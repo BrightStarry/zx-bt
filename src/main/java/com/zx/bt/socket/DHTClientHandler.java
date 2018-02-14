@@ -19,6 +19,7 @@ import java.net.InetAddress;
 @ChannelHandler.Sharable
 @Slf4j
 @Component
+@Deprecated
 public class DHTClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
     private static final String LOG = "[DHT客户端处理类]-";
 

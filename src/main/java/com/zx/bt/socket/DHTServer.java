@@ -33,28 +33,8 @@ public class DHTServer {
      */
     @SneakyThrows
     public void start() {
-        new Thread(()->{
-
-            try {
-                run();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        }).start();
-
-//        Thread.sleep(2000);
-//
-//        new Thread(()->{
-//
-//            try {
-//                run1(9595);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//        }).start();
-
+        new Thread(this::run).start();
+        //等待连接成功,获取到发送用的channel,再进行下一步
         Thread.sleep(2000);
     }
 

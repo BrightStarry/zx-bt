@@ -3,8 +3,19 @@
 - 尝试一个磁力搜索系统，基于ELK进行存储搜索。
 - [BitTorrent官网](http://bittorrent.org)
 - [Bencode编解码Github项目](https://github.com/dampcake/bencode)
-- [官网文档翻译-博客](http://www.cnblogs.com/bymax/p/4973639.html)
+- [官网文档翻译-博客1](http://www.cnblogs.com/bymax/p/4973639.html)
+- [官网文档翻译-博客2](https://blog.sharpbai.com/2014/05/bittorrent-dht%E5%8D%8F%E8%AE%AE%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91/)
 
+#### 奇淫巧技
+
+
+#### bug
+- 需要确保nodeId不与其他人重复,否则可能无法得到其他节点的响应(应该是因为,其他节点进行回复时会事先查询他们自己已有的路由表,如果有存在的节点,就.....)
+
+#### 注意点
+- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/port info”。其中前4个字节是网络字节序（大端序）的IP地址，后2个字节是网络字节序的端口号。
+  
+- node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/port info”。
  
 #### 简述
 - BitTorrent是分发文件的协议。它通过URL标识内容，旨在与网络无缝集成。
@@ -20,6 +31,7 @@
     - 当自己收到其他节点发送的find_node请求时,可按照常规流程查找出最相似的Top8个节点返回.不过也可以无论如何都将自己伪装成其中一个相似节点返回回去,以让自己更容易被别人找到.
         - 或者 返回一个空,表示自己没有存储任何节点
     - 可使用get_peers请求,根据资源ID查找某个资源,返回信息中包含有对应资源的ip:port. 
+    - 当收到别人的get_peers请求时,请求中的infohash就是我们需要的种子.
     - ping: 检测某个节点状态,已更新自己的路由表
     - 当某个节点有了某个资源时,会向之前向它请求过的所有节点,发送通知(应该就是在他自己的路由表中广播消息),BT嗅探器也正是基于这点进行操作.
     

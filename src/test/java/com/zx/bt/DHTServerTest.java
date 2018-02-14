@@ -35,14 +35,7 @@ public class DHTServerTest extends BtApplicationTests{
     @Test
     @SneakyThrows
     public void test1() {
-        //启动服务端
-        dhtServer.start();
-        Thread.sleep(3000);
-        InetSocketAddress inetSocketAddress = new InetSocketAddress("127.0.0.1", 9703);
-        Optional<Channel> channelOptional = dhtClient.getChannel(inetSocketAddress,new DHTClientHandler());
-        Channel channel = channelOptional.get();
-        BTUtil.writeAndFlush(channel,"xxxxx",inetSocketAddress);
-        Thread.sleep(1000000000);
+
     }
 
 }

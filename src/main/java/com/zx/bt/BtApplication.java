@@ -13,6 +13,9 @@ public class BtApplication{
 		SpringApplication.run(BtApplication.class, args);
 	}
 
+	/**
+	 * Bencode编解码工具类
+	 */
 	@Bean
 	public Bencode bencode() {
 		return new Bencode();

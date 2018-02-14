@@ -18,6 +18,7 @@ import java.util.Optional;
  */
 @Component
 @Slf4j
+@Deprecated
 public class DHTClient {
     private static final String LOG = "[DHT客户端]-";
     private final BootstrapFactory bootstrapFactory;

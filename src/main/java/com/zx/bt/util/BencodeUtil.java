@@ -2,12 +2,9 @@ package com.zx.bt.util;
 
 import com.dampcake.bencode.Bencode;
 import com.dampcake.bencode.Type;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * author:ZhengXing
@@ -63,6 +60,11 @@ public class BencodeUtil {
         }});
         String encodeStr = new String(encoded, bencode.getCharset());
         System.out.println(encodeStr);
+
+        Map<String, Object> map = bencode.decode(encoded, Type.DICTIONARY);
+        System.out.println(map);
+
+
 
 
     }
