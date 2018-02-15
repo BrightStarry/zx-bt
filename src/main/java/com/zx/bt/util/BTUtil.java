@@ -5,7 +5,9 @@ import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
 import io.netty.channel.Channel;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.text.RandomStringGenerator;
 
 import java.util.Map;
@@ -41,14 +43,14 @@ public class BTUtil {
      * 生成一个随机的nodeId
      */
     public static byte[] generateNodeId() {
-        return generateNodeIdString().getBytes();
+        return DigestUtils.sha1(randomStringGenerator.generate(20));
     }
 
     /**
      * 生成一个随机的nodeID
      */
     public static String generateNodeIdString() {
-        return randomStringGenerator.generate(20);
+        return new String(generateNodeId(), CharsetUtil.ISO_8859_1);
     }
 
     /**

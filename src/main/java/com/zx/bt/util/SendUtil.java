@@ -2,9 +2,7 @@ package com.zx.bt.util;
 
 import com.dampcake.bencode.Bencode;
 import com.zx.bt.config.Config;
-import com.zx.bt.dto.FindNode;
-import com.zx.bt.dto.MessageInfo;
-import com.zx.bt.dto.Ping;
+import com.zx.bt.dto.*;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
@@ -12,6 +10,7 @@ import com.zx.bt.socket.LogChannelFutureListener;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,7 @@ public class SendUtil {
             channel.close();
             throw new BTException("通道无法写入");
         }
-        log.info("正在向目标:{},写入数据:{}", address, new String(bytes));
+        log.info("正在向目标:{},写入数据:{}", address, new String(bytes, CharsetUtil.ISO_8859_1));
         channel.writeAndFlush(new DatagramPacket(Unpooled.copiedBuffer(bytes), address)).addListener(logChannelFutureListener);
     }
 
@@ -69,6 +68,22 @@ public class SendUtil {
         //存入缓存
         CacheUtil.put(request.getT(),new MessageInfo(MethodEnum.FIND_NODE, YEnum.QUERY,request.getT()));
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
+    }
+
+    /**
+     * 回复announce_peer
+     */
+    public static void announcePeerReceive(InetSocketAddress address,String nodeId) {
+        AnnouncePeer.Response response = new AnnouncePeer.Response(nodeId);
+        writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
+    }
+
+    /**
+     * 回复get_peers
+     */
+    public static void getPeersReceive(InetSocketAddress address, String nodeId, String token, String nodes) {
+        GetPeers.Response response = new GetPeers.Response(nodeId, token, nodes);
+        writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
 

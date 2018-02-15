@@ -1,8 +1,6 @@
 package com.zx.bt.util;
 
-import com.dampcake.bencode.Bencode;
-import com.dampcake.bencode.Type;
-import com.zx.bt.dto.Ping;
+import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -75,9 +73,19 @@ public class BeanUtil {
         return null;
     }
     public static void main(String[] args) {
-        byte a = (byte)1;
-        byte b = (byte)1;
-        System.out.println(Integer.toString(a & 0xFF));
-        System.out.println(Integer.toString(a & 0xFF | (b & 0xff) << 8));
+        byte[] bytes = intToByte4(44444);
+
+
+        System.out.println( ( bytes[3] & 0xFF) | (bytes[2] & 0xFF) << 8);
+
+    }
+
+    public static byte[] intToByte4(int i) {
+        byte[] targets = new byte[4];
+        targets[3] = (byte) (i & 0xFF);
+        targets[2] = (byte) (i >> 8 & 0xFF);
+        targets[1] = (byte) (i >> 16 & 0xFF);
+        targets[0] = (byte) (i >> 24 & 0xFF);
+        return targets;
     }
 }

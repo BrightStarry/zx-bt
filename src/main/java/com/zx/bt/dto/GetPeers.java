@@ -11,13 +11,13 @@ import lombok.experimental.Accessors;
 
 /**
  * author:ZhengXing
- * datetime:2018-02-14 17:07
- * find_node请求
+ * datetime:2018-02-15 15:21
+ * get_peers方法
  */
-public interface FindNode {
+public interface GetPeers {
 
     /**
-     * 主体
+     * 请求主体
      */
     @Data
     @AllArgsConstructor
@@ -30,9 +30,9 @@ public interface FindNode {
         private String id;
 
         /**
-         * 要查找的nodeID
+         * 种子文件的infohash
          */
-        private String target;
+        private String info_hash;
     }
 
 
@@ -47,22 +47,23 @@ public interface FindNode {
     public static class Request extends CommonRequest{
 
         /**主体,包含请求发送方的nodeID(也就是自己的)*/
-        private RequestContent a;
+        private GetPeers.RequestContent a;
 
         private void init() {
             t = BTUtil.generateMessageID();
             y = YEnum.QUERY.getCode();
-            q = MethodEnum.FIND_NODE.getCode();
-            a = new RequestContent();
+            q = MethodEnum.GET_PEERS.getCode();
+            a = new GetPeers.RequestContent();
         }
 
         /**
          * 指定请求发送方nodeID/ 要查找的nodeId构造
          */
-        public Request(String nodeId,String targetNodeId) {
+        public Request(String nodeId,String info_hash) {
             init();
             a.id = nodeId;
-            a.target = targetNodeId;
+            a.info_hash = info_hash;
+
         }
     }
 
@@ -80,10 +81,16 @@ public interface FindNode {
         private String id;
 
         /**
-         * 与要查找的nodeId最接近的8个node的nodeIds
+         * 回复方定义的token
+         */
+        private String token;
+
+        /**
+         * 当有该种子时,回复的是values,没有时,回复的是nodes.
          */
         private String nodes;
     }
+
     /**
      * 响应
      */
@@ -94,20 +101,21 @@ public interface FindNode {
     @Accessors(chain = true)
     public static class Response extends CommonResponse{
 
-        /**主体,包含请求发送方的nodeID(也就是自己的)*/
-        private ResponseContent r;
+        /**主体,*/
+        private GetPeers.ResponseContent r;
 
         private void init() {
             y = YEnum.QUERY.getCode();
-            r = new ResponseContent();
+            r = new GetPeers.ResponseContent();
         }
 
         /**
-         * 指定请回复方nodeID/ nodes
+         * 指定回复方id/ token/ nodes
          */
-        public Response(String nodeId,String nodes) {
+        public Response(String nodeId,String token,String nodes) {
             init();
             r.id = nodeId;
+            r.token = token;
             r.nodes = nodes;
         }
     }

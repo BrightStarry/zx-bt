@@ -7,7 +7,8 @@
 - [官网文档翻译-博客2](https://blog.sharpbai.com/2014/05/bittorrent-dht%E5%8D%8F%E8%AE%AE%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91/)
 
 #### 奇淫巧技
-
+- ISO_8859_1 编码可表示0x00 - 0xff 范围(单字节)的所有字符.而不会发生UTF-8/ASCII等编码中的无法识别字符.导致byte[]转为String后,再转回byte[]时
+发生变化.
 
 #### bug
 - 需要确保nodeId不与其他人重复,否则可能无法得到其他节点的响应(应该是因为,其他节点进行回复时会事先查询他们自己已有的路由表,如果有存在的节点,就.....)
@@ -16,6 +17,9 @@
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/port info”。其中前4个字节是网络字节序（大端序）的IP地址，后2个字节是网络字节序的端口号。
   
 - node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/port info”。
+
+- byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
+其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
  
 #### 简述
 - BitTorrent是分发文件的协议。它通过URL标识内容，旨在与网络无缝集成。

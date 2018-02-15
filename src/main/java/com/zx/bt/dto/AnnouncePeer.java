@@ -11,13 +11,12 @@ import lombok.experimental.Accessors;
 
 /**
  * author:ZhengXing
- * datetime:2018-02-14 17:07
- * find_node请求
+ * datetime:2018-02-15 14:53
+ * 宣告peer方法
  */
-public interface FindNode {
-
+public interface AnnouncePeer {
     /**
-     * 主体
+     * 请求主体
      */
     @Data
     @AllArgsConstructor
@@ -30,9 +29,19 @@ public interface FindNode {
         private String id;
 
         /**
-         * 要查找的nodeID
+         * 种子文件的infohash
          */
-        private String target;
+        private String info_hash;
+
+        /**
+         * 正在下载种子的端口
+         */
+        private Integer port;
+
+        /**
+         * 之前get_peers请求中的token
+         */
+        private String token;
     }
 
 
@@ -47,22 +56,24 @@ public interface FindNode {
     public static class Request extends CommonRequest{
 
         /**主体,包含请求发送方的nodeID(也就是自己的)*/
-        private RequestContent a;
+        private AnnouncePeer.RequestContent a;
 
         private void init() {
             t = BTUtil.generateMessageID();
             y = YEnum.QUERY.getCode();
-            q = MethodEnum.FIND_NODE.getCode();
-            a = new RequestContent();
+            q = MethodEnum.ANNOUNCE_PEER.getCode();
+            a = new AnnouncePeer.RequestContent();
         }
 
         /**
          * 指定请求发送方nodeID/ 要查找的nodeId构造
          */
-        public Request(String nodeId,String targetNodeId) {
+        public Request(String nodeId,String info_hash,int port,String token) {
             init();
             a.id = nodeId;
-            a.target = targetNodeId;
+            a.info_hash = info_hash;
+            a.port = port;
+            a.token = token;
         }
     }
 
@@ -78,12 +89,8 @@ public interface FindNode {
          * 回复方nodeID
          */
         private String id;
-
-        /**
-         * 与要查找的nodeId最接近的8个node的nodeIds
-         */
-        private String nodes;
     }
+
     /**
      * 响应
      */
@@ -94,21 +101,23 @@ public interface FindNode {
     @Accessors(chain = true)
     public static class Response extends CommonResponse{
 
-        /**主体,包含请求发送方的nodeID(也就是自己的)*/
-        private ResponseContent r;
+        /**主体,*/
+        private AnnouncePeer.ResponseContent r;
 
         private void init() {
             y = YEnum.QUERY.getCode();
-            r = new ResponseContent();
+            r = new AnnouncePeer.ResponseContent();
         }
 
         /**
-         * 指定请回复方nodeID/ nodes
+         * 指定回复方id
          */
-        public Response(String nodeId,String nodes) {
+        public Response(String nodeId) {
             init();
             r.id = nodeId;
-            r.nodes = nodes;
         }
     }
+
+
+
 }

@@ -3,8 +3,11 @@ package com.zx.bt.socket;
 import com.dampcake.bencode.Bencode;
 import com.dampcake.bencode.Type;
 import com.zx.bt.config.Config;
+import com.zx.bt.dto.FindNode;
 import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.dto.Node;
 import com.zx.bt.enums.YEnum;
+import com.zx.bt.store.Table;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
@@ -18,7 +21,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * author:ZhengXing
@@ -33,10 +35,12 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
     private final Bencode bencode;
     private final Config config;
+    private final Table table;
 
-    public DHTServerHandler(Bencode bencode, Config config) {
+    public DHTServerHandler(Bencode bencode, Config config, Table table) {
         this.bencode = bencode;
         this.config = config;
+        this.table = table;
     }
 
 
@@ -55,11 +59,10 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
         byte[] bytes = getBytes(packet);
 
-
         //解码为map
         Map<String, Object> map = null;
         try {
-            map = bencode.decode(bytes, Type.DICTIONARY);
+            map = this.bencode.decode(bytes, Type.DICTIONARY);
         } catch (Exception e) {
             log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, packet.sender(), e.getMessage(), e);
             return;
@@ -90,6 +93,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             case FIND_NODE:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
+                    new FindNode.Response(config.getMain().getNodeId(), "");
                 }else{
                     //如果是回复
                     Object r = map.get("r");
@@ -103,26 +107,77 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                         log.error("{}FIND_NODE,找不到nodes参数.发送者:{}.", LOG, packet.sender());
                         return;
                     }
-                    byte[] bytes1 = ((String) nodes).getBytes(CharsetUtil.UTF_8);
+                    byte[] bytes1 = ((String) nodes).getBytes(CharsetUtil.ISO_8859_1);
                     for (int i = 0; i < bytes1.length / 26; i++) {
                         //nodeId
                         byte[] nodeIdBytes = ArrayUtils.subarray(bytes1, i*26, i*26 + 20);
-                        String nodeId = new String(nodeIdBytes);
-                        System.out.println("nodeId:" + nodeId);
+                        String nodeId = new String(nodeIdBytes,CharsetUtil.ISO_8859_1);
 
                         //ip
                         byte[] ipBytes = ArrayUtils.subarray(bytes1, i * 26 + 20, i * 26 + 24);
-                        System.out.println(String.join(":","ip",Integer.toString(ipBytes[0] & 0xFF),
-                                Integer.toString(ipBytes[1] & 0xFF),Integer.toString(ipBytes[2] & 0xFF),Integer.toString(ipBytes[3] & 0xFF)));
+                        String ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF) ,Integer.toString(ipBytes[1] & 0xFF)
+                                ,Integer.toString(ipBytes[2] & 0xFF) ,Integer.toString(ipBytes[3] & 0xFF));
 
                         //port
                         byte[] portBytes = ArrayUtils.subarray(bytes1, i * 26 + 24, i * 26 + 26);
-                        System.out.println(String.join(":", "ip", Integer.toString(portBytes[0] & 0xFF | (portBytes[1] & 0xFF) << 8)));
+                        Integer port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+
+                        Node node = new Node(nodeId, ip, port);
+                        log.info("第{}个node信息:{}",i,node);
+                        //存入节点
+                        table.put(node);
                     }
 
                 }
                 break;
 
+            case ANNOUNCE_PEER:
+                //如果是请求
+                if (messageInfo.getStatus().equals(YEnum.QUERY)) {
+                    Object aObj = map.get("a");
+                    if(aObj == null){
+                        log.error("{}ANNOUNCE_PEER,找不到a参数.发送者:{}.", LOG, packet.sender());
+                        return;
+                    }
+                    Map<String, Object> aMap = (Map<String, Object>) aObj;
+                    Object iObj = aMap.get("info_hash");
+                    if (iObj == null) {
+                        log.error("{}ANNOUNCE_PEER,找不到info_hash参数.发送者:{}.", LOG, packet.sender());
+                        return;
+                    }
+                    String info_hash = (String) iObj;
+                    log.info("{}ANNOUNCE_PEER获取到info_hash:{}",LOG,info_hash);
+                    //回复
+                    SendUtil.announcePeerReceive(packet.sender(),config.getMain().getNodeId());
+
+                }else {
+                    //如果是回复
+                }
+                break;
+
+            case GET_PEERS:
+                //如果是请求
+                if (messageInfo.getStatus().equals(YEnum.QUERY)) {
+                    Object aObj = map.get("a");
+                    if(aObj == null){
+                        log.error("{}GET_PEERS,找不到a参数.发送者:{}.", LOG, packet.sender());
+                        return;
+                    }
+                    Map<String, Object> aMap = (Map<String, Object>) aObj;
+                    Object iObj = aMap.get("info_hash");
+                    if (iObj == null) {
+                        log.error("{}ANNOUNCE_PEER,找不到info_hash参数.发送者:{}.", LOG, packet.sender());
+                        return;
+                    }
+                    String info_hash = (String) iObj;
+                    log.info("{}ANNOUNCE_PEER获取到info_hash:{}",LOG,info_hash);
+                    SendUtil.getPeersReceive(packet.sender(),config.getMain().getNodeId(),
+                            config.getMain().getToken(),"");
+
+                }else {
+                    //如果是回复
+                }
+                break;
         }
 
 
@@ -137,7 +192,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         byte[] bytes = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(bytes);
 
-        log.info("{}1-收到消息,发送者:{},未解码消息内容:{}", LOG, packet.sender(), new String(bytes, CharsetUtil.UTF_8));
+        log.info("{}1-收到消息,发送者:{},未解码消息内容:{}", LOG, packet.sender(), new String(bytes,CharsetUtil.ISO_8859_1));
         return bytes;
     }
 

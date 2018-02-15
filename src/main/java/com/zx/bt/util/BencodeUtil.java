@@ -12,18 +12,6 @@ import java.util.Map;
  * BitTorrent专用的Bencode编码方式
  */
 public class BencodeUtil {
-    /**
-     * github找的,看了下,是线程安全,并且默认为UTF-8编码
-     */
-    private static final Bencode bencode = new Bencode();
-
-
-
-
-
-
-
-
 
     public static void main(String[] args) {
 
@@ -48,21 +36,6 @@ public class BencodeUtil {
 //        Map<String, Object> dict = bencode.decode(encodeStr.getBytes(), Type.DICTIONARY);
 //
 //        System.out.println(dict);
-
-        byte[] encoded = bencode.encode(new HashMap<Object, Object>() {{
-            put("t", "aa");
-            put("y", "q");
-            put("q", "find_node");
-            put("a", new HashMap<Object, Object>() {{
-                put("id","abcdefghij0123456789");
-                put("target","mnopqrstuvwxyz123456");
-            }});
-        }});
-        String encodeStr = new String(encoded, bencode.getCharset());
-        System.out.println(encodeStr);
-
-        Map<String, Object> map = bencode.decode(encoded, Type.DICTIONARY);
-        System.out.println(map);
 
 
 
