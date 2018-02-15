@@ -36,9 +36,8 @@ public class SendUtil {
     public static void writeAndFlush(byte[] bytes, InetSocketAddress address) {
         if (!channel.isActive()) {
             channel.close();
-            throw new BTException("通道无法写入");
+            throw new BTException("发送消息异常");
         }
-        log.info("正在向目标:{},写入数据:{}", address, new String(bytes, CharsetUtil.ISO_8859_1));
         channel.writeAndFlush(new DatagramPacket(Unpooled.copiedBuffer(bytes), address)).addListener(logChannelFutureListener);
     }
 
@@ -57,6 +56,7 @@ public class SendUtil {
      */
     public static void pingReceive(InetSocketAddress address, String nodeID,String messageId) {
         Ping.Response response = new Ping.Response(nodeID, messageId);
+        log.info("发送PING-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)), address);
     }
 
@@ -75,6 +75,7 @@ public class SendUtil {
      */
     public static void announcePeerReceive(InetSocketAddress address,String nodeId) {
         AnnouncePeer.Response response = new AnnouncePeer.Response(nodeId);
+        log.info("发送ANNOUNCE_PEER-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
@@ -83,6 +84,7 @@ public class SendUtil {
      */
     public static void getPeersReceive(InetSocketAddress address, String nodeId, String token, String nodes) {
         GetPeers.Response response = new GetPeers.Response(nodeId, token, nodes);
+        log.info("发送GET_PEERS-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 

@@ -73,12 +73,17 @@ public class BeanUtil {
         return null;
     }
     public static void main(String[] args) {
-        byte[] bytes = intToByte4(44444);
+        byte[] bytes = "sZ#Õ,Ì9\u0011\u009A÷b-êI|\u0095õÔÖí".getBytes(CharsetUtil.ISO_8859_1);
+        String s = CodeUtil.bytes2HexStr(bytes);
+        System.out.println("magnet:?xt=urn:btih:" + s.toUpperCase());
 
-
-        System.out.println( ( bytes[3] & 0xFF) | (bytes[2] & 0xFF) << 8);
+        byte[] bytes1 = CodeUtil.hexStr2Bytes(s.toLowerCase());
+        boolean equals = bytes.equals(bytes1);
+        System.out.println(equals);
 
     }
+
+
 
     public static byte[] intToByte4(int i) {
         byte[] targets = new byte[4];

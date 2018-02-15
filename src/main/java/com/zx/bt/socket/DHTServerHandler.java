@@ -3,12 +3,17 @@ package com.zx.bt.socket;
 import com.dampcake.bencode.Bencode;
 import com.dampcake.bencode.Type;
 import com.zx.bt.config.Config;
+import com.zx.bt.dto.AnnouncePeer;
 import com.zx.bt.dto.FindNode;
 import com.zx.bt.dto.MessageInfo;
-import com.zx.bt.dto.Node;
+import com.zx.bt.entity.Node;
+import com.zx.bt.entity.InfoHash;
 import com.zx.bt.enums.YEnum;
+import com.zx.bt.repository.InfoHashRepository;
+import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.store.Table;
 import com.zx.bt.util.BTUtil;
+import com.zx.bt.util.CodeUtil;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -20,6 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,11 +44,15 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     private final Bencode bencode;
     private final Config config;
     private final Table table;
+    private final InfoHashRepository infoHashRepository;
+    private final NodeRepository nodeRepository;
 
-    public DHTServerHandler(Bencode bencode, Config config, Table table) {
+    public DHTServerHandler(Bencode bencode, Config config, Table table, InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
         this.bencode = bencode;
         this.config = config;
         this.table = table;
+        this.infoHashRepository = infoHashRepository;
+        this.nodeRepository = nodeRepository;
     }
 
 
@@ -58,125 +70,99 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
         byte[] bytes = getBytes(packet);
-
+        InetSocketAddress sender = packet.sender();
         //解码为map
-        Map<String, Object> map = null;
+        Map<String, Object> map;
         try {
             map = this.bencode.decode(bytes, Type.DICTIONARY);
+            log.info("{}消息解码成功.发送者:{},解码消息内容:{}", LOG, sender, map);
         } catch (Exception e) {
-            log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, packet.sender(), e.getMessage(), e);
+            log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
             return;
         }
-        log.info("{}2-消息解码成功.发送者:{},解码消息内容:{}", LOG, packet.sender(), map);
 
         //解析出MessageInfo
-        MessageInfo messageInfo = null;
-        try {
-            messageInfo = BTUtil.getMessageInfo(map);
-        } catch (Exception e) {
-            log.error("{}解析MessageInfo异常.发送者:{}.异常:{}", LOG, packet.sender(), e.getMessage(), e);
-            return;
-        }
-        log.info("{}3-解析MessageInfo成功.发送者:{},MessageInfo:{}", LOG, packet.sender(), messageInfo);
+        MessageInfo messageInfo = BTUtil.getMessageInfo(map);
+//        log.info("{}解析MessageInfo成功.发送者:{},MessageInfo:{}", LOG, sender, messageInfo);
 
 
         switch (messageInfo.getMethod()) {
             case PING:
                 //如果是请求,进行回复
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    SendUtil.pingReceive(packet.sender(), config.getMain().getNodeId(), messageInfo.getMessageId());
-                } else {
-                    //如果是回复
-
+                    log.info("{}PING.发送者:{}", LOG, sender);
+                    SendUtil.pingReceive(sender, config.getMain().getNodeId(), messageInfo.getMessageId());
+                    break;
                 }
+                //如果是回复
+
                 break;
             case FIND_NODE:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
                     new FindNode.Response(config.getMain().getNodeId(), "");
-                }else{
-                    //如果是回复
-                    Object r = map.get("r");
-                    if(r == null){
-                        log.error("{}FIND_NODE,找不到r参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    Map<String, Object> rMap = (Map<String, Object>) r;
-                    Object nodes = rMap.get("nodes");
-                    if(nodes == null){
-                        log.error("{}FIND_NODE,找不到nodes参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    byte[] bytes1 = ((String) nodes).getBytes(CharsetUtil.ISO_8859_1);
-                    for (int i = 0; i < bytes1.length / 26; i++) {
-                        //nodeId
-                        byte[] nodeIdBytes = ArrayUtils.subarray(bytes1, i*26, i*26 + 20);
-                        String nodeId = new String(nodeIdBytes,CharsetUtil.ISO_8859_1);
-
-                        //ip
-                        byte[] ipBytes = ArrayUtils.subarray(bytes1, i * 26 + 20, i * 26 + 24);
-                        String ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF) ,Integer.toString(ipBytes[1] & 0xFF)
-                                ,Integer.toString(ipBytes[2] & 0xFF) ,Integer.toString(ipBytes[3] & 0xFF));
-
-                        //port
-                        byte[] portBytes = ArrayUtils.subarray(bytes1, i * 26 + 24, i * 26 + 26);
-                        Integer port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
-
-                        Node node = new Node(nodeId, ip, port);
-                        log.info("第{}个node信息:{}",i,node);
-                        //存入节点
-                        table.put(node);
-                    }
-
+                    break;
                 }
+                //如果是回复
+                log.info("{}FIND_NODE-RECEIVE.发送者:{}", LOG, sender);
+                //回复主体
+                Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "FIND_NODE,找不到r参数.map:" + map);
+                byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1);
+                List<Node> nodeList = new LinkedList<>();
+                for (int i = 0; i + 26 < nodesBytes.length; i += 26) {
+                    //nodeId
+                    byte[] nodeIdBytes = ArrayUtils.subarray(nodesBytes, i, i + 20);
+                    String nodeId = CodeUtil.bytes2HexStr(nodeIdBytes);
+
+                    //ip
+                    byte[] ipBytes = ArrayUtils.subarray(nodesBytes, i + 20, i + 24);
+                    String ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
+                            , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
+
+                    //port
+                    byte[] portBytes = ArrayUtils.subarray(nodesBytes, i + 24, i + 26);
+                    Integer port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+
+                    Node node = new Node(nodeId, ip, port);
+                    //存入节点
+                    table.put(node);
+                    nodeList.add(node);
+                }
+                //插入数据库
+                nodeRepository.save(nodeList);
                 break;
 
             case ANNOUNCE_PEER:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    Object aObj = map.get("a");
-                    if(aObj == null){
-                        log.error("{}ANNOUNCE_PEER,找不到a参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    Map<String, Object> aMap = (Map<String, Object>) aObj;
-                    Object iObj = aMap.get("info_hash");
-                    if (iObj == null) {
-                        log.error("{}ANNOUNCE_PEER,找不到info_hash参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    String info_hash = (String) iObj;
-                    log.info("{}ANNOUNCE_PEER获取到info_hash:{}",LOG,info_hash);
-                    //回复
-                    SendUtil.announcePeerReceive(packet.sender(),config.getMain().getNodeId());
 
-                }else {
-                    //如果是回复
+                    AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(map, sender.getPort());
+
+                    log.info("{}ANNOUNCE_PEER.发送者:{},port:{},info_hash:{}", LOG, sender, requestContent.getPort(), requestContent.getInfo_hash());
+                    //入库
+                    infoHashRepository.save(new InfoHash("ANNOUNCE_PEER:" + sender.getHostName() + ":" + requestContent.getPort() + requestContent.getInfo_hash()));
+                    //回复
+                    SendUtil.announcePeerReceive(sender, config.getMain().getNodeId());
+                    break;
                 }
+                //如果是回复
+
                 break;
 
             case GET_PEERS:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    Object aObj = map.get("a");
-                    if(aObj == null){
-                        log.error("{}GET_PEERS,找不到a参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    Map<String, Object> aMap = (Map<String, Object>) aObj;
-                    Object iObj = aMap.get("info_hash");
-                    if (iObj == null) {
-                        log.error("{}ANNOUNCE_PEER,找不到info_hash参数.发送者:{}.", LOG, packet.sender());
-                        return;
-                    }
-                    String info_hash = (String) iObj;
-                    log.info("{}ANNOUNCE_PEER获取到info_hash:{}",LOG,info_hash);
-                    SendUtil.getPeersReceive(packet.sender(),config.getMain().getNodeId(),
-                            config.getMain().getToken(),"");
+                    Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "GET_PEERS,找不到a参数.map:" + map);
+                    String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
+                    log.info("{}GET_PEERS,获取到info_hash:{}", LOG, info_hash);
+                    //入库
+                    infoHashRepository.save(new InfoHash("GET_PEERS:" + "-" + info_hash));
+                    SendUtil.getPeersReceive(sender, config.getMain().getNodeId(),
+                            config.getMain().getToken(), "");
 
-                }else {
-                    //如果是回复
+                    break;
                 }
+                //如果是回复
                 break;
         }
 
@@ -192,7 +178,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         byte[] bytes = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(bytes);
 
-        log.info("{}1-收到消息,发送者:{},未解码消息内容:{}", LOG, packet.sender(), new String(bytes,CharsetUtil.ISO_8859_1));
+//        log.info("{}1-收到消息,发送者:{},未解码消息内容:{}", LOG, sender, new String(bytes,CharsetUtil.ISO_8859_1));
         return bytes;
     }
 

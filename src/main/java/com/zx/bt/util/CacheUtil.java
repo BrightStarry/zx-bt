@@ -15,9 +15,9 @@ public class CacheUtil {
 
     //创建缓存
     private static final LoadingCache<String, MessageInfo> cache = Caffeine.newBuilder()
-            .initialCapacity(1024)
-			.maximumSize(10240)
-            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .initialCapacity(40960)
+			.maximumSize(40960)
+            .expireAfterAccess(20, TimeUnit.MINUTES)
             //传入缓存加载策略,key不存在时调用该方法返回一个value回去
             //此处直接返回空
             .build(key -> null);

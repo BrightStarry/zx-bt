@@ -2,17 +2,20 @@ server:
   port: 8080
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/test?useSSL=false
+    url: jdbc:mysql://106.14.7.29:3306/bt?useSSL=false
     username: root
     password: 123456
     driver-class-name: com.mysql.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQL5Dialect
+    hibernate:
+      ddl-auto: validate
 security:
   basic:
     enabled: false
 zx-bt:
   main:
+    port: 6881
     init-addresses:
       - 85.173.163.72:6881
       - 109.61.242.74:11609
@@ -27,7 +30,6 @@ zx-bt:
       - 37.59.58.55:6881
       - 188.165.211.227:6881
       - 94.23.249.8:6881
-
-#      - router.utorrent.com:6881 # 这个节点十分快速
+      - router.utorrent.com:6881 # 这个节点十分快速
 #      - router.bittorrent.com:6881
 #      - dht.transmissionbt.com:6881

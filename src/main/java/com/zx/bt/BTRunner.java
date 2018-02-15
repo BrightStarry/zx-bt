@@ -1,7 +1,7 @@
 package com.zx.bt;
 
 import com.zx.bt.config.Config;
-import com.zx.bt.dto.Node;
+import com.zx.bt.entity.Node;
 import com.zx.bt.socket.DHTServer;
 import com.zx.bt.store.Table;
 import com.zx.bt.util.BTUtil;
@@ -46,25 +46,30 @@ public class BTRunner implements CommandLineRunner{
             return new InetSocketAddress(split[0], Integer.parseInt(split[1]));
         }).toArray(InetSocketAddress[]::new);
 
+        String nodeId = config.getMain().getNodeId();
+
+        //给初始化地址发送find_node
         for (InetSocketAddress address : addresses) {
-            SendUtil.findNode(address,config.getMain().getNodeId(),config.getMain().getTargetNodeId());
+            SendUtil.findNode(address,nodeId,config.getMain().getTargetNodeId());
         }
+
+        //开启定时任务
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
                 Collection<Node> nodeList = table.getAll();
                 nodeList.forEach(item->{
                     try {
-                        SendUtil.findNode(new InetSocketAddress(item.getIp(), item.getPort()), config.getMain().getNodeId(), BTUtil.generateNodeIdString());
+                        SendUtil.findNode(new InetSocketAddress(item.getIp(), item.getPort()),nodeId, BTUtil.generateNodeIdString());
                     } catch (Exception e) {
-                        log.info("发送有误.异常:e",e.getMessage(),e);
+                        log.info("发送有误.异常:{}",e.getMessage(),e);
                     }
 
                 });
             } catch (Exception e) {
-                log.info("发送有误.异常:e",e.getMessage(),e);
+                log.info("发送有误.异常:{}",e.getMessage(),e);
             }
-        }, 10, 20, TimeUnit.SECONDS);
+        }, 30, 60, TimeUnit.SECONDS);
 
 
     }

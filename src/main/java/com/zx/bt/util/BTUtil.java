@@ -1,5 +1,6 @@
 package com.zx.bt.util;
 
+import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
@@ -9,6 +10,8 @@ import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.text.RandomStringGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
@@ -20,13 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 通用工具类
  */
 @Slf4j
-
+@Component
 public class BTUtil {
 
     //用于递增消息ID
     private static AtomicInteger messageIDGenerator = new AtomicInteger(1);
     //递增刷新阈值
-    private static long maxMessageID = Integer.MAX_VALUE - 10000;
+    private static long maxMessageID = Integer.MAX_VALUE - 100000;
     //用于生成20位随机字符,也就是byte[20]的nodeId
     private static RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder()
             .withinRange('0', 'z').build();
@@ -57,31 +60,31 @@ public class BTUtil {
      * 生成一个递增的t,相当于消息id
      */
     public static String generateMessageID() {
-//        int result;
-//        //当大于阈值时,重置为0
-//        if ((result = messageIDGenerator.getAndIncrement()) > maxMessageID) {
-//            messageIDGenerator.lazySet(0);
-//        }
-//        return result;
+        int result;
+        //当大于阈值时,重置为0
+        if ((result = messageIDGenerator.getAndIncrement()) > maxMessageID) {
+            messageIDGenerator.lazySet(0);
+        }
+        return String.valueOf(result);
 
-        return randomStringGenerator.generate(2);
+//        return randomStringGenerator.generate(2);
     }
 
     /**
      * 根据解析后的消息map,获取消息信息,例如 消息方法(ping/find_node等)/ 消息状态(请求/回复/异常)
      */
-    public static MessageInfo getMessageInfo(Map<String, Object> map) throws Exception{
+    public static MessageInfo getMessageInfo(Map<String, Object> map) throws Exception {
         MessageInfo messageInfo = new MessageInfo();
 
         /**
          * 状态 请求/回复/异常
          */
         Object yObj = map.get("y");
-        if(yObj == null)
+        if (yObj == null)
             throw new BTException("y属性不存在");
         String y = yObj.toString();
         Optional<YEnum> yEnumOptional = EnumUtil.getByCode(y, YEnum.class);
-        if(!yEnumOptional.isPresent())
+        if (!yEnumOptional.isPresent())
             throw new BTException("y属性值不正确,current:{}", y);
         messageInfo.setStatus(yEnumOptional.get());
 
@@ -100,15 +103,15 @@ public class BTUtil {
         //如果是请求, 直接从请求主体获取其方法
         if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.QUERY)) {
             Object qObj = map.get("q");
-            if(qObj == null)
+            if (qObj == null)
                 throw new BTException("q属性不存在");
             String q = qObj.toString();
             Optional<MethodEnum> qEnumOptional = EnumUtil.getByCode(q, MethodEnum.class);
-            if(!qEnumOptional.isPresent())
+            if (!qEnumOptional.isPresent())
                 throw new BTException("q属性值不正确,current:{}", y);
             messageInfo.setMethod(qEnumOptional.get());
 
-        } else  {
+        } else {
             //如果是回复,或异常,从缓存中读取其方法
             MessageInfo messageInfo1 = CacheUtil.get(t);
             if (messageInfo1 == null)
@@ -117,6 +120,33 @@ public class BTUtil {
         }
         return messageInfo;
     }
+
+    /**
+     * 从Map中获取Object属性
+     */
+    public static Object getParam(Map<String, Object> map, String key, String log) {
+        Object obj = map.get(key);
+        if (obj == null)
+            throw new BTException(log);
+        return obj;
+    }
+
+    /**
+     * 从Map中获取String属性
+     */
+    public static String getParamString(Map<String, Object> map, String key, String log) {
+        Object obj = getParam(map, key, log);
+        return (String) obj;
+    }
+
+    /**
+     * 从Map中获取Map属性
+     */
+    public static Map<String, Object> getParamMap(Map<String, Object> map, String key, String log) {
+        Object obj = getParam(map, key, log);
+        return (Map<String, Object>) obj;
+    }
+
 
 
 }

@@ -2,12 +2,17 @@ package com.zx.bt.dto;
 
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
+import com.zx.bt.exception.BTException;
 import com.zx.bt.util.BTUtil;
+import com.zx.bt.util.CodeUtil;
+import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+
+import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -29,6 +34,11 @@ public interface AnnouncePeer {
         private String id;
 
         /**
+         * 可选, 为1时,忽略port参数,直接将请求发送节点的发送port作为port
+         */
+        private Integer implied_port;
+
+        /**
          * 种子文件的infohash
          */
         private String info_hash;
@@ -42,6 +52,20 @@ public interface AnnouncePeer {
          * 之前get_peers请求中的token
          */
         private String token;
+
+        public  RequestContent (Map<String, Object> map,int defaultPort) {
+            Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "ANNOUNCE_PEER,找不到a参数.map:" + map);
+            info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "ANNOUNCE_PEER,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
+            if (aMap.get("implied_port") == null || (int) aMap.get("implied_port") == 0) {
+                Object portObj = aMap.get("port");
+                if(portObj == null)
+                    throw new BTException("ANNOUNCE_PEER,找不到info_hash参数.map:" + map);
+                port = (int) portObj;
+            }else
+                port = defaultPort;
+            id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "ANNOUNCE_PEER,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
+
+        }
     }
 
 

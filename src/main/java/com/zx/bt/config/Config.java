@@ -48,5 +48,7 @@ public class Config {
          * token(自己响应其他节点的get_peers请求时,需回复别人该token,等该节获取到该种子后,会将种子id和该token一起发回来(announce_peer请求))
          */
         private String token = "zx";
+
+
     }
 }
