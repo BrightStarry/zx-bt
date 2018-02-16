@@ -18,7 +18,7 @@ public class CodeUtil {
     }
 
     /**
-     * byte[] 转 16进制字符串 大写
+     * byte[] 转 16进制字符串
      */
     public static String bytes2HexStr(byte[] bytes){
         return Hex.encodeHexString(bytes);
@@ -47,6 +47,20 @@ public class CodeUtil {
             result += Math.abs(bytes1[i] ^ bytes2[i]);
         }
         return result;
+    }
+
+
+    /**
+     * int 转 2个字节的byte[]
+     * 舍弃16位最高位,只保留16位,两个字节的低位.
+     * 这个字节数组的顺序需要是这样的.. 目前我收到其他节点的信息,他们的字节数组大多是这样的/
+     * 并且按照惯性思维,左边的(也就是byte[0]),的确应该是高位的.
+     */
+    public static byte[] int2TwoBytes(int value) {
+        byte[] des = new byte[2];
+        des[1] = (byte) (value & 0xff);
+        des[0] = (byte) ((value >> 8) & 0xff);
+        return des;
     }
 
     public static void main(String[] args) {

@@ -2,7 +2,7 @@ package com.zx.bt;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
-import com.zx.bt.socket.DHTServer;
+import com.zx.bt.socket.UDPServer;
 import com.zx.bt.store.Table;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.SendUtil;
@@ -25,12 +25,12 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class BTRunner implements CommandLineRunner{
 
-    private final DHTServer dhtServer;
+    private final UDPServer UDPServer;
     private final Config config;
     private final Table table;
 
-    public BTRunner(DHTServer dhtServer, Config config, Table table) {
-        this.dhtServer = dhtServer;
+    public BTRunner(UDPServer UDPServer, Config config, Table table) {
+        this.UDPServer = UDPServer;
         this.config = config;
         this.table = table;
     }
@@ -38,7 +38,7 @@ public class BTRunner implements CommandLineRunner{
     @Override
     public void run(String... strings) throws Exception {
         //启动服务端
-        dhtServer.start();
+        UDPServer.start();
 
         //获取初始化地址
         InetSocketAddress[] addresses = config.getMain().getInitAddresses().stream().map(item -> {

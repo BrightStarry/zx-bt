@@ -38,7 +38,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
     private static final String LOG = "[DHT服务端处理类]-";
 
     private final Bencode bencode;
@@ -47,7 +47,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     private final InfoHashRepository infoHashRepository;
     private final NodeRepository nodeRepository;
 
-    public DHTServerHandler(Bencode bencode, Config config, Table table, InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
+    public UDPServerHandler(Bencode bencode, Config config, Table table, InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
         this.bencode = bencode;
         this.config = config;
         this.table = table;
@@ -100,7 +100,8 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             case FIND_NODE:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    new FindNode.Response(config.getMain().getNodeId(), "");
+                    FindNode.Response response = new FindNode.Response(config.getMain().getNodeId(), "");
+//                    SendUtil.findNode();
                     break;
                 }
                 //如果是回复
@@ -109,21 +110,9 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "FIND_NODE,找不到r参数.map:" + map);
                 byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1);
                 List<Node> nodeList = new LinkedList<>();
-                for (int i = 0; i + 26 < nodesBytes.length; i += 26) {
-                    //nodeId
-                    byte[] nodeIdBytes = ArrayUtils.subarray(nodesBytes, i, i + 20);
-                    String nodeId = CodeUtil.bytes2HexStr(nodeIdBytes);
-
-                    //ip
-                    byte[] ipBytes = ArrayUtils.subarray(nodesBytes, i + 20, i + 24);
-                    String ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
-                            , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
-
-                    //port
-                    byte[] portBytes = ArrayUtils.subarray(nodesBytes, i + 24, i + 26);
-                    Integer port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
-
-                    Node node = new Node(nodeId, ip, port);
+                for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
+                    //byte[26] 转 Node
+                    Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
                     //存入节点
                     table.put(node);
                     nodeList.add(node);
@@ -177,8 +166,6 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         ByteBuf byteBuf = packet.content();
         byte[] bytes = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(bytes);
-
-//        log.info("{}1-收到消息,发送者:{},未解码消息内容:{}", LOG, sender, new String(bytes,CharsetUtil.ISO_8859_1));
         return bytes;
     }
 

@@ -1,8 +1,10 @@
 package com.zx.bt.util;
 
+import com.zx.bt.entity.Node;
 import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -73,24 +75,28 @@ public class BeanUtil {
         return null;
     }
     public static void main(String[] args) {
-        byte[] bytes = "sZ#Õ,Ì9\u0011\u009A÷b-êI|\u0095õÔÖí".getBytes(CharsetUtil.ISO_8859_1);
-        String s = CodeUtil.bytes2HexStr(bytes);
-        System.out.println("magnet:?xt=urn:btih:" + s.toUpperCase());
+//        String nodeId = BTUtil.generateNodeIdString();
+//        byte[] bytes = new byte[26];
+//        for (int i = 0; i < 20; i++) {
+//            bytes[i] = 111;
+//        }
+//        bytes[20] = 106;
+//        bytes[21] = 14;
+//        bytes[22] = 7;
+//        bytes[23] = 29;
+//
+//        byte[] port = CodeUtil.int2TwoBytes(44451);
+//        bytes[24] = port[0];
+//        bytes[25] = port[1];
+//
+//        Node node = new Node(bytes);
+//        System.out.println(node);
 
-        byte[] bytes1 = CodeUtil.hexStr2Bytes(s.toLowerCase());
-        boolean equals = bytes.equals(bytes1);
-        System.out.println(equals);
-
+       //
+       byte[] a = {19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114,
+               111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 16, 0, 1};
+        String s = new String(a, CharsetUtil.US_ASCII);
+        System.out.println(s);
     }
 
-
-
-    public static byte[] intToByte4(int i) {
-        byte[] targets = new byte[4];
-        targets[3] = (byte) (i & 0xFF);
-        targets[2] = (byte) (i >> 8 & 0xFF);
-        targets[1] = (byte) (i >> 16 & 0xFF);
-        targets[0] = (byte) (i >> 24 & 0xFF);
-        return targets;
-    }
 }

@@ -3,6 +3,7 @@ package com.zx.bt.util;
 import com.dampcake.bencode.Bencode;
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.*;
+import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -68,6 +70,13 @@ public class SendUtil {
         //存入缓存
         CacheUtil.put(request.getT(),new MessageInfo(MethodEnum.FIND_NODE, YEnum.QUERY,request.getT()));
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
+    }
+
+    /**
+     * 回复find_node请求
+     */
+    public static void findNodeReceive(InetSocketAddress address, String nodeId, List<Node> nodeList) {
+//        new FindNode.Response()
     }
 
     /**

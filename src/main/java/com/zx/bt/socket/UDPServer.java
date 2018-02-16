@@ -17,15 +17,15 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class DHTServer {
+public class UDPServer {
     private static final String LOG = "[DHT服务端]-";
 
     private final Config config;
-    private final DHTServerHandler dhtServerHandler;
+    private final UDPServerHandler UDPServerHandler;
 
-    public DHTServer(Config config, DHTServerHandler dhtServerHandler) {
+    public UDPServer(Config config, UDPServerHandler UDPServerHandler) {
         this.config = config;
-        this.dhtServerHandler = dhtServerHandler;
+        this.UDPServerHandler = UDPServerHandler;
     }
 
     /**
@@ -65,7 +65,7 @@ public class DHTServer {
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(eventLoopGroup).channel(NioDatagramChannel.class)//通道类型也为UDP
                     .option(ChannelOption.SO_BROADCAST, true)//是广播,也就是UDP连接
-                    .handler(dhtServerHandler);//配置的业务处理类
+                    .handler(UDPServerHandler);//配置的业务处理类
             bootstrap.bind(port).sync().channel().closeFuture().await();
         }finally {
             if(eventLoopGroup != null)

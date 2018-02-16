@@ -2,6 +2,7 @@ package com.zx.bt.util;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
@@ -9,10 +10,14 @@ import io.netty.channel.Channel;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -146,6 +151,9 @@ public class BTUtil {
         Object obj = getParam(map, key, log);
         return (Map<String, Object>) obj;
     }
+
+
+
 
 
 
