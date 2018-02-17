@@ -1,13 +1,11 @@
 package com.zx.bt.util;
 
 import com.dampcake.bencode.Bencode;
-import com.zx.bt.config.Config;
 import com.zx.bt.dto.*;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
-import com.zx.bt.socket.LogChannelFutureListener;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
@@ -28,7 +26,6 @@ import java.util.List;
 @Component
 public class SendUtil {
 
-    private static LogChannelFutureListener logChannelFutureListener;
     private static Channel channel;
     private static Bencode bencode;
 
@@ -40,7 +37,7 @@ public class SendUtil {
             channel.close();
             throw new BTException("发送消息异常");
         }
-        channel.writeAndFlush(new DatagramPacket(Unpooled.copiedBuffer(bytes), address)).addListener(logChannelFutureListener);
+        channel.writeAndFlush(new DatagramPacket(Unpooled.copiedBuffer(bytes), address));
     }
 
     /**
@@ -69,21 +66,24 @@ public class SendUtil {
         FindNode.Request request = new FindNode.Request(nodeId, targetNodeId);
         //存入缓存
         CacheUtil.put(request.getT(),new MessageInfo(MethodEnum.FIND_NODE, YEnum.QUERY,request.getT()));
+        log.info("发送FIND_NODE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
     }
 
     /**
      * 回复find_node请求
      */
-    public static void findNodeReceive(InetSocketAddress address, String nodeId, List<Node> nodeList) {
-//        new FindNode.Response()
+    public static void findNodeReceive(String messageId,InetSocketAddress address, String nodeId, List<Node> nodeList) {
+        FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
+        log.info("发送FIND_NODE-RECEIVE,对方地址:{}",address);
+        writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
     /**
      * 回复announce_peer
      */
-    public static void announcePeerReceive(InetSocketAddress address,String nodeId) {
-        AnnouncePeer.Response response = new AnnouncePeer.Response(nodeId);
+    public static void announcePeerReceive(String messageId,InetSocketAddress address, String nodeId) {
+        AnnouncePeer.Response response = new AnnouncePeer.Response(nodeId,messageId);
         log.info("发送ANNOUNCE_PEER-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
@@ -91,8 +91,8 @@ public class SendUtil {
     /**
      * 回复get_peers
      */
-    public static void getPeersReceive(InetSocketAddress address, String nodeId, String token, String nodes) {
-        GetPeers.Response response = new GetPeers.Response(nodeId, token, nodes);
+    public static void getPeersReceive(String messageId,InetSocketAddress address, String nodeId, String token, List<Node> nodeList) {
+        GetPeers.Response response = new GetPeers.Response(nodeId, token, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
         log.info("发送GET_PEERS-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
@@ -105,8 +105,7 @@ public class SendUtil {
     //初始化-setter等--------------------------------
 
     @Autowired
-    public void init(LogChannelFutureListener logChannelFutureListener, Bencode bencode) {
-        SendUtil.logChannelFutureListener = logChannelFutureListener;
+    public void init(Bencode bencode) {
         SendUtil.bencode = bencode;
     }
 

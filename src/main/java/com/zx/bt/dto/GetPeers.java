@@ -112,11 +112,12 @@ public interface GetPeers {
         /**
          * 指定回复方id/ token/ nodes
          */
-        public Response(String nodeId,String token,String nodes) {
+        public Response(String nodeId,String token,String nodes,String messageId) {
             init();
             r.id = nodeId;
             r.token = token;
             r.nodes = nodes;
+            t = messageId;
         }
     }
 }

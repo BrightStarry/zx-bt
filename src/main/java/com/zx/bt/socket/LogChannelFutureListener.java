@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
  * datetime:2018-02-13 13:50
  * 只用于记录日志的channel future 监听器
  * 记录数据发送成功或失败
+ * @Deprecated udp通过应该都是发送成功,因为无法检测到底是否成功
  */
 @Slf4j
 @Component
+@Deprecated
 public class LogChannelFutureListener implements ChannelFutureListener {
     @Override
     public void operationComplete(ChannelFuture future) throws Exception {

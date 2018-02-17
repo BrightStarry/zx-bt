@@ -95,18 +95,6 @@ public interface Ping {
         }
     }
 
-    public static void main(String[] args) {
-        Request xx = new Request(new String(BTUtil.generateNodeId()));
-        Bencode bencode = new Bencode();
-        byte[] encode = bencode.encode(BeanUtil.beanToMap(xx));
-
-        System.out.println(new String(encode));
-
-        Map<String, Object> map = bencode.decode(encode, Type.DICTIONARY);
-        System.out.println(map);
-
-
-    }
 
 
 }

@@ -1,13 +1,9 @@
 package com.zx.bt.util;
 
-import com.zx.bt.entity.Node;
-import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,22 +54,7 @@ public class BeanUtil {
         return map;
     }
 
-    /**
-     * map<String,Object> 转 bean
-     */
-    @Deprecated
-    public static <T> T mapToBean(Map<String, Object> map,T obj) {
-        Class<?> tClass = obj.getClass();
-        Field[] fields = tClass.getDeclaredFields();
-        //将每个字段的name提取为另一个数组
-        String[] fieldNames = Arrays.stream(fields).map(Field::getName).toArray(String[]::new);
-        for (Map.Entry<String, Object> item : map.entrySet()) {
-            if(item.getValue().getClass().getName().contains("Map")){
 
-            }
-        }
-        return null;
-    }
     public static void main(String[] args) {
 //        String nodeId = BTUtil.generateNodeIdString();
 //        byte[] bytes = new byte[26];
@@ -92,11 +73,7 @@ public class BeanUtil {
 //        Node node = new Node(bytes);
 //        System.out.println(node);
 
-       //
-       byte[] a = {19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114,
-               111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 16, 0, 1};
-        String s = new String(a, CharsetUtil.US_ASCII);
-        System.out.println(s);
+
     }
 
 }

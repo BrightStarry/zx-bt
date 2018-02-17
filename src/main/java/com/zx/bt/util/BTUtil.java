@@ -16,6 +16,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -86,11 +87,11 @@ public class BTUtil {
          */
         Object yObj = map.get("y");
         if (yObj == null)
-            throw new BTException("y属性不存在");
+            throw new BTException("y属性不存在.map:" + map);
         String y = yObj.toString();
         Optional<YEnum> yEnumOptional = EnumUtil.getByCode(y, YEnum.class);
         if (!yEnumOptional.isPresent())
-            throw new BTException("y属性值不正确,current:{}", y);
+            throw new BTException("y属性值不正确.map:" + map);
         messageInfo.setStatus(yEnumOptional.get());
 
         /**
@@ -98,7 +99,7 @@ public class BTUtil {
          */
         Object tObj = map.get("t");
         if (tObj == null)
-            throw new BTException("t属性不存在");
+            throw new BTException("t属性不存在.map:" + map);
         String t = tObj.toString();
         messageInfo.setMessageId(t);
 
@@ -109,18 +110,18 @@ public class BTUtil {
         if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.QUERY)) {
             Object qObj = map.get("q");
             if (qObj == null)
-                throw new BTException("q属性不存在");
+                throw new BTException("q属性不存在.map:" + map);
             String q = qObj.toString();
             Optional<MethodEnum> qEnumOptional = EnumUtil.getByCode(q, MethodEnum.class);
             if (!qEnumOptional.isPresent())
-                throw new BTException("q属性值不正确,current:{}", y);
+                throw new BTException("q属性值不正确.map:" + map);
             messageInfo.setMethod(qEnumOptional.get());
 
         } else {
             //如果是回复,或异常,从缓存中读取其方法
-            MessageInfo messageInfo1 = CacheUtil.get(t);
-            if (messageInfo1 == null)
-                throw new BTException("缓存不存在(已过期)");
+            MessageInfo messageInfo1 = CacheUtil.getAndRemove(t);
+            if(messageInfo1 == null)
+                throw new BTException("缓存不存在");
             messageInfo.setMethod(messageInfo1.getMethod());
         }
         return messageInfo;
@@ -151,6 +152,15 @@ public class BTUtil {
         Object obj = getParam(map, key, log);
         return (Map<String, Object>) obj;
     }
+
+    /**
+     * 从udp返回的sender属性中,提取出ip
+     */
+    public static String getIpBySender(InetSocketAddress sender) {
+        return sender.getAddress().toString().substring(1);
+    }
+
+
 
 
 

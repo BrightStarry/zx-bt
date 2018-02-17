@@ -3,6 +3,7 @@ package com.zx.bt.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 import javax.persistence.Entity;
@@ -13,6 +14,7 @@ import javax.persistence.Table;
 /**
  * author:ZhengXing
  * datetime:2018-02-15 19:43
+ * 存储info_hash信息
  */
 @Entity
 @AllArgsConstructor
@@ -25,9 +27,30 @@ public class InfoHash {
     @GeneratedValue()
     private Long id;
 
-    private String content;
+    /**
+     * infoHash信息,16进制形式
+     */
+    private String infoHash;
 
-    public InfoHash(String content) {
-        this.content = content;
+    /**
+     * 类型
+     * see {@link com.zx.bt.enums.InfoHashTypeEnum}
+     */
+    private Integer type;
+
+    /**
+     * 如果是announce_peer类型(type == 1),则保存其peer的ip:port
+     */
+    private String peerAddress = "";
+
+    public InfoHash(String infoHash, Integer type, String peerAddress) {
+        this.infoHash = infoHash;
+        this.type = type;
+        this.peerAddress = peerAddress;
+    }
+
+    public InfoHash(String infoHash, Integer type) {
+        this.infoHash = infoHash;
+        this.type = type;
     }
 }

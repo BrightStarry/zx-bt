@@ -2,7 +2,11 @@ package com.zx.bt.util;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.exception.BTException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,16 +15,25 @@ import java.util.concurrent.TimeUnit;
  * datetime:2018-02-14 16:05
  * 缓存工具类
  */
+@Component
 public class CacheUtil {
+    private static Config config;
+
+    @Autowired
+    public void init(Config config) {
+        CacheUtil.config = config;
+        this.cache = Caffeine.newBuilder()
+                .initialCapacity(config.getMain().getSendCacheLen())
+                .maximumSize(config.getMain().getSendCacheLen())
+                .expireAfterAccess(config.getMain().getSendCacheExpireMinute(), TimeUnit.MINUTES)
+                //传入缓存加载策略,key不存在时调用该方法返回一个value回去
+                //此处直接返回空
+                .build(key -> null);
+
+    }
 
     //创建缓存
-    private static final LoadingCache<String, MessageInfo> cache = Caffeine.newBuilder()
-            .initialCapacity(40960)
-			.maximumSize(40960)
-            .expireAfterAccess(20, TimeUnit.MINUTES)
-            //传入缓存加载策略,key不存在时调用该方法返回一个value回去
-            //此处直接返回空
-            .build(key -> null);
+    private static LoadingCache<String, MessageInfo> cache ;
 
 
     /**
@@ -28,6 +41,17 @@ public class CacheUtil {
      */
     public static MessageInfo get(String key) {
         return cache.getIfPresent(key);
+    }
+
+    /**
+     * 获取并删除
+     */
+    public static MessageInfo getAndRemove(String key) {
+        MessageInfo result = cache.getIfPresent(key);
+        if(result != null){
+            cache.invalidate(key);
+        }
+        return result;
     }
 
     /**

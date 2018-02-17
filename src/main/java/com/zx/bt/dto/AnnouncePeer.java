@@ -136,9 +136,10 @@ public interface AnnouncePeer {
         /**
          * 指定回复方id
          */
-        public Response(String nodeId) {
+        public Response(String nodeId,String messageId) {
             init();
             r.id = nodeId;
+            t = messageId;
         }
     }
 

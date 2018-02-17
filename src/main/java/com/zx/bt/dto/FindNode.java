@@ -46,7 +46,7 @@ public interface FindNode {
     @Accessors(chain = true)
     public static class Request extends CommonRequest{
 
-        /**主体,包含请求发送方的nodeID(也就是自己的)*/
+        /**主体,包含请求发送方的nodeID*/
         private RequestContent a;
 
         private void init() {
@@ -105,10 +105,11 @@ public interface FindNode {
         /**
          * 指定请回复方nodeID/ nodes
          */
-        public Response(String nodeId,String nodes) {
+        public Response(String nodeId,String nodes,String messageId) {
             init();
             r.id = nodeId;
             r.nodes = nodes;
+            t = messageId;
         }
     }
 }

@@ -2,9 +2,12 @@ package com.zx.bt.config;
 
 import com.zx.bt.util.BTUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,6 +19,7 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "zx-bt")
 @Data
+@Slf4j
 public class Config {
     /**
      * 主要配置
@@ -41,25 +45,68 @@ public class Config {
          */
         private String nodeId = BTUtil.generateNodeIdString();
 
+        /**
+         * 要查询的目标节点
+         * see {@link #updateTargetNodeId()}
+         */
+        private volatile String targetNodeId = BTUtil.generateNodeIdString();
+
         /**UDP服务器端端口号*/
-        private Integer port = 44444;
+        private Integer port = 6881;
 
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 2;
+        private Integer udpServerMainThreadNum = 4;
+        
+        /**TCP处理任务线程数*/
+        private Integer tcpClientThreadNum = 2;
+
+        /**TCP连接超时时间(ms)*/
+        private Integer tcpConnectTimeoutMillis = 10000;
 
         /**初始地址*/
         private List<String> initAddresses = new LinkedList<>();
+        
+        /**FindNodeTask群发路由表线程,间隔时间(s)*/
+        private Integer findNodeTaskByTableIntervalSecond = 60;
 
         /**
-         * 初始要查找的目标nodeId
+         * 路由表空间长度
          */
-        private String targetNodeId = BTUtil.generateNodeIdString();
+        private Integer tableLen = 1024;
+
+        /**
+         * 发送记录缓存长度
+         */
+        private Integer sendCacheLen = 10240;
+
+        /**
+         * 发送记录缓存过期时间
+         */
+        private Integer sendCacheExpireMinute = 3;
 
         /**
          * token(自己响应其他节点的get_peers请求时,需回复别人该token,等该节获取到该种子后,会将种子info_hash和该token一起发回来(announce_peer请求))
          */
         private String token = "zx";
 
+        /**
+         * 获取初始化地址
+         */
+        public InetSocketAddress[] getInitAddressArray() {
+            return this.initAddresses.stream().map(item -> {
+                String[] split = item.split(":");
+                return new InetSocketAddress(split[0], Integer.parseInt(split[1]));
+            }).toArray(InetSocketAddress[]::new);
+        }
+    }
 
+    /**
+     * 更新线程
+     * 每5分钟,更新一次要find_Node的目标节点
+     */
+    @Scheduled(cron = "0 0/3 * * * ? ")
+    public void updateTargetNodeId() {
+        this.main.setTargetNodeId(BTUtil.generateNodeIdString());
+        log.info("已更新TargetNodeId");
     }
 }
