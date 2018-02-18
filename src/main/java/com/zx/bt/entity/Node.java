@@ -51,7 +51,7 @@ public class Node {
     public void check() {
         if(StringUtils.isBlank(nodeId) || nodeId.length() != 40 ||
                 StringUtils.isBlank(ip) || port == null || port < 1024 || port > 65535)
-            throw new BTException("该节点信息有误");
+            throw new BTException("该节点信息有误:" + this);
     }
 
     /**

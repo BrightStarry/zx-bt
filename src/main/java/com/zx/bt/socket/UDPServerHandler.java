@@ -24,6 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
@@ -118,7 +119,8 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
                     List<Node> nodes = table.getTop8Nodes();
-                    log.info("{}FIND_NODE.发送者:{},返回的nodes", LOG, sender,nodes);
+                    nodes.get(0).setIp(config.getMain().getIp()).setPort(config.getMain().getPort());
+                    log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);
                     SendUtil.findNodeReceive(messageInfo.getMessageId(),sender,config.getMain().getNodeId(),nodes);
                     break;
                 }
@@ -132,14 +134,15 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
                     //byte[26] 转 Node
                     Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
-
+                    table.put(node);
                     nodeList.add(node);
                 }
                 //加入路由表
-                table.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort()));
-                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
-                //加入队列
-                findNodeTask.putAll(nodeList);
+                if(CollectionUtils.isNotEmpty(nodeList))
+                    table.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort()));
+//                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
+//                //加入队列
+//                findNodeTask.putAll(nodeList);
 
                 //入库
                 nodeRepository.save(nodeList);
@@ -148,6 +151,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             case ANNOUNCE_PEER:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
+                    log.info("{}ANNOUNCE_PEER.map:{}",LOG,map);
 
                     AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(map, sender.getPort());
 
@@ -174,7 +178,8 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     String id1 = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map);
 
                     List<Node> nodes = table.getTop8Nodes();
-                    log.info("{}GET_PEERS,获取到info_hash:{}", LOG, info_hash);
+                    nodes.get(0).setIp(config.getMain().getIp()).setPort(config.getMain().getPort());
+                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
                     //入库
                     infoHashRepository.save(new InfoHash(info_hash, InfoHashTypeEnum.GET_PEERS.getCode()));
                     SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, config.getMain().getNodeId(),

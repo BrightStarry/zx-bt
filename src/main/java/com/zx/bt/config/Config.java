@@ -40,6 +40,12 @@ public class Config {
 
     @Data
     public static class Main{
+
+        /**
+         * 机器的ip
+         */
+        private String ip;
+
         /**
          * nodeId
          */
@@ -67,22 +73,22 @@ public class Config {
         private List<String> initAddresses = new LinkedList<>();
         
         /**FindNodeTask群发路由表线程,间隔时间(s)*/
-        private Integer findNodeTaskByTableIntervalSecond = 60;
+        private Integer findNodeTaskByTableIntervalSecond = 6;
 
         /**
          * 路由表空间长度
          */
-        private Integer tableLen = 1024;
+        private Integer tableLen = 10240;
 
         /**
          * 发送记录缓存长度
          */
-        private Integer sendCacheLen = 10240;
+        private Integer sendCacheLen = 1024000;
 
         /**
          * 发送记录缓存过期时间
          */
-        private Integer sendCacheExpireMinute = 3;
+        private Integer sendCacheExpireMinute = 1;
 
         /**
          * token(自己响应其他节点的get_peers请求时,需回复别人该token,等该节获取到该种子后,会将种子info_hash和该token一起发回来(announce_peer请求))
@@ -104,7 +110,7 @@ public class Config {
      * 更新线程
      * 每5分钟,更新一次要find_Node的目标节点
      */
-    @Scheduled(cron = "0 0/3 * * * ? ")
+    @Scheduled(cron = "0 0/1 * * * ? ")
     public void updateTargetNodeId() {
         this.main.setTargetNodeId(BTUtil.generateNodeIdString());
         log.info("已更新TargetNodeId");

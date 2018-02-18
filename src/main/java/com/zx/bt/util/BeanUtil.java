@@ -30,9 +30,9 @@ public class BeanUtil {
      * Bean 转 Map
      */
     @SneakyThrows
-    public static <T> Map<Object, Object> beanToMap(T obj) {
+    public static <T> Map<String, Object> beanToMap(T obj) {
         //实体类转map
-        Map<Object, Object> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
 
         Class<?> tClass = obj.getClass();
         //获取所有字段,包括父类字段
@@ -47,7 +47,7 @@ public class BeanUtil {
             //其他自定义类型 TODO 可能还要扩展
             else{
                 //递归
-                Map<Object, Object> map1 = beanToMap(temp);
+                Map<String, Object> map1 = beanToMap(temp);
                 map.put(field.getName(), map1);
             }
         }
@@ -73,7 +73,10 @@ public class BeanUtil {
 //        Node node = new Node(bytes);
 //        System.out.println(node);
 
-
+        long a = 22222;
+        Object b = a;
+        int i = ((Long) b).intValue();
+        System.out.println(i);
     }
 
 }

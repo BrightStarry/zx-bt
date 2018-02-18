@@ -18,7 +18,7 @@
 - 自己手贱,在netty的handle的异常捕获方法中,当发生异常就关闭该udp连接,导致各种bug...
 
 #### 注意点
-- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/port info”。其中前4个字节是网络字节序（大端序）的IP地址，后2个字节是网络字节序的端口号。
+- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/port info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
   
 - node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/port info”。
 

@@ -72,6 +72,7 @@ public interface Ping {
     /**
      * 响应
      */
+    @EqualsAndHashCode(callSuper = true)
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -81,7 +82,7 @@ public interface Ping {
         private Content r;
 
         private void init() {
-            y = YEnum.QUERY.getCode();
+            y = YEnum.RECEIVE.getCode();
             r = new Content();
         }
 

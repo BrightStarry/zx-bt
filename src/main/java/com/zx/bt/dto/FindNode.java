@@ -98,7 +98,7 @@ public interface FindNode {
         private ResponseContent r;
 
         private void init() {
-            y = YEnum.QUERY.getCode();
+            y = YEnum.RECEIVE.getCode();
             r = new ResponseContent();
         }
 

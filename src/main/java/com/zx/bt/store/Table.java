@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class Table {
 
     private final Config config;
+    private final String ip;
 
     /**
      * 临时存储节点
@@ -41,6 +42,7 @@ public class Table {
                 //传入缓存加载策略,key不存在时调用该方法返回一个value回去
                 //此处直接返回空
                 .build(key -> null);
+        this.ip = config.getMain().getIp();
     }
 
 
@@ -48,8 +50,17 @@ public class Table {
      * 存入节点
      */
     public void put(Node node) {
-        log.info("[路由表]加入节点:{}",node);
-        cache.put(node.getNodeId(), node);
+//        log.info("[路由表]加入节点:{}",node);
+        if(!node.getIp().equals(ip))
+            cache.put(node.getNodeId(), node);
+    }
+
+
+    /**
+     * 删除节点
+     */
+    public void remove(String nodeId) {
+        cache.invalidate(nodeId);
     }
 
     /**

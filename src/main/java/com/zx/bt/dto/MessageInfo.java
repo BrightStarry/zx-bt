@@ -34,4 +34,6 @@ public class MessageInfo {
      * 消息id
      */
     private String messageId;
+
+
 }

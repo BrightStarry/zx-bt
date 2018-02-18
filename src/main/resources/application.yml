@@ -16,8 +16,7 @@ security:
 zx-bt:
   main:
     port: 44444
-    find-node-task-by-table-interval-second: 30
-    sendCacheLen: 1024000
+    ip: 39.181.141.107
     init-addresses:
       - 213.136.79.7:6892
       - 173.212.205.4:6876
@@ -55,6 +54,5 @@ zx-bt:
       - 188.165.211.227:6881
       - 94.23.249.8:6881
       - router.utorrent.com:6881
-    table-len: 1024
 #      - router.bittorrent.com:6881
 #      - dht.transmissionbt.com:6881
