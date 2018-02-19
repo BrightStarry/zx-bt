@@ -1,8 +1,5 @@
 package com.zx.bt.util;
 
-import com.dampcake.bencode.Bencode;
-import com.dampcake.bencode.Type;
-import com.zx.bt.config.Config;
 import com.zx.bt.dto.*;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
@@ -13,13 +10,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * author:ZhengXing

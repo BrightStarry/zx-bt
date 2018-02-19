@@ -31,6 +31,9 @@ public class Config {
     //每个节点信息默认占用的node字节长度. 为20位nodeId,4位ip,2位port
     public static final Integer NODE_BYTES_LEN = 26;
 
+    //nodeId和infohash的长度
+    public static final Integer BASIC_HASH_LEN = 20;
+
     //获取种子元信息时,第一条握手信息的前缀, 28位byte. 第2-20位,是ASCII码的BitTorrent protocol,
     // 第一位19,是固定的,表示这个字符串的长度.后面八位是BT协议的版本.可以全为0,不必理会.
     public static final Byte[] GET_METADATA_HANDSHAKE_PRE_BYTES = {19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114,
@@ -61,7 +64,7 @@ public class Config {
         private Integer port = 6881;
 
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 4;
+        private Integer udpServerMainThreadNum = 2;
         
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;
@@ -73,7 +76,7 @@ public class Config {
         private List<String> initAddresses = new LinkedList<>();
         
         /**FindNodeTask群发路由表线程,间隔时间(s)*/
-        private Integer findNodeTaskByTableIntervalSecond = 6;
+        private Integer findNodeTaskByTableIntervalSecond = 10;
 
         /**
          * 路由表空间长度
@@ -82,8 +85,9 @@ public class Config {
 
         /**
          * 发送记录缓存长度
+         * 消息id(t)为2个字节,最大表示也就是2的16次方
          */
-        private Integer sendCacheLen = 1024000;
+        private Integer sendCacheLen = 1<<16;
 
         /**
          * 发送记录缓存过期时间
@@ -108,9 +112,9 @@ public class Config {
 
     /**
      * 更新线程
-     * 每5分钟,更新一次要find_Node的目标节点
+     * 每x分钟,更新一次要find_Node的目标节点
      */
-    @Scheduled(cron = "0 0/1 * * * ? ")
+    @Scheduled(cron = "0 0/3 * * * ? ")
     public void updateTargetNodeId() {
         this.main.setTargetNodeId(BTUtil.generateNodeIdString());
         log.info("已更新TargetNodeId");

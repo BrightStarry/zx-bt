@@ -1,6 +1,6 @@
 package com.zx.bt.config;
 
-import com.dampcake.bencode.Bencode;
+import com.zx.bt.util.Bencode;
 import io.netty.util.CharsetUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +17,6 @@ public class BeanConfig {
      */
     @Bean
     public Bencode bencode() {
-        return new Bencode(CharsetUtil.ISO_8859_1);
+        return new Bencode();
     }
 }

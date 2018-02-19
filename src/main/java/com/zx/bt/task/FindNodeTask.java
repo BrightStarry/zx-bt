@@ -22,8 +22,6 @@ import java.util.concurrent.*;
 @Component
 @Slf4j
 public class FindNodeTask {
-    //存储等待向其发送find_node请求的节点
-//    private final BlockingDeque<Node> nodeQueue = new LinkedBlockingDeque<>(102400);
 
     private final Config config;
     private final Table table;
@@ -39,16 +37,7 @@ public class FindNodeTask {
      * 循环执行该任务
      */
     public void start() {
-//        //队列线程
-//        new Thread(() -> {
-//            while (true) {
-//                try {
-//                    findNodeByQueue();
-//                } catch (Exception e) {
-//                    log.error("[FindNodeTask]获取节点队列发送异常:{}", e.getMessage(), e);
-//                }
-//            }
-//        }).start();
+
         //定时群发路由表线程
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
@@ -60,20 +49,7 @@ public class FindNodeTask {
         }, 5, config.getMain().getFindNodeTaskByTableIntervalSecond(), TimeUnit.SECONDS);
     }
 
-    /**
-     * 从队列中取出下一节点,并发送find_node请求
-     */
-//    private void findNodeByQueue() throws Exception {
-//        //从阻塞队列中获取node
-//        Node node = nodeQueue.pollFirst(3,TimeUnit.SECONDS);
-//        //当队列为空时,向路由表群发
-//        if (node == null) {
-//            log.error("[FindNodeTask]队列为空");
-//            findNodeByTable();
-//            return;
-//        }
-//        SendUtil.findNode(new InetSocketAddress(node.getIp(), node.getPort()),nodeId, config.getMain().getTargetNodeId());
-//    }
+
 
     /**
      * 向路由表群发
@@ -87,27 +63,7 @@ public class FindNodeTask {
         log.info("向{}个节点群发请求,耗时{}秒",nodes.size(),(System.currentTimeMillis() - start)/1000);
     }
 
-//    /**
-//     * 向队列中追加元素
-//     */
-//    public void put(Node node) {
-//        //尝试追加元素到队列头部,如果失败
-//        if (!nodeQueue.offer(node)) {
-//            //尝试从末尾移除元素
-//            nodeQueue.pollLast();
-//            //然后再次追加,当然,这样也不确保能成功,但是能确保,一定有一个最新的元素被插入队列头部
-//            nodeQueue.offer(node);
-//        }
-//    }
-//
-//    /**
-//     * 向队列中批量追加元素
-//     */
-//    public void putAll(List<Node> nodeList) {
-//        for (Node node : nodeList) {
-//            put(node);
-//        }
-//    }
+
 
 
 }

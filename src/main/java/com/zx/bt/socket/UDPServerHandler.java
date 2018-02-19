@@ -1,7 +1,5 @@
 package com.zx.bt.socket;
 
-import com.dampcake.bencode.Bencode;
-import com.dampcake.bencode.Type;
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.AnnouncePeer;
 import com.zx.bt.dto.MessageInfo;
@@ -15,6 +13,7 @@ import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.store.Table;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
+import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
@@ -79,7 +78,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         //解码为map
         Map<String, Object> map;
         try {
-            map = this.bencode.decode(bytes, Type.DICTIONARY);
+            map = bencode.decode(bytes,Map.class);
         } catch (Exception e) {
             log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
             return;
@@ -175,8 +174,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
                     Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "GET_PEERS,找不到a参数.map:" + map);
                     String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
-                    String id1 = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map);
-
+                    String id1 = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     List<Node> nodes = table.getTop8Nodes();
                     nodes.get(0).setIp(config.getMain().getIp()).setPort(config.getMain().getPort());
                     log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);

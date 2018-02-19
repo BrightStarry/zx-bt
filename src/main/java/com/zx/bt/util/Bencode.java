@@ -8,12 +8,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * author:ZhengXing
@@ -25,7 +24,7 @@ public class Bencode {
     private static final String LOG = "[Bencode]";
 
     //编码
-    private Charset charset = CharsetUtil.UTF_8;
+    private Charset charset = CharsetUtil.ISO_8859_1;
 
     //string类型分隔符(冒号)的byte形式.
     private final byte stringTypeSeparator;
@@ -67,7 +66,7 @@ public class Bencode {
         int endIndex = separatorIndex + strLen + 1;
         if (separatorIndex > bytes.length)
             throw new BTException(LOG + "解码String类型异常,长度超出");
-        return new MethodResult<>(new String(ArrayUtils.subarray(bytes, separatorIndex + 1, endIndex), charset),endIndex);
+        return new MethodResult<>(new String(ArrayUtils.subarray(bytes, separatorIndex + 1, endIndex), charset), endIndex);
     }
 
     /**
@@ -87,22 +86,21 @@ public class Bencode {
         } catch (NumberFormatException e) {
             throw new BTException(LOG + "解码Int类型异常,值非int类型");
         }
-        return new MethodResult<>(result,++endIndex);
+        return new MethodResult<>(result, ++endIndex);
     }
 
     /**
      * list 解码
      */
-    public  MethodResult<List<Object>> decodeList(byte[] bytes, int start) {
+    public MethodResult<List<Object>> decodeList(byte[] bytes, int start) {
         List<Object> result = new ArrayList<>();
         if (start >= bytes.length || bytes[start] != listTypePre.charAt(0))
             throw new BTException(LOG + "解码List类型异常,start异常. start:" + start);
         //循环l后面的每个字节
         int i = start + 1;
         for (; i < bytes.length; ) {
-            String item = new String(new byte[]{bytes[i]}, charset);
-            //如果是结束字符,退出本次循环
-            if (item.equals(typeSuf))
+            //如果是结束字符,退出循环
+            if (bytes[i] == typeSuf.getBytes(charset)[0])
                 break;
             //解码为任意类型
             MethodResult<Object> methodResult = decodeAny(bytes, i);
@@ -111,8 +109,43 @@ public class Bencode {
             //增加到结果
             result.add(methodResult.value);
         }
-        if(i == bytes.length)
+        if (i == bytes.length)
             throw new BTException(LOG + "解码List类型异常,结束符不存在");
+        return new MethodResult<>(result, ++i);
+    }
+
+    /**
+     * dict解码
+     */
+    public MethodResult<Map<String, Object>> decodeDict(byte[] bytes, int start) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (start >= bytes.length || bytes[start] != dictTypePre.charAt(0))
+            throw new BTException(LOG + "解码Dict类型异常,start异常. start:" + start);
+
+        //循环d后面的每个字节
+        int i = start + 1;
+        for (; i < bytes.length; ) {
+            String item = new String(new byte[]{bytes[i]}, charset);
+            //如果是结束字符,退出循环
+            if (item.equals(typeSuf))
+                break;
+
+            //如果不为数字,格式异常(因为每次循环解析一个key/value对,而key是string类型,string类型的编码是长度在前)
+            if (!StringUtils.isNumeric(item))
+                throw new BTException(LOG + "解码Dict异常,key/value对非数组开头");
+            //解析key
+            MethodResult<String> keyMethodResult = decodeString(bytes, i);
+            //更新索引
+            i = keyMethodResult.index;
+            //解析value
+            MethodResult<Object> valueMethodResult = decodeAny(bytes, i);
+            //更新索引
+            i = valueMethodResult.index;
+            //放入
+            result.put(keyMethodResult.value, valueMethodResult.value);
+        }
+        if (i == bytes.length)
+            throw new BTException(LOG + "解码Dict类型异常,结束符不存在");
         return new MethodResult<>(result, ++i);
     }
 
@@ -120,7 +153,44 @@ public class Bencode {
      * 任意类型解码
      */
     public MethodResult<Object> decodeAny(byte[] bytes, int start) {
+        MethodResult<String> stringMethodResult = null;
+        MethodResult<Integer> integerMethodResult = null;
+        MethodResult<List<Object>> listMethodResult = null;
+        MethodResult<Map<String, Object>> dictMethodResult = null;
+        try {
+            stringMethodResult = decodeString(bytes, start);
+            return new MethodResult<>(stringMethodResult.value, stringMethodResult.index);
+        } catch (Exception ignored) {
+        }
+        if (stringMethodResult == null)
+            try {
+                integerMethodResult = decodeInt(bytes, start);
+                return new MethodResult<>(integerMethodResult.value, integerMethodResult.index);
+            } catch (Exception ignored) {
+            }
+        if (integerMethodResult == null)
+            try {
+                listMethodResult = decodeList(bytes, start);
+                return new MethodResult<>(listMethodResult.value, listMethodResult.index);
+            } catch (Exception ignored) {
+            }
+        if (listMethodResult == null)
+            try {
+                dictMethodResult = decodeDict(bytes, start);
+                return new MethodResult<>(dictMethodResult.value, dictMethodResult.index);
+            } catch (Exception ignored) {
+            }
+        if (dictMethodResult == null)
+            throw new BTException(LOG + "解码失败");
+        //不可能执行到此处...
         return null;
+    }
+
+    /**
+     * 封装任意类型解码
+     */
+    public <T> T decode(byte[] bytes, Class<T> tClass) {
+        return (T) decodeAny(bytes, 0).value;
     }
 
 
@@ -225,8 +295,7 @@ public class Bencode {
         byte[] encode = bencode.encode(map);
 
 
-
-
+        String xxx = bencode.decode(bencode.encode("xxx"), String.class);
     }
 
 }

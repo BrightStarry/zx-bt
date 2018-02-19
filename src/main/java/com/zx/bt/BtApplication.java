@@ -1,14 +1,11 @@
 package com.zx.bt;
 
-import com.dampcake.bencode.Bencode;
 import com.zx.bt.socket.UDPServer;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.task.InitTask;
-import io.netty.util.CharsetUtil;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.EnableScheduling;
 

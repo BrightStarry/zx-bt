@@ -54,5 +54,5 @@ zx-bt:
       - 188.165.211.227:6881
       - 94.23.249.8:6881
       - router.utorrent.com:6881
-#      - router.bittorrent.com:6881
-#      - dht.transmissionbt.com:6881
+      - router.bittorrent.com:6881
+      - dht.transmissionbt.com:6881

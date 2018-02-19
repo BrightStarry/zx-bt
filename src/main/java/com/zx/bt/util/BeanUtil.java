@@ -1,10 +1,12 @@
 package com.zx.bt.util;
 
+import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -32,7 +34,7 @@ public class BeanUtil {
     @SneakyThrows
     public static <T> Map<String, Object> beanToMap(T obj) {
         //实体类转map
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
 
         Class<?> tClass = obj.getClass();
         //获取所有字段,包括父类字段
@@ -72,11 +74,6 @@ public class BeanUtil {
 //
 //        Node node = new Node(bytes);
 //        System.out.println(node);
-
-        long a = 22222;
-        Object b = a;
-        int i = ((Long) b).intValue();
-        System.out.println(i);
     }
 
 }

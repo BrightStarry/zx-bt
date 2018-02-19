@@ -13,11 +13,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -46,6 +44,24 @@ public class Node {
     private Integer port;
 
     /**
+     * 最后交流时间(收到请求或收到回复)
+     */
+    @Transient
+    private Date lastExchangeTime;
+
+    /**
+     * 权重
+     */
+    @Transient
+    private Integer rank;
+
+    /**
+     * 与自己的nodeId的异或值
+     */
+    @Transient
+    private byte[] xor;
+
+    /**
      * 检查该节点信息是否完整
      */
     public void check() {
@@ -61,8 +77,8 @@ public class Node {
         if(CollectionUtils.isEmpty(nodes))
             return new byte[0];
         byte[] result = new byte[nodes.size() * Config.NODE_BYTES_LEN];
-        for (int i = 0; i + 26 < result.length; i+=26) {
-            System.arraycopy(nodes.get(i/26).toBytes(),0,result,i,Config.NODE_BYTES_LEN);
+        for (int i = 0; i + Config.NODE_BYTES_LEN <= result.length; i+=Config.NODE_BYTES_LEN) {
+            System.arraycopy(nodes.get(i/Config.NODE_BYTES_LEN).toBytes(),0,result,i,Config.NODE_BYTES_LEN);
         }
         return result;
     }

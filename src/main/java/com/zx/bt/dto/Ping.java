@@ -1,18 +1,14 @@
 package com.zx.bt.dto;
 
-import com.dampcake.bencode.Bencode;
-import com.dampcake.bencode.Type;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.BeanUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.util.Map;
 
 /**
  * author:ZhengXing

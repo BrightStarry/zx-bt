@@ -33,9 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BTUtil {
 
     //用于递增消息ID
-    private static AtomicInteger messageIDGenerator = new AtomicInteger(3);
+    private static AtomicInteger messageIDGenerator = new AtomicInteger(1);
     //递增刷新阈值
-    private static long maxMessageID = 99;
+    private static int maxMessageID = 1<<15;
     //用于生成20位随机字符,也就是byte[20]的nodeId
     private static RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder()
             .withinRange('0', 'z').build();
@@ -66,13 +66,12 @@ public class BTUtil {
      * 生成一个递增的t,相当于消息id
      */
     public static String generateMessageID() {
-//        int result;
-//        //当大于阈值时,重置为0
-//        if ((result = messageIDGenerator.getAndIncrement()) > maxMessageID) {
-//            messageIDGenerator.lazySet(0);
-//        }
-//        return String.valueOf(result);
-        return "11";
+        int result;
+        //当大于阈值时,重置为0
+        if ((result = messageIDGenerator.getAndIncrement()) > maxMessageID) {
+            messageIDGenerator.lazySet(1);
+        }
+        return new String(CodeUtil.int2TwoBytes(result), CharsetUtil.ISO_8859_1);
 
 //        return randomStringGenerator.generate(2);
     }

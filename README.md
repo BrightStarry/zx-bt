@@ -2,7 +2,7 @@
 
 - 尝试一个磁力搜索系统，基于ELK进行存储搜索。
 - [BitTorrent官网](http://bittorrent.org)
-- [Bencode编解码Github项目](https://github.com/dampcake/bencode)
+- [Bencode编解码Github项目](https://github.com/dampcake/bencode)-废弃(自行实现了)
 - [官网文档翻译-博客1](http://www.cnblogs.com/bymax/p/4973639.html)
 - [官网文档翻译-博客2](https://blog.sharpbai.com/2014/05/bittorrent-dht%E5%8D%8F%E8%AE%AE%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91/)
 

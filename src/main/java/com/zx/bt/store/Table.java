@@ -51,7 +51,7 @@ public class Table {
      */
     public void put(Node node) {
 //        log.info("[路由表]加入节点:{}",node);
-        if(!node.getIp().equals(ip))
+        if(!ip.equals(node.getIp()))
             cache.put(node.getNodeId(), node);
     }
 
