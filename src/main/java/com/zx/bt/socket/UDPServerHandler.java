@@ -118,7 +118,6 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
                     List<Node> nodes = table.getTop8Nodes();
-                    nodes.get(0).setIp(config.getMain().getIp()).setPort(config.getMain().getPort());
                     log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);
                     SendUtil.findNodeReceive(messageInfo.getMessageId(),sender,config.getMain().getNodeId(),nodes);
                     break;
@@ -176,11 +175,11 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     String id1 = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     List<Node> nodes = table.getTop8Nodes();
-                    nodes.get(0).setIp(config.getMain().getIp()).setPort(config.getMain().getPort());
                     log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
                     //入库
                     infoHashRepository.save(new InfoHash(info_hash, InfoHashTypeEnum.GET_PEERS.getCode()));
-                    SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, config.getMain().getNodeId(),
+                    //回复时,将自己的nodeId伪造为 和它请求的种子的info_hash异或值相差不大的值
+                    SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, CodeUtil.generateSimilarInfoHashString(info_hash),
                             config.getMain().getToken(),nodes);
                     //加入路由表
                     table.put(new Node(id1,BTUtil.getIpBySender(sender), sender.getPort()));

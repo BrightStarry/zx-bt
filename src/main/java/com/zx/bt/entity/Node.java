@@ -44,10 +44,10 @@ public class Node {
     private Integer port;
 
     /**
-     * 最后交流时间(收到请求或收到回复)
+     * 最后活动时间(收到请求或收到回复)
      */
     @Transient
-    private Date lastExchangeTime;
+    private Date lastActiveTime;
 
     /**
      * 权重

@@ -124,8 +124,10 @@ public class BTUtil {
             }else{
                 //从缓存中读取其方法
                 MessageInfo messageInfo1 = CacheUtil.getAndRemove(t);
-                if(messageInfo1 == null)
-                    throw new BTException("缓存不存在");
+                if(messageInfo1 == null){
+                    throw new BTException("缓存不存在.map:" + map);
+                }
+
                 messageInfo.setMethod(messageInfo1.getMethod());
             }
         }

@@ -181,7 +181,7 @@ public class Bencode {
             } catch (Exception ignored) {
             }
         if (dictMethodResult == null)
-            throw new BTException(LOG + "解码失败");
+            throw new BTException(LOG + "解码失败.start:" + start +",bytes:" + new String(bytes,charset));
         //不可能执行到此处...
         return null;
     }
