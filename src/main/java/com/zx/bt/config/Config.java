@@ -2,6 +2,7 @@ package com.zx.bt.config;
 
 import com.zx.bt.util.BTUtil;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,6 +18,7 @@ import java.util.List;
  * 自定义配置类
  */
 @Component
+@Accessors(chain = true)
 @ConfigurationProperties(prefix = "zx-bt")
 @Data
 @Slf4j
@@ -79,9 +81,9 @@ public class Config {
         private Integer findNodeTaskByTableIntervalSecond = 10;
 
         /**
-         * 路由表空间长度
+         * 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
          */
-        private Integer tableLen = 10240;
+        private Integer routingTablePrefixLen = 15;
 
         /**
          * 发送记录缓存长度

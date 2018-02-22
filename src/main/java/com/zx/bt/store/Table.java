@@ -36,8 +36,8 @@ public class Table {
     public Table(Config config) {
         this.config = config;
         this.cache = Caffeine.newBuilder()
-                .initialCapacity(config.getMain().getTableLen())
-                .maximumSize(config.getMain().getTableLen())
+//                .initialCapacity(config.getMain().getTableLen())
+//                .maximumSize(config.getMain().getTableLen())
 //            .expireAfterAccess(30, TimeUnit.MINUTES)
                 //传入缓存加载策略,key不存在时调用该方法返回一个value回去
                 //此处直接返回空

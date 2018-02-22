@@ -184,6 +184,19 @@ public class CodeUtil {
         return byte2Bit(b)[index % 8];
     }
 
+    /**
+     * 比较两个byte[]是否相等
+     */
+    public static boolean equalsBytes(byte[] bytes1, byte[] bytes2) {
+        if (bytes1.length != bytes2.length)
+            return false;
+        for (int i = 0; i < bytes1.length; i++) {
+            if(bytes1[i] != bytes2[i])
+                return false;
+        }
+        return true;
+    }
+
     public static void main(String[] args) {
         byte[] a = new byte[]{0, 124, 123, -45, 65, -76, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 112, -128};
         byte[] b = new byte[]{0, 124, 123, -34, 65, 43, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 123, 123};

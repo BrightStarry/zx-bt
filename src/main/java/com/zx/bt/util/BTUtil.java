@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -52,7 +53,11 @@ public class BTUtil {
      * 生成一个随机的nodeId
      */
     public static byte[] generateNodeId() {
-        return DigestUtils.sha1(randomStringGenerator.generate(20));
+        byte[] r = new byte[20];
+        for (int i = 0; i < 20; i++) {
+            r[i] = (byte) RandomUtils.nextInt(0, 256);
+        }
+        return r;
     }
 
     /**
