@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.BiFunction;
 
 /**
  * author:ZhengXing
@@ -26,6 +27,9 @@ public class Bencode {
     //编码
     private Charset charset = CharsetUtil.ISO_8859_1;
 
+    //函数数组
+    private BiFunction<byte[], Integer, MethodResult>[] functions = new BiFunction[4];
+
     //string类型分隔符(冒号)的byte形式.
     private final byte stringTypeSeparator;
 
@@ -37,6 +41,12 @@ public class Bencode {
 
     public Bencode() {
         stringTypeSeparator = ":".getBytes(charset)[0];
+
+        //使用方法引用简写
+        functions[0] = this::decodeString;
+        functions[1] = this::decodeInt;
+        functions[2] = this::decodeList;
+        functions[3] = this::decodeDict;
     }
 
 //解码相关------------------------------------------------------------------------------------
@@ -103,7 +113,7 @@ public class Bencode {
             if (bytes[i] == typeSuf.getBytes(charset)[0])
                 break;
             //解码为任意类型
-            MethodResult<Object> methodResult = decodeAny(bytes, i);
+            MethodResult methodResult = decodeAny(bytes, i);
             //索引由具体解码方法控制
             i = methodResult.index;
             //增加到结果
@@ -138,7 +148,7 @@ public class Bencode {
             //更新索引
             i = keyMethodResult.index;
             //解析value
-            MethodResult<Object> valueMethodResult = decodeAny(bytes, i);
+            MethodResult valueMethodResult = decodeAny(bytes, i);
             //更新索引
             i = valueMethodResult.index;
             //放入
@@ -152,38 +162,15 @@ public class Bencode {
     /**
      * 任意类型解码
      */
-    public MethodResult<Object> decodeAny(byte[] bytes, int start) {
-        MethodResult<String> stringMethodResult = null;
-        MethodResult<Integer> integerMethodResult = null;
-        MethodResult<List<Object>> listMethodResult = null;
-        MethodResult<Map<String, Object>> dictMethodResult = null;
-        try {
-            stringMethodResult = decodeString(bytes, start);
-            return new MethodResult<>(stringMethodResult.value, stringMethodResult.index);
-        } catch (Exception ignored) {
+    public MethodResult decodeAny(byte[] bytes, int start) {
+        for (BiFunction<byte[], Integer, MethodResult> function : functions) {
+            try {
+                return function.apply(bytes, start);
+            } catch (Exception e) {
+            }
         }
-        if (stringMethodResult == null)
-            try {
-                integerMethodResult = decodeInt(bytes, start);
-                return new MethodResult<>(integerMethodResult.value, integerMethodResult.index);
-            } catch (Exception ignored) {
-            }
-        if (integerMethodResult == null)
-            try {
-                listMethodResult = decodeList(bytes, start);
-                return new MethodResult<>(listMethodResult.value, listMethodResult.index);
-            } catch (Exception ignored) {
-            }
-        if (listMethodResult == null)
-            try {
-                dictMethodResult = decodeDict(bytes, start);
-                return new MethodResult<>(dictMethodResult.value, dictMethodResult.index);
-            } catch (Exception ignored) {
-            }
-        if (dictMethodResult == null)
             throw new BTException(LOG + "解码失败.start:" + start +",bytes:" + new String(bytes,charset));
-        //不可能执行到此处...
-        return null;
+
     }
 
     /**
@@ -296,6 +283,7 @@ public class Bencode {
 
 
         String xxx = bencode.decode(bencode.encode("xxx"), String.class);
+        System.out.println(xxx);
     }
 
 }
