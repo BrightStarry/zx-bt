@@ -50,7 +50,7 @@ public class Node {
     private Date lastActiveTime;
 
     /**
-     * 权重
+     * 权重,允许并发导致的一些误差
      */
     @Transient
     private Integer rank;
@@ -60,6 +60,16 @@ public class Node {
      */
     @Transient
     private byte[] xor;
+
+    /**
+     * 增加rank
+     */
+    public void addRank(int addValue) {
+        if(Integer.MAX_VALUE - rank >= addValue)
+            rank += addValue;
+        else
+            rank = Integer.MAX_VALUE;
+    }
 
     /**
      * 检查该节点信息是否完整
