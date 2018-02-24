@@ -13,20 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class UDPServerTest extends BtApplicationTests{
 
-    @Autowired
-    private UDPServer UDPServer;
 
-    @Before
-    @SneakyThrows
-    public void init() {
-
-    }
-
-
-    @Test
-    @SneakyThrows
-    public void test1() {
-
-    }
 
 }

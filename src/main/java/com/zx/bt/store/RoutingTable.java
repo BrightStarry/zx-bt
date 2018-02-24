@@ -12,6 +12,8 @@ import lombok.experimental.Accessors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.atomic.LongAdder;
+
 /**
  * author:ZhengXing
  * datetime:2018-02-19 15:56
@@ -36,7 +38,7 @@ public class RoutingTable {
     private TrieNode root;
 
     //总node个数
-    private long count;
+    private LongAdder count;
 
     //非自己的nodeId分支, 最大可存储的层数
     private int maxStorePrefixLen;
@@ -68,7 +70,7 @@ public class RoutingTable {
          */
         public Node contain(byte[] nodeId) {
             for (Node node : nodes) {
-                if(CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(node.getNodeId())))
+                if(node != null && CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(node.getNodeId())))
                     return node;
             }
             return null;
@@ -106,16 +108,13 @@ public class RoutingTable {
         for (int i = 0; i < 1000000; i++) {
             Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", i);
                b = routingTable.put(node);
-
-
-
             System.out.println(b);
         }
 
         System.out.println(routingTable.count);
 
-        boolean delete = routingTable.delete(routingTable.nodeId);
-        TrieNode trieNode = routingTable.get(CodeUtil.hexStr2Bytes(node1.getNodeId()));
+//        boolean delete = routingTable.delete(routingTable.nodeId);
+        TrieNode trieNode = routingTable.get(routingTable.nodeId);
         System.out.println(trieNode);
 
 
@@ -140,7 +139,7 @@ public class RoutingTable {
             //如果该节点未存满
             if (currentNode.count < MAX_NODE_NUM) {
                 currentNode.nodes[currentNode.count++] = node;
-                count++;
+                count.increment();
                 return true;
             }
             //如果存满了
@@ -160,7 +159,7 @@ public class RoutingTable {
                 }
                 //清空当前节点
                 currentNode.setCount(0).setNodes(null);
-                count++;
+                count.increment();
                 return true;
             }
             //否则抛弃该NodeId
@@ -171,7 +170,6 @@ public class RoutingTable {
 
     /**
      * 删除某节点
-     * TODO .删除过多,,需要聚合
      */
     public boolean delete(byte[] nodeId) {
         TrieNode trieNode = get(nodeId);
@@ -180,10 +178,15 @@ public class RoutingTable {
             return false;
         Node[] nodes = trieNode.nodes;
         //循环保存了该节点的trieNode的nodes
-        for (int i = 0; i <nodes.length; i++) {
+        for (int i = 0; i < trieNode.count; i++) {
             //如果有相同的
             if (CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(nodes[i].getNodeId()))) {
-                ArrayUtils.remove(nodes, i);
+                trieNode.nodes[i] = null;
+                //如果不是末尾,将末尾的值赋值到该索引
+                if (i != trieNode.count - 1) {
+                    trieNode.nodes[i] = trieNode.nodes[trieNode.count-1];
+                    trieNode.nodes[trieNode.count - 1] = null;
+                }
                 trieNode.count--;
                 return true;
             }
