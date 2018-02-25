@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
+import sun.text.normalizer.Trie;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,27 +111,32 @@ public class RoutingTable {
     }
 
     public static void main(String[] args) {
-//        //创建
-//        RoutingTable routingTable = new RoutingTable(new Config().setMain(
-//                new Config.Main().setNodeId(BTUtil.generateNodeIdString())
-//                        .setIp("106.14.7.29")
-//                        .setPort(6881)
-//        )
-//        );
-//
-//        boolean b = false;
-//        Node node1 = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", 2);
-//        for (int i = 0; i < 1000000; i++) {
-//            Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", i);
-//                b = routingTable.put(node);
-//            System.out.println(b);
-//        }
-//
-//        System.out.println(routingTable.count);
-//
-//        List<Node> forTop8 = routingTable.getForTop8(routingTable.nodeId);
-//        System.out.println(forTop8);
+        //创建
+        RoutingTable routingTable = new RoutingTable(new Config().setMain(
+                new Config.Main().setNodeId(BTUtil.generateNodeIdString())
+                        .setIp("106.14.7.29")
+                        .setPort(6881)
+        )
+        );
 
+        for (int i = 0; i < 20; i++) {
+            Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", i);
+            System.out.println(routingTable.put(node));
+        }
+
+        System.out.println(routingTable.count);
+
+        final int[] a = {0};
+        routingTable.loop(routingTable.root, item -> {
+            Arrays.stream(item).forEach(item1 -> {
+                System.out.println(item1);
+                if (item1 != null)
+                    a[0]++;
+            });
+            return item;
+        });
+
+        System.out.println(a[0]);
 
     }
 
@@ -280,7 +286,19 @@ public class RoutingTable {
     /**
      * 遍历节点
      */
-    public void loop(Function<Node,Node> function) {
+    public void loop(TrieNode node, Function<Node[], Node[]> function) {
+        if (node.next[0] != null) {
+            loop(node.next[0], function);
+        }
+        if (node.next[1] != null) {
+            loop(node.next[1], function);
+        }
+
+        if (node.count > 0)
+        {
+            node.nodes = function.apply(node.nodes);
+            return;
+        }
     }
 
 
