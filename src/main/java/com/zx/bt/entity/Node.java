@@ -47,28 +47,24 @@ public class Node {
      * 最后活动时间(收到请求或收到回复)
      */
     @Transient
-    private Date lastActiveTime;
+    private Date lastActiveTime = new Date();
 
     /**
      * 权重,允许并发导致的一些误差
+     * see {@link com.zx.bt.enums.NodeRankEnum}
      */
     @Transient
-    private Integer rank;
-
-    /**
-     * 与自己的nodeId的异或值
-     */
-    @Transient
-    private byte[] xor;
+    private Integer rank = 0;
 
     /**
      * 增加rank
      */
-    public void addRank(int addValue) {
+    public Node addRank(int addValue) {
         if(Integer.MAX_VALUE - rank >= addValue)
             rank += addValue;
         else
             rank = Integer.MAX_VALUE;
+        return this;
     }
 
     /**
@@ -144,5 +140,12 @@ public class Node {
         this.nodeId = nodeId;
         this.ip = ip;
         this.port = port;
+    }
+
+    public Node(String nodeId, String ip, Integer port, Integer rank) {
+        this.nodeId = nodeId;
+        this.ip = ip;
+        this.port = port;
+        this.rank = rank;
     }
 }

@@ -8,17 +8,17 @@ import com.zx.bt.util.CodeUtil;
 import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 import sun.text.normalizer.Trie;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -26,6 +26,8 @@ import java.util.function.Function;
  * datetime:2018-02-19 15:56
  * 路由表
  * 使用Trie Tree实现, 空间换取时间, 插入和查询复杂度都为O(k),k为key的长度,此处key为nodeId,即160位
+ *
+ *
  */
 @Component
 public class RoutingTable {
@@ -50,6 +52,12 @@ public class RoutingTable {
 
     //非自己的nodeId分支, 最大可存储的层数
     private int maxStorePrefixLen;
+
+    //分段锁
+    private final ReentrantLock[] locks;
+
+    //锁数量
+    private final int lockNum;
 
     /**
      * 字典树-节点
@@ -99,15 +107,24 @@ public class RoutingTable {
      * @param config
      */
     public RoutingTable(Config config) {
+        //参数
         this.config = config;
         nodeId = config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1);
         maxStorePrefixLen = config.getMain().getRoutingTablePrefixLen();
+        lockNum = config.getMain().getRoutingTableLockNum();
+
+        //初始化锁
+        locks = new ReentrantLock[lockNum];
+        for (int i = 0; i < lockNum; i++) {
+            locks[i] = new ReentrantLock(true);
+        }
+
         //初始化根节点
         root = new TrieNode().setPrefixLen(-1).setNodes(null);
         root.getNext()[0] = new TrieNode(0);
         root.getNext()[1] = new TrieNode(0);
         //存入主节点(自己的nodeId)
-        put(new Node(CodeUtil.bytes2HexStr(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1)), config.getMain().getIp(), config.getMain().getPort()));
+        put(new Node(CodeUtil.bytes2HexStr(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1)), config.getMain().getIp(), config.getMain().getPort(),Integer.MAX_VALUE));
     }
 
     public static void main(String[] args) {
@@ -119,25 +136,47 @@ public class RoutingTable {
         )
         );
 
-        for (int i = 0; i < 20; i++) {
-            Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", i);
-            System.out.println(routingTable.put(node));
+
+        for (int i = 0; i < 1; i++) {
+            new Thread(()->{
+                for (int j = 0; j < 999999; j++) {
+                    try {
+                        Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", j);
+                        System.out.println(routingTable.put(node));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
 
-        System.out.println(routingTable.count);
+        for (int i = 0; i < 1; i++) {
+            new Thread(()->{
+                for (int j = 0; j < 999999; j++) {
+                    try {
+                        routingTable.getForTop8(BTUtil.generateNodeId());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
 
-        final int[] a = {0};
-        routingTable.loop(routingTable.root, item -> {
-            Arrays.stream(item).forEach(item1 -> {
-                System.out.println(item1);
-                if (item1 != null)
-                    a[0]++;
-            });
-            return item;
-        });
 
-        System.out.println(a[0]);
 
+
+
+
+    }
+
+    /**
+     * 新增若干节点
+     */
+    public void putAll(Node... nodes) {
+        if(ArrayUtils.isNotEmpty(nodes))
+            for (Node node : nodes) {
+                put(node);
+            }
     }
 
     /**
@@ -158,20 +197,18 @@ public class RoutingTable {
             //如果已经包含该nodeId
             int oldNodeIndex;
             if ((oldNodeIndex = currentNode.containForIndex(nodeId)) != -1) {
-                //当旧节点rank值大于新节点，直接返回
-                if (currentNode.nodes[oldNodeIndex].getRank() < node.getRank()) return false;
-                //否则替换
-                currentNode.nodes[oldNodeIndex] = node;
+                //累加rank值,更新最后更新时间,暂不考虑nodeId冲突的可能
+                currentNode.nodes[oldNodeIndex].addRank(node.getRank()).setLastActiveTime(new Date());
                 return true;
             }
             //如果该节点未存满
             if (currentNode.count < MAX_NODE_NUM) {
                 currentNode.nodes[currentNode.count++] = node;
-                count.increment();
+                this.count.increment();
                 return true;
             }
-            //如果存满了
-            //如果当前节点包含自己的节点,或者不超过x层
+            //如果存满了,进行分裂,然后递归执行本方法,将节点插入
+            //如果当前节点包含自己的节点并且小于160,或者不超过x层
             if (currentNode.contain(this.nodeId) != null && i != MAX_PREFIX_LEN || i <= maxStorePrefixLen) {
                 //将nodes分裂
                 //创建出子节点
@@ -179,6 +216,7 @@ public class RoutingTable {
                 currentNode.getNext()[1] = new TrieNode(i);
                 //获取当前节点保存的nodes
                 Node[] nodes = currentNode.getNodes();
+                //将原来的所有节点分配到新节点
                 for (Node itemNode : nodes) {
                     //获取node的第i位(下一位)二进制值
                     byte nextBit = CodeUtil.getBitByBytes(CodeUtil.hexStr2Bytes(itemNode.getNodeId()), i);
@@ -187,8 +225,9 @@ public class RoutingTable {
                 }
                 //清空当前节点
                 currentNode.setCount(0).setNodes(null);
-                count.increment();
-                return true;
+                //此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
+
+                return put(node);
             }
             //否则抛弃该NodeId
             return false;
@@ -197,7 +236,7 @@ public class RoutingTable {
     }
 
     /**
-     * 删除某节点
+     * 删除某节点,根据节点id
      */
     public boolean delete(byte[] nodeId) {
         TrieNode trieNode = get(nodeId);
@@ -209,13 +248,16 @@ public class RoutingTable {
         for (int i = 0; i < trieNode.count; i++) {
             //如果有相同的
             if (CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(nodes[i].getNodeId()))) {
-                trieNode.nodes[i] = null;
+                nodes[i] = null;
                 //如果不是末尾,将末尾的值赋值到该索引
                 if (i != trieNode.count - 1) {
-                    trieNode.nodes[i] = trieNode.nodes[trieNode.count - 1];
-                    trieNode.nodes[trieNode.count - 1] = null;
+                    nodes[i] = nodes[trieNode.count - 1];
+                    nodes[trieNode.count - 1] = null;
                 }
+                //当前trieNode的node数量-1
                 trieNode.count--;
+                //路由表的node数量-1
+                this.count.decrement();
                 return true;
             }
         }
@@ -273,33 +315,47 @@ public class RoutingTable {
                 //否则将该trieNode中的所有node放到返回集合中
                 nodes.addAll(Arrays.asList(currentNode.nodes).subList(0, currentNode.count));
             }
-            //如果list的长度没到8（说明nodes为空，或者nodes的长度不足8）,就去拥有相同父节点的隔壁节点找(因为是由8个节点分裂而来，所有在未主动删除的情况下，是可以集齐8个的)
-            TrieNode[] findNodes = lastNode.next;//此处不会为空，因为当i==0，currentNode为root时，必然会进入一次该lastNode赋值的循环体.
+            if(nodes.size() == MAX_NODE_NUM )
+                return nodes;
+            //如果list的长度没到8（说明nodes为空，或者nodes的长度不足8）,就去拥有相同父节点的隔壁节点找
+            //(因为是由8个节点分裂而来，所有在未主动删除的情况下，是可以集齐8个的)
             byte lastIndex = CodeUtil.getBitByBytes(nodeId, i - 1);//上个节点，进入currentNode时的bit
+            //此处lastNode不会为空，因为当i==0，currentNode为root时，必然会进入一次该lastNode赋值的循环体.
             TrieNode findNode = lastNode.next[lastIndex == 0 ? 1 : 0];//隔壁节点
-            nodes.addAll(Arrays.asList(findNode.nodes).subList(0, findNode.count));
+            //要返回的nodes缺少的节点个数
+            int lackNum = MAX_NODE_NUM - nodes.size();
+            if(findNode.count != 0)
+                //从隔壁节点截取若干节点添加到返回节点. 此处限制其数量,防止IndexOutOfBoundsException
+                nodes.addAll(Arrays.asList(findNode.nodes).subList(0, lackNum <= findNode.count ? lackNum : findNode.count ));
             return nodes;
         }
         return nodes;
     }
 
     /**
-     * 遍历节点
+     * 遍历节点,并使用指定函数 操作nodes
      */
-    public void loop(TrieNode node, Function<Node[], Node[]> function) {
-        if (node.next[0] != null) {
-            loop(node.next[0], function);
-        }
-        if (node.next[1] != null) {
-            loop(node.next[1], function);
-        }
-
-        if (node.count > 0)
-        {
-            node.nodes = function.apply(node.nodes);
-            return;
-        }
+    private void loop(TrieNode node, Consumer<TrieNode> consumer) {
+        if (node.next[0] != null) loop(node.next[0], consumer);
+        if (node.next[1] != null) loop(node.next[1], consumer);
+        if (node.count > 0) consumer.accept(node);
     }
+
+    /**
+     * 遍历节点,并使用指定函数 操作nodes
+     * 封装,去除一个参数
+     */
+    public void loop(Consumer<TrieNode> consumer) {
+        loop(this.root,consumer);
+    }
+
+    /**
+     * 长度
+     */
+    public long size() {
+        return this.count.longValue();
+    }
+
 
 
 }

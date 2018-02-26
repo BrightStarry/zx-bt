@@ -1,12 +1,12 @@
 package com.zx.bt.util;
 
 
-import com.zx.bt.config.Config;
 import com.zx.bt.exception.BTException;
 import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.RandomUtils;
 
 /**
  * author:ZhengXing
@@ -35,25 +35,24 @@ public class CodeUtil {
     }
 
     /**
-     * 生成一个和指定info_hash(nodeId)异或值仅相差1的info_hash(nodeId)
+     * 生成一个和指定info_hash(nodeId)异或值仅相差若干位的info_hash(nodeId)
      */
-    public static byte[] generateSimilarInfoHash(byte[] hash) {
+    public static byte[] generateSimilarNodeId(byte[] hash, int num) {
         byte[] result = new byte[hash.length];
-        System.arraycopy(hash,0,result,0,hash.length);
-
-        byte tmp = result[hash.length - 1];
-        if (tmp > -128)
-            result[hash.length - 1] = (byte) (tmp - 1);
-        else
-            result[hash.length - 1] = (byte) (tmp + 1);
+        //拷贝前(length-num)位到新数组
+        System.arraycopy(hash,0,result,0,hash.length - num);
+        //拷贝随机数组到后num位
+        System.arraycopy(RandomUtils.nextBytes(num),0,result,hash.length - num,num);
         return result;
     }
+
+
 
     /**
      * 包装generateSimilarInfoHash()方法参数和返回值为string
      */
-    public static String generateSimilarInfoHashString(String hash) {
-        return new String(generateSimilarInfoHash(hash.getBytes(CharsetUtil.ISO_8859_1)),CharsetUtil.ISO_8859_1);
+    public static String generateSimilarInfoHashString(String hash,int num) {
+        return new String(generateSimilarNodeId(hash.getBytes(CharsetUtil.ISO_8859_1),num),CharsetUtil.ISO_8859_1);
     }
 
 
@@ -134,18 +133,6 @@ public class CodeUtil {
         return 0;
     }
 
-    /**
-     * 获取一个字节数组的前x位为0
-     * 返回x
-     * 用于比较某NodeId和自己的nodeId相同的前缀
-     */
-    public static int getTopNZeroByBytes(byte[] bytes) {
-        int r = 0;
-        while( r < bytes.length && bytes[r] == 0)
-            r++;
-        return r;
-    }
-
 
     /**
      * int 转 2个字节的byte[]
@@ -200,12 +187,7 @@ public class CodeUtil {
     public static void main(String[] args) {
         byte[] a = new byte[]{0, 124, 123, -45, 65, -76, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 112, -128};
         byte[] b = new byte[]{0, 124, 123, -34, 65, 43, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 123, 123};
-//        byte[] bytes = bytesXorBytes(a, b);
-//        int indexByXorResult = getIndexByXorResult(bytes);
-//
-//        System.out.println(4 * 8);
-//        System.out.println(4 << 3 + 1);
-//        byte[] bytes = generateSimilarInfoHash(a);
+
 
         byte[] bytes = {-1, -11, 4, 12};
         byte[] bytes2 = {-1, -12, 5, 12};
@@ -213,6 +195,9 @@ public class CodeUtil {
         int i = xorResultCompare(bytes, bytes2);
 
         byte[] bytes1 = byte2Bit((byte) 127);
+
+        byte[] bytes3 = generateSimilarNodeId(a, 3);
+
 
     }
 

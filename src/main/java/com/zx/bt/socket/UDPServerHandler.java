@@ -2,16 +2,17 @@ package com.zx.bt.socket;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.AnnouncePeer;
+import com.zx.bt.dto.FindNode;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.entity.Node;
 import com.zx.bt.entity.InfoHash;
 import com.zx.bt.enums.InfoHashTypeEnum;
+import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
 import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
-import com.zx.bt.store.Table;
-import com.zx.bt.task.FindNodeTask;
+import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
@@ -45,18 +46,17 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
     private final Bencode bencode;
     private final Config config;
-    private final Table table;
     private final InfoHashRepository infoHashRepository;
     private final NodeRepository nodeRepository;
-    private final FindNodeTask findNodeTask;
+    private final RoutingTable routingTable;
 
-    public UDPServerHandler(Bencode bencode, Config config, Table table, InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask) {
+    public UDPServerHandler(Bencode bencode, Config config,InfoHashRepository infoHashRepository,
+                            NodeRepository nodeRepository, RoutingTable routingTable) {
         this.bencode = bencode;
         this.config = config;
-        this.table = table;
         this.infoHashRepository = infoHashRepository;
         this.nodeRepository = nodeRepository;
-        this.findNodeTask = findNodeTask;
+        this.routingTable = routingTable;
     }
 
 
@@ -117,9 +117,19 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             case FIND_NODE:
                 //如果是请求
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    List<Node> nodes = table.getTop8Nodes();
+
+                    //截取出要查找的目标nodeId和 请求发送方nodeId
+                    Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "FIND_NODE,找不到a参数.map:" + map);
+                    byte[] targetNodeId = BTUtil.getParamString(aMap, "target", "FIND_NODE,找不到target参数.map:" + map)
+                            .getBytes(CharsetUtil.ISO_8859_1);
+                    String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + map)
+                            .getBytes(CharsetUtil.ISO_8859_1));
+                    //查找
+                    List<Node> nodes = routingTable.getForTop8(targetNodeId);
                     log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);
                     SendUtil.findNodeReceive(messageInfo.getMessageId(),sender,config.getMain().getNodeId(),nodes);
+                    //操作路由表
+                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.FIND_NODE.getCode()));
                     break;
                 }
                 //如果是回复
@@ -132,18 +142,17 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
                     //byte[26] 转 Node
                     Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
-                    table.put(node);
+                    //加入路由表
+                    routingTable.put(node);
                     nodeList.add(node);
                 }
-                //加入路由表
+                //发送该回复的节点,加入路由表
                 if(CollectionUtils.isNotEmpty(nodeList))
-                    table.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort()));
+                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
 //                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
-//                //加入队列
-//                findNodeTask.putAll(nodeList);
 
                 //入库
-                nodeRepository.save(nodeList);
+//                nodeRepository.save(nodeList);
                 break;
 
             case ANNOUNCE_PEER:
@@ -161,7 +170,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     SendUtil.announcePeerReceive(messageInfo.getMessageId(),sender, config.getMain().getNodeId());
 
                     //加入路由表
-                    table.put(new Node(requestContent.getId(),BTUtil.getIpBySender(sender), sender.getPort()));
+                    routingTable.put(new Node(requestContent.getId(),BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.ANNOUNCE_PEER.getCode()));
                     break;
                 }
                 //如果是回复
@@ -174,15 +183,15 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "GET_PEERS,找不到a参数.map:" + map);
                     String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     String id1 = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
-                    List<Node> nodes = table.getTop8Nodes();
+                    List<Node> nodes = routingTable.getForTop8(CodeUtil.hexStr2Bytes(info_hash));
                     log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
                     //入库
                     infoHashRepository.save(new InfoHash(info_hash, InfoHashTypeEnum.GET_PEERS.getCode()));
-                    //回复时,将自己的nodeId伪造为 和它请求的种子的info_hash异或值相差不大的值
-                    SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, CodeUtil.generateSimilarInfoHashString(info_hash),
+                    //回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
+                    SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, CodeUtil.generateSimilarInfoHashString(info_hash,config.getMain().getSimilarNodeIdNum()),
                             config.getMain().getToken(),nodes);
                     //加入路由表
-                    table.put(new Node(id1,BTUtil.getIpBySender(sender), sender.getPort()));
+                    routingTable.put(new Node(id1,BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.GET_PEERS.getCode()));
                     break;
                 }
                 //如果是回复

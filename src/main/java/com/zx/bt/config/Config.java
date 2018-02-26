@@ -1,11 +1,11 @@
 package com.zx.bt.config;
 
+import com.zx.bt.task.ScheduleTask;
 import com.zx.bt.util.BTUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -58,7 +58,7 @@ public class Config {
 
         /**
          * 要查询的目标节点
-         * see {@link #updateTargetNodeId()}
+         * see {@link ScheduleTask#updateTargetNodeId()}
          */
         private volatile String targetNodeId = BTUtil.generateNodeIdString();
 
@@ -102,6 +102,27 @@ public class Config {
         private String token = "zx";
 
         /**
+         * 普通节点超时时间
+         */
+        private Integer generalNodeTimeoutMinute = 10;
+
+        /**
+         * rank值较高的节点超时时间
+         */
+        private Integer specialNodeTimeoutMinute = 120;
+
+        /**
+         * 返回假nodeId时,和对方nodeId后x个字节不同
+         * <= 20
+         */
+        private Integer similarNodeIdNum = 1;
+
+        /**
+         * 路由表分段锁 数量
+         */
+        private Integer routingTableLockNum = 20;
+
+        /**
          * 获取初始化地址
          */
         public InetSocketAddress[] getInitAddressArray() {
@@ -112,13 +133,5 @@ public class Config {
         }
     }
 
-    /**
-     * 更新线程
-     * 每x分钟,更新一次要find_Node的目标节点
-     */
-    @Scheduled(cron = "0 0/3 * * * ? ")
-    public void updateTargetNodeId() {
-        this.main.setTargetNodeId(BTUtil.generateNodeIdString());
-        log.info("已更新TargetNodeId");
-    }
+
 }

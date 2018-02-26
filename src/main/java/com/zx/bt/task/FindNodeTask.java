@@ -2,16 +2,12 @@ package com.zx.bt.task;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
-import com.zx.bt.store.Table;
-import com.zx.bt.util.BTUtil;
+import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.SendUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -24,13 +20,13 @@ import java.util.concurrent.*;
 public class FindNodeTask {
 
     private final Config config;
-    private final Table table;
     private final String nodeId;
+    private final RoutingTable routingTable;
 
-    public FindNodeTask( Config config, Table table) {
+    public FindNodeTask(Config config, RoutingTable routingTable) {
         this.config = config;
-        this.table = table;
         nodeId = config.getMain().getNodeId();
+        this.routingTable = routingTable;
     }
 
     /**
@@ -55,12 +51,19 @@ public class FindNodeTask {
      * 向路由表群发
      */
     private void findNodeByTable() {
-        Collection<Node> nodes = table.getAll();
         long start = System.currentTimeMillis();
-        for (Node item : nodes) {
-            SendUtil.findNode(new InetSocketAddress(item.getIp(), item.getPort()),nodeId,config.getMain().getTargetNodeId());
-        }
-        log.info("向{}个节点群发请求,耗时{}秒",nodes.size(),(System.currentTimeMillis() - start)/1000);
+
+        //路由表的循环方法
+        routingTable.loop(trieNode -> {
+            Node[] nodes = trieNode.getNodes();
+            for (int i = 0; i < nodes.length; i++) {
+                if(nodes[i] == null)
+                    continue;
+                SendUtil.findNode(new InetSocketAddress(nodes[i].getIp(), nodes[i].getPort()),nodeId,config.getMain().getTargetNodeId());
+            }
+        });
+
+        log.info("向{}个节点群发请求,耗时{}秒",routingTable.size(),(System.currentTimeMillis() - start)/1000);
     }
 
 

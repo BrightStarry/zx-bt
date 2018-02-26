@@ -53,11 +53,7 @@ public class BTUtil {
      * 生成一个随机的nodeId
      */
     public static byte[] generateNodeId() {
-        byte[] r = new byte[20];
-        for (int i = 0; i < 20; i++) {
-            r[i] = (byte) RandomUtils.nextInt(0, 256);
-        }
-        return r;
+        return RandomUtils.nextBytes(20);
     }
 
     /**

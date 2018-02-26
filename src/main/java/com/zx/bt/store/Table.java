@@ -19,9 +19,10 @@ import java.util.stream.Collectors;
  * 路由表
  * 用于存储节点
  *
- * TODO 使用二叉树实现
+ * 废弃, 已使用字典树实现
+ * see {@link RoutingTable}
  */
-@Component
+@Deprecated
 @Slf4j
 public class Table {
 
