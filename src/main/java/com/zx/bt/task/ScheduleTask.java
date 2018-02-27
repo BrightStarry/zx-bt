@@ -45,9 +45,9 @@ public class ScheduleTask {
 	}
 
 	/**
-	 * 每15分钟清理一次路由表
+	 * 每x分钟清理一次路由表
 	 */
-	@Scheduled(cron = "0 0/15 * * * ? ")
+	@Scheduled(cron = "0 0/10 * * * ? ")
 	public void clearRoutingTable() {
 		try {
 			log.info("[清理节点任务]任务开始.");

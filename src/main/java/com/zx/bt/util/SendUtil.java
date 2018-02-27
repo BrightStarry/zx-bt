@@ -102,6 +102,22 @@ public class SendUtil {
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
+    /**
+     * 批量发送get_peers
+     * @return 消息Id
+     */
+    public static void getPeersBatch(List<InetSocketAddress> addresses, String nodeId,String infoHash,String messageId) {
+        GetPeers.Request request = new GetPeers.Request(nodeId, infoHash,messageId);
+        byte[] encode = bencode.encode(BeanUtil.beanToMap(request));
+        for (InetSocketAddress address : addresses) {
+            try {
+                writeAndFlush(encode,address);
+            } catch (Exception e) {
+                log.error("发送GET_PEERS,失败.");
+            }
+        }
+    }
+
 
 
 

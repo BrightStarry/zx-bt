@@ -73,8 +73,6 @@ public class BTUtil {
             messageIDGenerator.lazySet(1);
         }
         return new String(CodeUtil.int2TwoBytes(result), CharsetUtil.ISO_8859_1);
-
-//        return randomStringGenerator.generate(2);
     }
 
     /**
@@ -120,6 +118,7 @@ public class BTUtil {
 
         } else  if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.RECEIVE))  {
             Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "r属性不存在.map:" + map);
+            //TODO 修改
             if(rMap.get("nodes") != null){
                 messageInfo.setMethod(rMap.get("token") == null ? MethodEnum.FIND_NODE : MethodEnum.GET_PEERS);
             }else{

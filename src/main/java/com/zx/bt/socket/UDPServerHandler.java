@@ -142,13 +142,12 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
                     //byte[26] 转 Node
                     Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
-                    //加入路由表
-                    routingTable.put(node);
                     nodeList.add(node);
                 }
                 //发送该回复的节点,加入路由表
                 if(CollectionUtils.isNotEmpty(nodeList))
-                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
+                    nodeList.add(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
+                routingTable.putAll(nodeList);
 //                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
 
                 //入库
@@ -168,9 +167,11 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                             BTUtil.getIpBySender(sender) + ":" + requestContent.getPort()));
                     //回复
                     SendUtil.announcePeerReceive(messageInfo.getMessageId(),sender, config.getMain().getNodeId());
-
+                    Node node = new Node(requestContent.getId(), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
                     //加入路由表
-                    routingTable.put(new Node(requestContent.getId(),BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.ANNOUNCE_PEER.getCode()));
+                    routingTable.put(node);
+                    //入库
+                    nodeRepository.save(node);
                     break;
                 }
                 //如果是回复

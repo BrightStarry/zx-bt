@@ -38,6 +38,7 @@ public interface GetPeers {
 
     /**
      * 请求
+     * 该类不自动生成消息id
      */
     @EqualsAndHashCode(callSuper = true)
     @Data
@@ -50,7 +51,7 @@ public interface GetPeers {
         private GetPeers.RequestContent a;
 
         private void init() {
-            t = BTUtil.generateMessageID();
+//            t = BTUtil.generateMessageID();
             y = YEnum.QUERY.getCode();
             q = MethodEnum.GET_PEERS.getCode();
             a = new GetPeers.RequestContent();
@@ -59,11 +60,11 @@ public interface GetPeers {
         /**
          * 指定请求发送方nodeID/ 要查找的nodeId构造
          */
-        public Request(String nodeId,String info_hash) {
+        public Request(String nodeId,String info_hash,String messageId) {
             init();
+            t = messageId;
             a.id = nodeId;
             a.info_hash = info_hash;
-
         }
     }
 

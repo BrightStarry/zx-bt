@@ -17,6 +17,8 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * author:ZhengXing
@@ -29,6 +31,8 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 public class Node {
+
+
 
     @Id
     @GeneratedValue
@@ -55,6 +59,8 @@ public class Node {
      */
     @Transient
     private Integer rank = 0;
+
+
 
     /**
      * 增加rank

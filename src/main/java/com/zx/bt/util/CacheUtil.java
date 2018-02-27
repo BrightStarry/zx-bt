@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
-import com.zx.bt.exception.BTException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +21,10 @@ public class CacheUtil {
     @Autowired
     public void init(Config config) {
         CacheUtil.config = config;
-        this.cache = Caffeine.newBuilder()
+        cache = Caffeine.newBuilder()
                 .initialCapacity(config.getMain().getSendCacheLen())
                 .maximumSize(config.getMain().getSendCacheLen())
-                .expireAfterAccess(config.getMain().getSendCacheExpireMinute(), TimeUnit.MINUTES)
+                .expireAfterAccess(config.getMain().getSendCacheExpireSecond(), TimeUnit.SECONDS)
                 //传入缓存加载策略,key不存在时调用该方法返回一个value回去
                 //此处直接返回空
                 .build(key -> null);
@@ -33,7 +32,7 @@ public class CacheUtil {
     }
 
     //创建缓存
-    private static LoadingCache<String, MessageInfo> cache ;
+    private static LoadingCache<String, MessageInfo> cache;
 
 
     /**

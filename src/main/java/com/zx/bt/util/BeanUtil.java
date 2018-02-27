@@ -46,7 +46,7 @@ public class BeanUtil {
             //基本类型,则直接赋值
             if(temp.getClass().getName().contains("java"))
                 map.put(field.getName(),temp);
-            //其他自定义类型 TODO 可能还要扩展
+            //其他自定义类型
             else{
                 //递归
                 Map<String, Object> map1 = beanToMap(temp);

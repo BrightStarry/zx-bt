@@ -66,7 +66,7 @@ public class Config {
         private Integer port = 6881;
 
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 2;
+        private Integer udpServerMainThreadNum = 8;
         
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;
@@ -78,7 +78,7 @@ public class Config {
         private List<String> initAddresses = new LinkedList<>();
         
         /**FindNodeTask群发路由表线程,间隔时间(s)*/
-        private Integer findNodeTaskByTableIntervalSecond = 10;
+        private Integer findNodeTaskByTableIntervalSecond = 5;
 
         /**
          * 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
@@ -94,7 +94,7 @@ public class Config {
         /**
          * 发送记录缓存过期时间
          */
-        private Integer sendCacheExpireMinute = 1;
+        private Integer sendCacheExpireSecond = 30;
 
         /**
          * token(自己响应其他节点的get_peers请求时,需回复别人该token,等该节获取到该种子后,会将种子info_hash和该token一起发回来(announce_peer请求))
@@ -120,7 +120,12 @@ public class Config {
         /**
          * 路由表分段锁 数量
          */
-        private Integer routingTableLockNum = 20;
+        private Integer routingTableLockNum = 30;
+
+        /**
+         * get_peers任务过期时间
+         */
+        private Integer getPeersTaskExpireSecond = 1200;
 
         /**
          * 获取初始化地址

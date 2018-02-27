@@ -166,9 +166,21 @@ public class CodeUtil {
      * 获取byte[]的第x位bit
      * x 从0开始
      */
-    public static byte getBitByBytes(byte[] bytes,int index) {
+    public static byte getBitByIndex(byte[] bytes, int index) {
         byte b = bytes[index / 8];
         return byte2Bit(b)[index % 8];
+    }
+
+    /**
+     * 获取byte[]的所有bit
+     * x 从0开始
+     */
+    public static byte[] getBitAll(byte[] bytes) {
+        byte[] result = new byte[160];
+        for (int i = 0; i < 20; i++) {
+            System.arraycopy(byte2Bit(bytes[i]),0,result,i*8,8);
+        }
+        return result;
     }
 
     /**
@@ -187,16 +199,7 @@ public class CodeUtil {
     public static void main(String[] args) {
         byte[] a = new byte[]{0, 124, 123, -45, 65, -76, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 112, -128};
         byte[] b = new byte[]{0, 124, 123, -34, 65, 43, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 123, 123};
-
-
-        byte[] bytes = {-1, -11, 4, 12};
-        byte[] bytes2 = {-1, -12, 5, 12};
-
-        int i = xorResultCompare(bytes, bytes2);
-
-        byte[] bytes1 = byte2Bit((byte) 127);
-
-        byte[] bytes3 = generateSimilarNodeId(a, 3);
+        byte[] bitByBytesAll = getBitAll(a);
 
 
     }
