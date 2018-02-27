@@ -155,6 +155,7 @@ public class BTUtil {
     /**
      * 从Map中获取Map属性
      */
+    @SuppressWarnings("unchecked")
     public static Map<String, Object> getParamMap(Map<String, Object> map, String key, String log) {
         Object obj = getParam(map, key, log);
         return (Map<String, Object>) obj;

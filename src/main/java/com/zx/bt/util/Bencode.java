@@ -28,6 +28,7 @@ public class Bencode {
     private Charset charset = CharsetUtil.ISO_8859_1;
 
     //函数数组
+    @SuppressWarnings("unchecked")
     private BiFunction<byte[], Integer, MethodResult>[] functions = new BiFunction[4];
 
     //string类型分隔符(冒号)的byte形式.
@@ -176,6 +177,7 @@ public class Bencode {
     /**
      * 封装任意类型解码
      */
+    @SuppressWarnings("unchecked")
     public <T> T decode(byte[] bytes, Class<T> tClass) {
         return (T) decodeAny(bytes, 0).value;
     }
@@ -228,6 +230,7 @@ public class Bencode {
     /**
      * 任意编码
      */
+    @SuppressWarnings("unchecked")
     public String encodeAny(Object obj) {
         try {
             if (obj instanceof Integer) {
