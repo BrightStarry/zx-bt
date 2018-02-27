@@ -2,8 +2,8 @@ package com.zx.bt.socket;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.AnnouncePeer;
-import com.zx.bt.dto.FindNode;
 import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.dto.Peer;
 import com.zx.bt.entity.Node;
 import com.zx.bt.entity.InfoHash;
 import com.zx.bt.enums.InfoHashTypeEnum;
@@ -12,6 +12,7 @@ import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
 import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
+import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
@@ -32,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * author:ZhengXing
@@ -49,14 +51,16 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     private final InfoHashRepository infoHashRepository;
     private final NodeRepository nodeRepository;
     private final RoutingTable routingTable;
+    private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
 
-    public UDPServerHandler(Bencode bencode, Config config,InfoHashRepository infoHashRepository,
-                            NodeRepository nodeRepository, RoutingTable routingTable) {
+    public UDPServerHandler(Bencode bencode, Config config, InfoHashRepository infoHashRepository,
+                            NodeRepository nodeRepository, RoutingTable routingTable, CommonCache<CommonCache.GetPeersSendInfo> getPeersCache) {
         this.bencode = bencode;
         this.config = config;
         this.infoHashRepository = infoHashRepository;
         this.nodeRepository = nodeRepository;
         this.routingTable = routingTable;
+        this.getPeersCache = getPeersCache;
     }
 
 
@@ -137,13 +141,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 //回复主体
                 Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "FIND_NODE,找不到r参数.map:" + map);
                 String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
-                byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1);
-                List<Node> nodeList = new LinkedList<>();
-                for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
-                    //byte[26] 转 Node
-                    Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
-                    nodeList.add(node);
-                }
+                List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
                 //发送该回复的节点,加入路由表
                 if(CollectionUtils.isNotEmpty(nodeList))
                     nodeList.add(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
@@ -183,7 +181,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
                     Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "GET_PEERS,找不到a参数.map:" + map);
                     String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
-                    String id1 = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
+                    id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     List<Node> nodes = routingTable.getForTop8(CodeUtil.hexStr2Bytes(info_hash));
                     log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
                     //入库
@@ -192,10 +190,53 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, CodeUtil.generateSimilarInfoHashString(info_hash,config.getMain().getSimilarNodeIdNum()),
                             config.getMain().getToken(),nodes);
                     //加入路由表
-                    routingTable.put(new Node(id1,BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.GET_PEERS.getCode()));
+                    routingTable.put(new Node(id,BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.GET_PEERS.getCode()));
                     break;
                 }
                 //如果是回复
+
+                //查询缓存
+                CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
+                //缓存过期，则不做任何处理了
+                if(getPeersSendInfo == null)
+                    return;
+                //查询rMap,此处rMap不可能不存在
+                rMap = BTUtil.getParamMap(map, "r", "");
+                id = CodeUtil.bytes2HexStr(BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
+                //如果返回的是nodes
+                if (rMap.get("nodes") != null) {
+                    nodeList = BTUtil.getNodeListByRMap(rMap);
+                    //如果nodes为空
+                    if(CollectionUtils.isEmpty(nodeList))
+                        return;
+                    routingTable.putAll(nodeList);
+                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
+                    //取出所有节点的地址
+                    List<InetSocketAddress> addresses = nodeList.stream().map(node -> new InetSocketAddress(node.getIp(), node.getPort())).collect(Collectors.toList());
+                    //批量发送请求
+                    SendUtil.getPeersBatch(addresses,config.getMain().getNodeId(),new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()),CharsetUtil.ISO_8859_1),messageInfo.getMessageId());
+                } else if (rMap.get("values") != null) {
+                    //如果返回的是values peer
+                    byte[] valuesBytes = BTUtil.getParamString(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1);
+                    List<Peer> peerList = new LinkedList<>();
+                    for (int i = 0; i + Config.PEER_BYTES_LEN < valuesBytes.length; i += Config.PEER_BYTES_LEN) {
+                        //byte[6] 转 Peer
+                        Peer peer = new Peer(ArrayUtils.subarray(valuesBytes, i, i + Config.PEER_BYTES_LEN));
+                        peerList.add(peer);
+                    }
+                    final StringBuilder peersInfoBuilder = new StringBuilder();
+                    peerList.forEach(peer -> {
+                        peersInfoBuilder.append(";").append(peer.getIp()).append(":").append(peer.getPort());
+                    });
+                    peersInfoBuilder.deleteCharAt(0);
+                    InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(getPeersSendInfo.getInfoHash(),InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
+                    if(infoHash != null)
+                        return;
+                    //如果为空,则储存
+                    infoHash = new InfoHash(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), peersInfoBuilder.toString());
+                    infoHashRepository.save(infoHash);
+                }
+                //否则是格式错误,不做任何处理
                 break;
         }
 

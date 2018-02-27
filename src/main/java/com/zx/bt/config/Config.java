@@ -30,8 +30,12 @@ public class Config {
 
     //常量配置--------
 
-    //每个节点信息默认占用的node字节长度. 为20位nodeId,4位ip,2位port
+    //每个节点信息默认占用的字节长度. 为20位nodeId,4位ip,2位port
     public static final Integer NODE_BYTES_LEN = 26;
+
+    //每个peer信息占用的字节长度,4位ip + 2位port
+    public static final Integer PEER_BYTES_LEN = 6;
+
 
     //nodeId和infohash的长度
     public static final Integer BASIC_HASH_LEN = 20;

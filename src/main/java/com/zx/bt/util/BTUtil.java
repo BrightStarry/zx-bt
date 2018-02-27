@@ -6,6 +6,7 @@ import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
+import com.zx.bt.store.CommonCache;
 import io.netty.channel.Channel;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -40,6 +38,10 @@ public class BTUtil {
     //用于生成20位随机字符,也就是byte[20]的nodeId
     private static RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder()
             .withinRange('0', 'z').build();
+
+
+
+
 
 
     /**
@@ -118,18 +120,13 @@ public class BTUtil {
 
         } else  if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.RECEIVE))  {
             Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "r属性不存在.map:" + map);
-            //TODO 修改
-            if(rMap.get("nodes") != null){
-                messageInfo.setMethod(rMap.get("token") == null ? MethodEnum.FIND_NODE : MethodEnum.GET_PEERS);
-            }else{
-                //从缓存中读取其方法
-                MessageInfo messageInfo1 = CacheUtil.getAndRemove(t);
-                if(messageInfo1 == null){
-                    throw new BTException("缓存不存在.map:" + map);
-                }
 
-                messageInfo.setMethod(messageInfo1.getMethod());
+            if(rMap.get("token") != null){
+                messageInfo.setMethod(MethodEnum.GET_PEERS);
+            }else if(rMap.get("nodes") != null){
+                messageInfo.setMethod(rMap.get("token") == null ? MethodEnum.FIND_NODE : MethodEnum.GET_PEERS);
             }
+
         }
         return messageInfo;
     }
@@ -166,6 +163,20 @@ public class BTUtil {
      */
     public static String getIpBySender(InetSocketAddress sender) {
         return sender.getAddress().toString().substring(1);
+    }
+
+    /**
+     * 从回复的r对象中取出nodes
+     */
+    public static List<Node> getNodeListByRMap(Map<String, Object> rMap) {
+        byte[] nodesBytes = BTUtil.getParamString(rMap, "nodes", "FIND_NODE,找不到nodes参数.rMap:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
+        List<Node> nodeList = new LinkedList<>();
+        for (int i = 0; i + Config.NODE_BYTES_LEN < nodesBytes.length; i += Config.NODE_BYTES_LEN) {
+            //byte[26] 转 Node
+            Node node = new Node(ArrayUtils.subarray(nodesBytes, i, i + Config.NODE_BYTES_LEN));
+            nodeList.add(node);
+        }
+        return nodeList;
     }
 
 

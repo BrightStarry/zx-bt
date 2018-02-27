@@ -43,6 +43,7 @@ public class BeanUtil {
         for (Field field : fields) {
             field.setAccessible(true);
             Object temp = field.get(obj);
+
             //基本类型,则直接赋值
             if(temp.getClass().getName().contains("java"))
                 map.put(field.getName(),temp);

@@ -44,8 +44,7 @@ public class SendUtil {
      */
     public static void ping(InetSocketAddress address, String nodeID) {
         Ping.Request request = new Ping.Request(nodeID);
-        //存入缓存
-        CacheUtil.put(request.getT(),new MessageInfo(MethodEnum.PING, YEnum.QUERY,request.getT()));
+
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
     }
 
