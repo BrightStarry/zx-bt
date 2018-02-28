@@ -30,7 +30,7 @@ public class Peer {
      * byte[6] 转 Node
      */
     public Peer(byte[] bytes) {
-        if (bytes.length != Config.NODE_BYTES_LEN)
+        if (bytes.length != Config.PEER_BYTES_LEN)
             throw new BTException("转换为Peer需要bytes长度为6,当前为:" + bytes.length);
         //ip
         byte[] ipBytes = ArrayUtils.subarray(bytes, 0, 4);

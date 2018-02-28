@@ -2,9 +2,9 @@ server:
   port: 8080
 spring:
   datasource:
-    url: jdbc:mysql://106.14.7.29:3306/bt?useSSL=false
+    url: jdbc:mysql://rm-uf659fc1pyp136g328o.mysql.rds.aliyuncs.com:3306/zx-bt?useSSL=false
     username: root
-    password: 123456
+    password: Lzb112358*
     driver-class-name: com.mysql.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQL5Dialect
@@ -53,6 +53,15 @@ zx-bt:
       - 37.59.58.55:6881
       - 188.165.211.227:6881
       - 94.23.249.8:6881
+      # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾
       - router.utorrent.com:6881
       - router.bittorrent.com:6881
       - dht.transmissionbt.com:6881
+      # 以下是返回我有效的get_peers请求的节点
+      - 185.106.123.2:28013
+      - 5.79.77.167:6881
+      - 185.45.195.187:28161
+      - 173.193.90.75:15005
+      - 178.32.217.107:1026
+      - 185.148.3.126:15359
+      - 223.190.104.156:16771

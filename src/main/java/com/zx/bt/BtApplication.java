@@ -2,6 +2,7 @@ package com.zx.bt;
 
 import com.zx.bt.socket.UDPServer;
 import com.zx.bt.task.FindNodeTask;
+import com.zx.bt.task.GetPeersTask;
 import com.zx.bt.task.InitTask;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -16,11 +17,13 @@ public class BtApplication implements CommandLineRunner{
 	private final UDPServer udpServer;
 	private final InitTask initTask;
 	private final FindNodeTask findNodeTask;
+	private final GetPeersTask getPeersTask;
 
-	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask) {
+	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask) {
 		this.udpServer = udpServer;
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
+		this.getPeersTask = getPeersTask;
 	}
 
 	public static void main(String[] args) {
@@ -43,5 +46,7 @@ public class BtApplication implements CommandLineRunner{
 		initTask.run();
 		//异步启动find_node任务
 		findNodeTask.start();
+		//异步启动get_peers任务
+		getPeersTask.start();
 	}
 }

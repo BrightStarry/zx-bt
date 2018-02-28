@@ -21,10 +21,18 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CommonCache<T> {
 
-	public CommonCache(Config config, CacheMethodEnum cacheMethodEnum,int expireTime) {
+	public static void main(String[] args) {
+		CommonCache<String> cache = new CommonCache<>(CacheMethodEnum.AFTER_WRITE, 120, 1 << 16);
+		cache.put("1","111");
+		String s = cache.get("1");
+		System.out.println(s);
+
+	}
+
+	public CommonCache(CacheMethodEnum cacheMethodEnum,int expireTime,int capacity) {
 		Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
-				.initialCapacity(config.getMain().getSendCacheLen())
-				.maximumSize(config.getMain().getSendCacheLen());
+				.initialCapacity(capacity / 2)
+				.maximumSize(capacity);
 		if (CacheMethodEnum.AFTER_ACCESS.equals(cacheMethodEnum))
 			caffeine.expireAfterAccess(expireTime, TimeUnit.SECONDS);
 		else if (CacheMethodEnum.AFTER_WRITE.equals(cacheMethodEnum))
@@ -67,6 +75,22 @@ public class CommonCache<T> {
 	 */
 	public void remove(String key) {
 		cache.invalidate(key);
+	}
+
+	/**
+	 * 长度
+	 * ps:该长度不是强一致性的.
+	 */
+	public long size() {
+
+		return cache.estimatedSize();
+	}
+
+	/**
+	 * 判断值是否存在
+	 */
+	public boolean isExist(T obj) {
+		return cache.asMap().values().parallelStream().filter(item -> item.equals(obj)).count() > 0;
 	}
 
 

@@ -56,9 +56,9 @@ public class ScheduleTask {
 			//rank超过该值,超时时长延长
 			final int minRank = NodeRankEnum.ANNOUNCE_PEER.getCode();
 			//普通节点超时时间
-			int generalNodeTimeoutMinute = config.getMain().getGeneralNodeTimeoutMinute();
+			int generalNodeTimeoutMinute = config.getPerformance().getGeneralNodeTimeoutMinute();
 			//rank值较大节点超时时间
-			int specialNodeTimeoutMinute = config.getMain().getSpecialNodeTimeoutMinute();
+			int specialNodeTimeoutMinute = config.getPerformance().getSpecialNodeTimeoutMinute();
 			//自己的节点Id
 			String nodeId = CodeUtil.bytes2HexStr(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1));
 			//等待清理队列

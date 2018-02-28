@@ -60,11 +60,13 @@ public class UDPServer {
         EventLoopGroup eventLoopGroup = null;
         try {
             //创建线程组 - 手动设置线程数,默认为cpu核心数2倍
-            eventLoopGroup =  new NioEventLoopGroup(config.getMain().getUdpServerMainThreadNum());
+            eventLoopGroup =  new NioEventLoopGroup(config.getPerformance().getUdpServerMainThreadNum());
             //创建引导程序
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(eventLoopGroup).channel(NioDatagramChannel.class)//通道类型也为UDP
                     .option(ChannelOption.SO_BROADCAST, true)//是广播,也就是UDP连接
+                    .option(ChannelOption.SO_RCVBUF, 3000 * 1024)// 设置UDP读缓冲区为3M
+                    .option(ChannelOption.SO_SNDBUF, 3000 * 1024)// 设置UDP写缓冲区为3M
                     .handler(UDPServerHandler);//配置的业务处理类
             bootstrap.bind(port).sync().channel().closeFuture().await();
         }finally {

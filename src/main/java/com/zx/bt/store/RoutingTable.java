@@ -90,12 +90,13 @@ public class RoutingTable {
 
 		//锁id生成器
 		private static AtomicInteger lockIdGenerator = new AtomicInteger(0);
+
 		/**
 		 * 生成锁id
 		 */
 		private int generateLockId() {
 			int result = lockIdGenerator.getAndIncrement();
-			if(result > 1 << 20)
+			if (result > 1 << 20)
 				lockIdGenerator.lazySet(0);
 			return result;
 		}
@@ -150,8 +151,8 @@ public class RoutingTable {
 		//参数
 		this.config = config;
 		nodeId = config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1);
-		maxStorePrefixLen = config.getMain().getRoutingTablePrefixLen();
-		lockNum = config.getMain().getRoutingTableLockNum();
+		maxStorePrefixLen = config.getPerformance().getRoutingTablePrefixLen();
+		lockNum = config.getPerformance().getRoutingTableLockNum();
 
 		//初始化锁
 		locks = new ReentrantLock[lockNum];
@@ -196,7 +197,6 @@ public class RoutingTable {
 		}
 
 
-
 		for (int i = 0; i < 30; i++) {
 			new Thread(() -> {
 				for (int j = 0; j < 99999; j++) {
@@ -225,7 +225,7 @@ public class RoutingTable {
 		if (CollectionUtils.isEmpty(nodes))
 			return;
 		for (Node node : nodes) {
-				put(node);
+			put(node);
 		}
 	}
 
@@ -233,61 +233,65 @@ public class RoutingTable {
 	 * 新增节点
 	 */
 	public boolean put(Node node) {
-		byte[] nodeId = CodeUtil.hexStr2Bytes(node.getNodeId());
 
-		//nodeId -> 160位二进制
-		byte[] bits = CodeUtil.getBitAll(nodeId);
+			byte[] nodeId = CodeUtil.hexStr2Bytes(node.getNodeId());
 
-		TrieNode currentNode = root;
-		TrieNode nextNode;
+			//nodeId -> 160位二进制
+			byte[] bits = CodeUtil.getBitAll(nodeId);
 
-		for (int i = 0; i < MAX_PREFIX_LEN; i++) {
+			TrieNode currentNode = root;
+			TrieNode nextNode;
+		try {
+			for (int i = 0; i < MAX_PREFIX_LEN; i++) {
 
 
-			//获取下一节点(根据nodeId字节数组的第i位)
-			nextNode = currentNode.next[bits[i]];
+				//获取下一节点(根据nodeId字节数组的第i位)
+				nextNode = currentNode.next[bits[i]];
 
-			//如果下一节点不为空
-			if (nextNode != null) {
-				currentNode = nextNode;
-				nextNode = null;
-				continue;
+				//如果下一节点不为空
+				if (nextNode != null) {
+					currentNode = nextNode;
+					nextNode = null;
+					continue;
+				}
+				boolean isSplit = false;
+				try {
+					lock(currentNode.lockId);
+					//如果已经包含该nodeId
+					int oldNodeIndex;
+					if ((oldNodeIndex = currentNode.containForIndex(nodeId)) != -1) {
+						//累加rank值,更新最后更新时间,暂不考虑nodeId冲突的可能
+						currentNode.nodes[oldNodeIndex].addRank(node.getRank()).setLastActiveTime(new Date());
+						return true;
+					}
+
+					//如果该节点未存满
+					if (currentNode.count < MAX_NODE_NUM) {
+						currentNode.nodes[currentNode.count++] = node;
+						this.count.increment();
+						return true;
+					}
+
+					//如果存满了,进行分裂,然后递归执行本方法,将节点插入
+					//如果当前节点包含自己的节点,或者不超过x层
+					if (currentNode.contain(this.nodeId) != null || i <= maxStorePrefixLen) {
+						//分裂节点
+						currentNode.split();
+						isSplit = true;
+						//此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
+
+					}
+				} finally {
+					unlock(currentNode.lockId);
+				}
+				if (isSplit)
+					put(node);
+
+				//否则抛弃该NodeId
+				return false;
 			}
-			boolean isSplit = false;
-			try {
-				lock(currentNode.lockId);
-				//如果已经包含该nodeId
-				int oldNodeIndex;
-				if ((oldNodeIndex = currentNode.containForIndex(nodeId)) != -1) {
-					//累加rank值,更新最后更新时间,暂不考虑nodeId冲突的可能
-					currentNode.nodes[oldNodeIndex].addRank(node.getRank()).setLastActiveTime(new Date());
-					return true;
-				}
-
-				//如果该节点未存满
-				if (currentNode.count < MAX_NODE_NUM) {
-					currentNode.nodes[currentNode.count++] = node;
-					this.count.increment();
-					return true;
-				}
-
-				//如果存满了,进行分裂,然后递归执行本方法,将节点插入
-				//如果当前节点包含自己的节点,或者不超过x层
-				if (currentNode.contain(this.nodeId) != null || i <= maxStorePrefixLen) {
-					//分裂节点
-					currentNode.split();
-					isSplit = true;
-					//此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
-
-				}
-			} finally {
-				unlock(currentNode.lockId);
-			}
-			if (isSplit)
-				put(node);
-
-			//否则抛弃该NodeId
-			return false;
+		} catch (Exception e) {
+			log.error("{}put失败.", LOG);
 		}
 		return false;
 	}
@@ -296,13 +300,13 @@ public class RoutingTable {
 	 * 删除某节点,根据节点id
 	 */
 	public boolean delete(byte[] nodeId) {
-			TrieNode trieNode = get(nodeId);
-		try {
-			lock(trieNode.lockId);
+		TrieNode trieNode = get(nodeId);
+
 			//如果该节点不存在
 			if (trieNode == null)
 				return false;
-
+		try {
+			lock(trieNode.lockId);
 			Node[] nodes = trieNode.nodes;
 			//循环保存了该节点的trieNode的nodes
 			for (int i = 0; i < trieNode.count; i++) {
@@ -321,11 +325,12 @@ public class RoutingTable {
 					return true;
 				}
 			}
-
-			return false;
+		} catch (Exception e) {
+			log.error("{}delete失败.", LOG);
 		} finally {
 			unlock(trieNode.lockId);
 		}
+		return false;
 	}
 
 	/**
@@ -336,24 +341,29 @@ public class RoutingTable {
 		//nodeId -> 160位二进制
 		byte[] bits = CodeUtil.getBitAll(nodeId);
 
-		for (int i = 0; i <= MAX_PREFIX_LEN; i++) {
-			try {
-				lock(currentNode.lockId);
-				//获取下一节点(根据nodeId字节数组的第i位)
-				TrieNode nextNode = currentNode.next[bits[i]];
-				//如果下一节点不为空
-				if (nextNode != null) {
-					currentNode = nextNode;
-				} else {
-					//为空则搜索该节点的nodes
-					if (currentNode.count == 0)
-						return null;
-					Node node = currentNode.contain(nodeId);
-					return node == null ? null : currentNode;
+		try {
+			for (int i = 0; i <= MAX_PREFIX_LEN; i++) {
+				try {
+					lock(currentNode.lockId);
+					//获取下一节点(根据nodeId字节数组的第i位)
+					TrieNode nextNode = currentNode.next[bits[i]];
+					//如果下一节点不为空
+					if (nextNode != null) {
+						currentNode = nextNode;
+					} else {
+						//为空则搜索该节点的nodes
+						if (currentNode.count == 0)
+							return null;
+						Node node = currentNode.contain(nodeId);
+						return node == null ? null : currentNode;
+					}
+				} finally {
+					unlock(currentNode.lockId);
 				}
-			} finally {
-				unlock(currentNode.lockId);
 			}
+		} catch (Exception e) {
+			log.error("{}get失败.", LOG);
+
 		}
 		return null;
 	}
@@ -367,53 +377,55 @@ public class RoutingTable {
 		byte[] bits = CodeUtil.getBitAll(nodeId);
 		TrieNode currentNode = root;
 		TrieNode lastNode = null;//上一节点
-		for (int i = 0; i <= MAX_PREFIX_LEN; i++) {
-			//获取下一节点(根据nodeId字节数组的第i位)
-			TrieNode nextNode = currentNode.next[bits[i]];
-			//如果下一节点不为空
-			if (nextNode != null) {
-				lastNode = currentNode;
-				currentNode = nextNode;
-				continue;
-			}
-
-
-			try {
-				lock(currentNode.lockId);
-				//为空则搜索该节点的nodes
-				//如果nodes不为空
-				if (currentNode.count != 0) {
-					//查找node
-					Node node = currentNode.contain(nodeId);
-					//找到了，直接返回
-					if (node != null) {
-						nodes.add(node);
-						return nodes;
-					}
-					//否则将该trieNode中的所有node放到返回集合中
-					nodes.addAll(Arrays.asList(currentNode.nodes).subList(0, currentNode.count));
+		try {
+			for (int i = 0; i <= MAX_PREFIX_LEN; i++) {
+				//获取下一节点(根据nodeId字节数组的第i位)
+				TrieNode nextNode = currentNode.next[bits[i]];
+				//如果下一节点不为空
+				if (nextNode != null) {
+					lastNode = currentNode;
+					currentNode = nextNode;
+					continue;
 				}
-			} finally {
-				unlock(currentNode.lockId);
-			}
+				try {
+					lock(currentNode.lockId);
+					//为空则搜索该节点的nodes
+					//如果nodes不为空
+					if (currentNode.count != 0) {
+						//查找node
+						Node node = currentNode.contain(nodeId);
+						//找到了，直接返回
+						if (node != null) {
+							nodes.add(node);
+							return nodes;
+						}
+						//否则将该trieNode中的所有node放到返回集合中
+						nodes.addAll(Arrays.asList(currentNode.nodes).subList(0, currentNode.count));
+					}
+				} finally {
+					unlock(currentNode.lockId);
+				}
 				if (nodes.size() == MAX_NODE_NUM)
 					return nodes;
 				//如果list的长度没到8（说明nodes为空，或者nodes的长度不足8）,就去拥有相同父节点的隔壁节点找
 				//(因为是由8个节点分裂而来，所有在未主动删除的情况下，是可以集齐8个的)
 				byte lastIndex = bits[i - 1];//上个节点，进入currentNode时的bit
 				//此处lastNode不会为空，因为当i==0，currentNode为root时，必然会进入一次该lastNode赋值的循环体.
-			TrieNode findNode = lastNode.next[lastIndex == 0 ? 1 : 0];//隔壁节点
-			try {
-				lock(findNode.lockId);
-				//要返回的nodes缺少的节点个数
-				int lackNum = MAX_NODE_NUM - nodes.size();
-				if (findNode.count != 0)
-					//从隔壁节点截取若干节点添加到返回节点. 此处限制其数量,防止IndexOutOfBoundsException
-					nodes.addAll(Arrays.asList(findNode.nodes).subList(0, lackNum <= findNode.count ? lackNum : findNode.count));
-				return nodes;
-			} finally {
-				unlock(findNode.lockId);
+				TrieNode findNode = lastNode.next[lastIndex == 0 ? 1 : 0];//隔壁节点
+				try {
+					lock(findNode.lockId);
+					//要返回的nodes缺少的节点个数
+					int lackNum = MAX_NODE_NUM - nodes.size();
+					if (findNode.count != 0)
+						//从隔壁节点截取若干节点添加到返回节点. 此处限制其数量,防止IndexOutOfBoundsException
+						nodes.addAll(Arrays.asList(findNode.nodes).subList(0, lackNum <= findNode.count ? lackNum : findNode.count));
+					return nodes;
+				} finally {
+					unlock(findNode.lockId);
+				}
 			}
+		} catch (Exception e) {
+			log.error("{}getForTop8失败.", LOG);
 		}
 		return nodes;
 	}
@@ -422,16 +434,17 @@ public class RoutingTable {
 	 * 遍历节点,并使用指定函数 操作nodes
 	 */
 	private void loop(TrieNode node, Consumer<TrieNode> consumer) {
-		if (node.next[0] != null) loop(node.next[0], consumer);
-		if (node.next[1] != null) loop(node.next[1], consumer);
-		if (node.count > 0) {
-			try {
-				lock(node.lockId);
-				consumer.accept(node);
-			} finally {
-				unlock(node.lockId);
+			if (node.next[0] != null) loop(node.next[0], consumer);
+			if (node.next[1] != null) loop(node.next[1], consumer);
+			if (node.count > 0) {
+				try {
+					lock(node.lockId);
+					consumer.accept(node);
+				} finally {
+					unlock(node.lockId);
+				}
 			}
-		}
+
 	}
 
 	/**
@@ -439,7 +452,11 @@ public class RoutingTable {
 	 * 封装,去除一个参数
 	 */
 	public void loop(Consumer<TrieNode> consumer) {
-		loop(this.root, consumer);
+		try {
+			loop(this.root, consumer);
+		} catch (Exception e) {
+			log.error("{}loop失败.", LOG);
+		}
 	}
 
 	/**

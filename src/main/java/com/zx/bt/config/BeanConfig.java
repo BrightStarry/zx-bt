@@ -27,6 +27,9 @@ public class BeanConfig {
      */
     @Bean
     public CommonCache<CommonCache.GetPeersSendInfo> getPeersCache(Config config) {
-        return new CommonCache<>(config, CacheMethodEnum.AFTER_WRITE,config.getMain().getGetPeersTaskExpireSecond());
+        return new CommonCache<>(
+                CacheMethodEnum.AFTER_WRITE,
+                config.getPerformance().getGetPeersTaskExpireSecond(),
+                config.getPerformance().getDefaultCacheLen());
     }
 }

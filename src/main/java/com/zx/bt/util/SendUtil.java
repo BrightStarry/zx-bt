@@ -55,7 +55,7 @@ public class SendUtil {
      */
     public static void pingReceive(InetSocketAddress address, String nodeID,String messageId) {
         Ping.Response response = new Ping.Response(nodeID, messageId);
-        log.info("发送PING-RECEIVE,对方地址:{}",address);
+//        log.info("发送PING-RECEIVE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)), address);
     }
 
@@ -64,9 +64,6 @@ public class SendUtil {
      */
     public static void findNode(InetSocketAddress address, String nodeId,String targetNodeId) {
         FindNode.Request request = new FindNode.Request(nodeId, targetNodeId);
-        //存入缓存
-//        CacheUtil.put(request.getT(),new MessageInfo(MethodEnum.FIND_NODE, YEnum.QUERY,request.getT()));
-//        log.info("发送FIND_NODE,对方地址:{}",address);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
     }
 
@@ -77,7 +74,7 @@ public class SendUtil {
      */
     public static void findNodeReceive(String messageId,InetSocketAddress address, String nodeId, List<Node> nodeList) {
         FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
-        log.info("发送FIND_NODE-RECEIVE,对方地址:{},消息:{}",address,response);
+//        log.info("发送FIND_NODE-RECEIVE,对方地址:{},消息:{}",address,response);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
@@ -97,7 +94,7 @@ public class SendUtil {
      */
     public static void getPeersReceive(String messageId,InetSocketAddress address, String nodeId, String token, List<Node> nodeList) {
         GetPeers.Response response = new GetPeers.Response(nodeId, token, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
-        log.info("发送GET_PEERS-RECEIVE,对方地址:{},消息:{}",address,response);
+//        log.info("发送GET_PEERS-RECEIVE,对方地址:{},消息:{}",address,response);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address);
     }
 
@@ -107,6 +104,7 @@ public class SendUtil {
      */
     public static void getPeersBatch(List<InetSocketAddress> addresses, String nodeId,String infoHash,String messageId) {
         GetPeers.Request request = new GetPeers.Request(nodeId, infoHash,messageId);
+//        log.info("批量发送GET_PEERS,消息:{}",request);
         byte[] encode = bencode.encode(BeanUtil.beanToMap(request));
         for (InetSocketAddress address : addresses) {
             try {

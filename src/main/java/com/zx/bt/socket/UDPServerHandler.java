@@ -14,6 +14,7 @@ import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
+import com.zx.bt.task.GetPeersTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
@@ -27,6 +28,7 @@ import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -52,15 +54,18 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
     private final NodeRepository nodeRepository;
     private final RoutingTable routingTable;
     private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+    private final GetPeersTask getPeersTask;
+
 
     public UDPServerHandler(Bencode bencode, Config config, InfoHashRepository infoHashRepository,
-                            NodeRepository nodeRepository, RoutingTable routingTable, CommonCache<CommonCache.GetPeersSendInfo> getPeersCache) {
+                            NodeRepository nodeRepository, RoutingTable routingTable, CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask) {
         this.bencode = bencode;
         this.config = config;
         this.infoHashRepository = infoHashRepository;
         this.nodeRepository = nodeRepository;
         this.routingTable = routingTable;
         this.getPeersCache = getPeersCache;
+        this.getPeersTask = getPeersTask;
     }
 
 
@@ -83,6 +88,9 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         Map<String, Object> map;
         try {
             map = bencode.decode(bytes,Map.class);
+        }  catch (BTException e) {
+            log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender,e.getMessage());
+            return;
         } catch (Exception e) {
             log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
             return;
@@ -111,7 +119,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             case PING:
                 //如果是请求,进行回复
                 if (messageInfo.getStatus().equals(YEnum.QUERY)) {
-                    log.info("{}PING.发送者:{}", LOG, sender);
+//                    log.info("{}PING.发送者:{}", LOG, sender);
                     SendUtil.pingReceive(sender, config.getMain().getNodeId(), messageInfo.getMessageId());
                     break;
                 }
@@ -160,9 +168,22 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(map, sender.getPort());
 
                     log.info("{}ANNOUNCE_PEER.发送者:{},port:{},info_hash:{}", LOG, sender, requestContent.getPort(), requestContent.getInfo_hash());
+
+                    InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(requestContent.getInfo_hash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
+                    //如果不为空
+                    if (infoHash != null) {
+                        String peerAddress = infoHash.getPeerAddress();
+                        //如果当前存储的peer个数<=16或为空. 则将追加新的peers
+                        if (StringUtils.isEmpty(peerAddress) || peerAddress.split(";").length <= 16 ) {
+                            infoHash.setPeerAddress(infoHash.getPeerAddress() +";" +BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
+                        }
+                    }else{
+                        //如果为空,则新建
+                        infoHash = new InfoHash(requestContent.getInfo_hash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
+                    }
                     //入库
-                    infoHashRepository.save(new InfoHash(requestContent.getInfo_hash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(),
-                            BTUtil.getIpBySender(sender) + ":" + requestContent.getPort()));
+                    infoHashRepository.save(infoHash);
+
                     //回复
                     SendUtil.announcePeerReceive(messageInfo.getMessageId(),sender, config.getMain().getNodeId());
                     Node node = new Node(requestContent.getId(), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
@@ -183,58 +204,87 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                     List<Node> nodes = routingTable.getForTop8(CodeUtil.hexStr2Bytes(info_hash));
-                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
+//                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
                     //入库
-                    infoHashRepository.save(new InfoHash(info_hash, InfoHashTypeEnum.GET_PEERS.getCode()));
+//                    infoHashRepository.save(new InfoHash(info_hash, InfoHashTypeEnum.GET_PEERS.getCode()));
                     //回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
                     SendUtil.getPeersReceive(messageInfo.getMessageId(),sender, CodeUtil.generateSimilarInfoHashString(info_hash,config.getMain().getSimilarNodeIdNum()),
                             config.getMain().getToken(),nodes);
                     //加入路由表
                     routingTable.put(new Node(id,BTUtil.getIpBySender(sender), sender.getPort(),NodeRankEnum.GET_PEERS.getCode()));
+                    //开始查找任务
+                    getPeersTask.put(info_hash);
                     break;
                 }
                 //如果是回复
 
                 //查询缓存
                 CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
-                //缓存过期，则不做任何处理了
-                if(getPeersSendInfo == null)
-                    return;
                 //查询rMap,此处rMap不可能不存在
                 rMap = BTUtil.getParamMap(map, "r", "");
+                //缓存过期，则不做任何处理了
+                if(getPeersSendInfo == null){
+                    log.info("{}GET_PEERS-RECEIVE,发送者:{},消息id:{},该任务已经过期.",LOG,sender,messageInfo.getMessageId(),rMap);
+                    return;
+                }
+
+
                 id = CodeUtil.bytes2HexStr(BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));
                 //如果返回的是nodes
                 if (rMap.get("nodes") != null) {
                     nodeList = BTUtil.getNodeListByRMap(rMap);
                     //如果nodes为空
-                    if(CollectionUtils.isEmpty(nodeList))
+                    if(CollectionUtils.isEmpty(nodeList)){
+//                        log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes为空.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
                         return;
+                    }
                     routingTable.putAll(nodeList);
                     routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
+//                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
                     //取出所有节点的地址
-                    List<InetSocketAddress> addresses = nodeList.stream().map(node -> new InetSocketAddress(node.getIp(), node.getPort())).collect(Collectors.toList());
+                    List<InetSocketAddress> addresses = nodeList.stream().map(node -> new InetSocketAddress(node.getIp(), node.getPort())).distinct().collect(Collectors.toList());
                     //批量发送请求
                     SendUtil.getPeersBatch(addresses,config.getMain().getNodeId(),new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()),CharsetUtil.ISO_8859_1),messageInfo.getMessageId());
+                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
                 } else if (rMap.get("values") != null) {
                     //如果返回的是values peer
-                    byte[] valuesBytes = BTUtil.getParamString(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1);
+                    List<String> rawPeerList = BTUtil.getParamList(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + map);
+                    if (CollectionUtils.isEmpty(rawPeerList)) {
+                        log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回peers为空", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
+                        return;
+                    }
+
                     List<Peer> peerList = new LinkedList<>();
-                    for (int i = 0; i + Config.PEER_BYTES_LEN < valuesBytes.length; i += Config.PEER_BYTES_LEN) {
+                    for (String rawPeer : rawPeerList) {
                         //byte[6] 转 Peer
-                        Peer peer = new Peer(ArrayUtils.subarray(valuesBytes, i, i + Config.PEER_BYTES_LEN));
+                        Peer peer = new Peer(rawPeer.getBytes(CharsetUtil.ISO_8859_1));
                         peerList.add(peer);
                     }
+                    //将peers连接为字符串
                     final StringBuilder peersInfoBuilder = new StringBuilder();
-                    peerList.forEach(peer -> {
-                        peersInfoBuilder.append(";").append(peer.getIp()).append(":").append(peer.getPort());
-                    });
+                    peerList.forEach(peer -> peersInfoBuilder.append(";").append(peer.getIp()).append(":").append(peer.getPort()));
                     peersInfoBuilder.deleteCharAt(0);
+
+                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(),peersInfoBuilder.toString());
+                    //从数据库中查找infoHash
                     InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(getPeersSendInfo.getInfoHash(),InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
-                    if(infoHash != null)
-                        return;
-                    //如果为空,则储存
-                    infoHash = new InfoHash(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), peersInfoBuilder.toString());
+                    //清除该任务缓存
+                    getPeersCache.remove(messageInfo.getMessageId());
+                    //如果不为空
+                    if (infoHash != null) {
+                        String peerAddress = infoHash.getPeerAddress();
+                        //如果当前存储的peer个数<=16或为空. 则将追加新的peers
+                        if (StringUtils.isEmpty(peerAddress) || peerAddress.split(";").length <= 16 ) {
+                            infoHash.setPeerAddress(infoHash.getPeerAddress() +";" + peersInfoBuilder.toString());
+                        }
+                    }else{
+                        //如果为空,则新建
+                        infoHash = new InfoHash(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), peersInfoBuilder.toString());
+                    }
                     infoHashRepository.save(infoHash);
+                    //节点入库
+                    nodeRepository.save(new Node("",BTUtil.getIpBySender(sender),sender.getPort()));
+                    routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
                 }
                 //否则是格式错误,不做任何处理
                 break;

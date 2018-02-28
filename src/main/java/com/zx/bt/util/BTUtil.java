@@ -125,8 +125,9 @@ public class BTUtil {
                 messageInfo.setMethod(MethodEnum.GET_PEERS);
             }else if(rMap.get("nodes") != null){
                 messageInfo.setMethod(rMap.get("token") == null ? MethodEnum.FIND_NODE : MethodEnum.GET_PEERS);
+            }else{
+                throw new BTException("未知类型的回复消息.消息:" + map);
             }
-
         }
         return messageInfo;
     }
@@ -147,6 +148,16 @@ public class BTUtil {
     public static String getParamString(Map<String, Object> map, String key, String log) {
         Object obj = getParam(map, key, log);
         return (String) obj;
+    }
+
+    /**
+     * 从Map中获取List属性
+     */
+
+    @SuppressWarnings("unchecked")
+    public static List<String> getParamList(Map<String, Object> map, String key, String log) {
+        Object obj = getParam(map, key, log);
+        return (List<String>) obj;
     }
 
     /**

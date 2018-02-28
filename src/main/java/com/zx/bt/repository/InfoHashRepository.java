@@ -15,4 +15,6 @@ public interface InfoHashRepository extends JpaRepository<InfoHash, Long> {
 
     InfoHash findFirstByInfoHashAndType(String infoHash,int type);
 
+    Integer countByInfoHashAndType(String infoHash, int type);
+
 }

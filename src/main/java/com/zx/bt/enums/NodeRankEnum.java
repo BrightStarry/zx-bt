@@ -17,8 +17,9 @@ public enum NodeRankEnum implements CodeEnum<Integer>{
     PING(10, "收到该节点ping请求"),
     PING_RECEIVE(1, "收到该节点ping回复"),
     GET_PEERS(100, "收到该节点get_peers请求"),
-    GET_PEERS_RECEIVE(100, "收到该节点get_peers回复"),
-    ANNOUNCE_PEER(100000, "收到该节点announce_peer请求"),
+    GET_PEERS_RECEIVE(1, "收到该节点get_peers回复"),
+    GET_PEERS_RECEIVE_OF_VALUE(10000, "收到该节点get_peers_values回复"),
+    ANNOUNCE_PEER(10000, "收到该节点announce_peer请求"),
 
 
     ;
