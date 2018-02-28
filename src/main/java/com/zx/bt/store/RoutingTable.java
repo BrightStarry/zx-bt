@@ -337,6 +337,8 @@ public class RoutingTable {
 	 * 搜索包含指定node的节点(trieNode)
 	 */
 	public TrieNode get(byte[] nodeId) {
+		if(nodeId.length != 20)
+			return null;
 		TrieNode currentNode = root;
 		//nodeId -> 160位二进制
 		byte[] bits = CodeUtil.getBitAll(nodeId);
@@ -362,7 +364,7 @@ public class RoutingTable {
 				}
 			}
 		} catch (Exception e) {
-			log.error("{}get失败.", LOG);
+			log.error("{}get失败.e:{}", LOG,e.getMessage(),e);
 
 		}
 		return null;

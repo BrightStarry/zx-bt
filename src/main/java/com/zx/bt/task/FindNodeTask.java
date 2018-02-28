@@ -21,51 +21,54 @@ import java.util.concurrent.*;
 @Slf4j
 public class FindNodeTask {
 
-	private final Config config;
-	private final String nodeId;
-	private final RoutingTable routingTable;
+    private final Config config;
+    private final String nodeId;
+    private final RoutingTable routingTable;
 
-	public FindNodeTask(Config config, RoutingTable routingTable) {
-		this.config = config;
-		nodeId = config.getMain().getNodeId();
-		this.routingTable = routingTable;
-	}
+    public FindNodeTask(Config config, RoutingTable routingTable) {
+        this.config = config;
+        nodeId = config.getMain().getNodeId();
+        this.routingTable = routingTable;
+    }
 
-	/**
-	 * 循环执行该任务
-	 */
-	public void start() {
+    /**
+     * 循环执行该任务
+     */
+    public void start() {
 
-		//定时群发路由表线程
-		ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
-
-
-		scheduledExecutorService.scheduleAtFixedRate(() -> {
-			try {
-				for (int i = 0; i < 5; i++) {
-					findNode();
-				}
-			} catch (Exception e) {
-				log.error("[FindNodeTask]定时群发路由表异常:{}", e.getMessage(), e);
-			}
-		}, 0, config.getPerformance().getFindNodeTaskIntervalSecond(), TimeUnit.SECONDS);
-
-		scheduledExecutorService.scheduleAtFixedRate(() -> {
-			log.info("[FindNodeTask]当前路由表长度:{}", routingTable.size());
-		}, 0, 5, TimeUnit.SECONDS);
-	}
+        //定时群发路由表线程
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
 
 
-	/**
-	 * 向路由表群发
-	 */
-	private void findNode() {
-		byte[] target = BTUtil.generateNodeId();
-		List<Node> nodeList = routingTable.getForTop8(target);
-		nodeList.forEach(node -> {
-			SendUtil.findNode(new InetSocketAddress(node.getIp(), node.getPort()), nodeId, config.getMain().getTargetNodeId());
-		});
-	}
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                for (int i = 0; i < 5; i++) {
+                    findNode();
+                }
+            } catch (Exception e) {
+                log.error("[FindNodeTask]定时群发路由表异常:{}", e.getMessage(), e);
+            }
+        }, 0, config.getPerformance().getFindNodeTaskIntervalSecond(), TimeUnit.SECONDS);
+
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            log.info("[FindNodeTask]当前路由表长度:{}", routingTable.size());
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+
+
+    /**
+     * 向路由表群发
+     */
+    private void findNode() {
+        long l = routingTable.size() >> 5 + 1;
+        for (int i = 0; i < l; i++) {
+            byte[] target = BTUtil.generateNodeId();
+            List<Node> nodeList = routingTable.getForTop8(target);
+            nodeList.forEach(node -> {
+                SendUtil.findNode(new InetSocketAddress(node.getIp(), node.getPort()), nodeId, config.getMain().getTargetNodeId());
+            });
+        }
+    }
 
 
 }

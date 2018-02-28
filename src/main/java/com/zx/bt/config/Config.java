@@ -107,7 +107,7 @@ public class Config {
     @Data
     public static class Performance{
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 50;
+        private Integer udpServerMainThreadNum = 10;
 
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;
@@ -155,7 +155,7 @@ public class Config {
         private Integer defaultCacheLen = 1<<16;
 
         /**FindNodeTask群发路由表线程,间隔时间(s)*/
-        private Integer findNodeTaskIntervalSecond = 1;
+        private Integer findNodeTaskIntervalSecond = 10;
 
     }
 
