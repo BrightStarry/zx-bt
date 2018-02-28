@@ -32,7 +32,7 @@ public class SendUtil {
      * 使用channel发送消息
      */
     public static void writeAndFlush(byte[] bytes, InetSocketAddress address) {
-        if (!channel.isActive()) {
+        if (!channel.isWritable()) {
             channel.close();
             throw new BTException("发送消息异常");
         }

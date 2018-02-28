@@ -42,9 +42,7 @@ public class FindNodeTask {
 
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
-                for (int i = 0; i < 5; i++) {
                     findNode();
-                }
             } catch (Exception e) {
                 log.error("[FindNodeTask]定时群发路由表异常:{}", e.getMessage(), e);
             }
@@ -60,7 +58,7 @@ public class FindNodeTask {
      * 向路由表群发
      */
     private void findNode() {
-        long l = routingTable.size() >> 5 + 1;
+        long l = (routingTable.size() >> 6) + 1;
         for (int i = 0; i < l; i++) {
             byte[] target = BTUtil.generateNodeId();
             List<Node> nodeList = routingTable.getForTop8(target);
@@ -69,6 +67,7 @@ public class FindNodeTask {
             });
         }
     }
+
 
 
 }
