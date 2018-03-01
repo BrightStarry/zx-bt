@@ -105,7 +105,7 @@ public class ProcessQueue {
 						}
 
 
-						udpProcessorManager.process(new ProcessObject(messageInfo, map, sender, config));
+						udpProcessorManager.process(new ProcessObject(messageInfo, map, sender,processObject.getIndex()));
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -120,5 +120,6 @@ public class ProcessQueue {
 	public static class A{
 		private byte[] bytes;
 		private InetSocketAddress sender;
+		private int index;
 	}
 }

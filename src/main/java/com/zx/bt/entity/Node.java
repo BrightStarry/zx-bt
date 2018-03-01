@@ -51,7 +51,7 @@ public class Node {
     private Integer port;
 
     /**
-     * nodeId 字节表示
+     * nodeIds 字节表示
      */
     @Transient
     private byte[] nodeIdBytes;
@@ -116,7 +116,7 @@ public class Node {
      */
     public byte[] toBytes() {
         check();
-        //nodeId
+        //nodeIds
         byte[] nodeBytes = new byte[Config.NODE_BYTES_LEN];
         System.arraycopy(nodeIdBytes, 0, nodeBytes, 0, 20);
 
@@ -130,7 +130,7 @@ public class Node {
         }
         System.arraycopy(ipBytes, 0, nodeBytes, 20, 4);
 
-        //port
+        //ports
         byte[] portBytes = CodeUtil.int2TwoBytes(port);
         System.arraycopy(portBytes, 0, nodeBytes, 24, 2);
 
@@ -143,7 +143,7 @@ public class Node {
     public Node(byte[] bytes) {
         if (bytes.length != Config.NODE_BYTES_LEN)
             throw new BTException("转换为Node需要bytes长度为26,当前为:" + bytes.length);
-        //nodeId
+        //nodeIds
         nodeIdBytes = ArrayUtils.subarray(bytes, 0, 20);
 
         //ip
@@ -151,7 +151,7 @@ public class Node {
         ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
                 , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
 
-        //port
+        //ports
         byte[] portBytes = ArrayUtils.subarray(bytes, 24, Config.NODE_BYTES_LEN);
         port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
 

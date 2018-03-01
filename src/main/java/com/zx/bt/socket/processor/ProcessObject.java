@@ -37,7 +37,7 @@ public class ProcessObject {
 	private InetSocketAddress sender;
 
 	/**
-	 * config
+	 * index
 	 */
-	private Config config;
+	private int index;
 }

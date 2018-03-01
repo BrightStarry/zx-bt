@@ -38,14 +38,16 @@ import java.util.stream.Collectors;
 public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[GET_PEERS_RECEIVE]";
 
-	private final RoutingTable routingTable;
-	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+	private final List<RoutingTable> routingTables;
+	private final List<CommonCache<CommonCache.GetPeersSendInfo>> getPeersCaches;
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
 
-	public GetPeersResponseUDPProcessor(RoutingTable routingTable, CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
-		this.routingTable = routingTable;
-		this.getPeersCache = getPeersCache;
+	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
+										List<CommonCache<CommonCache.GetPeersSendInfo>> getPeersCaches,
+										InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
+		this.routingTables = routingTables;
+		this.getPeersCaches = getPeersCaches;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
 	}
@@ -55,10 +57,11 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		MessageInfo messageInfo = processObject.getMessageInfo();
 		Map<String, Object> rawMap = processObject.getRawMap();
 		InetSocketAddress sender = processObject.getSender();
-		Config config = processObject.getConfig();
+		int index = processObject.getIndex();
+		RoutingTable routingTable = routingTables.get(index);
 
 		//查询缓存
-		CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
+		CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCaches.get(index).get(messageInfo.getMessageId());
 		//查询rMap,此处rMap不可能不存在
 		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了
@@ -78,9 +81,10 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 				return true;
 			}
 			//向新节点发送消息
-			nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), config.getMain().getNodeId(), BTUtil.generateNodeIdString()));
+			nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(),index));
 			//将消息发送者加入路由表.
-			routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
+			routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(),
+					NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
 //                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
 
 			//取出未发送过请求的节点
@@ -97,7 +101,9 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			//将其加入已发送队列
 			getPeersSendInfo.put(unSentNodeIdList);
 			//批量发送请求
-			SendUtil.getPeersBatch(unSentAddressList, config.getMain().getNodeId(), new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1), messageInfo.getMessageId());
+			SendUtil.getPeersBatch(unSentAddressList, nodeIds.get(index),
+					new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
+					messageInfo.getMessageId(),index);
 		} else if (rMap.get("values") != null) {
 			//如果返回的是values peer
 			List<String> rawPeerList = BTUtil.getParamList(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + rawMap);
@@ -122,7 +128,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			//从数据库中查找infoHash
 			InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
 			//清除该任务缓存
-			getPeersCache.remove(messageInfo.getMessageId());
+			getPeersCaches.get(index).remove(messageInfo.getMessageId());
 			//如果不为空
 			if (infoHash == null) {
 				//如果为空,则新建

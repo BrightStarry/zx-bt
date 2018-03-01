@@ -1,11 +1,7 @@
 package com.zx.bt.socket;
 
 import com.zx.bt.config.Config;
-import com.zx.bt.dto.MessageInfo;
-import com.zx.bt.exception.BTException;
-import com.zx.bt.socket.processor.ProcessObject;
 import com.zx.bt.socket.processor.UDPProcessorManager;
-import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
@@ -14,10 +10,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -25,10 +19,12 @@ import java.util.Map;
  * dht服务端处理类
  */
 @Slf4j
-@Component
-@ChannelHandler.Sharable
+@ChannelHandler.Sharable//此处,该注解是为了重启时,不会报错,而非该对象可以被复用
 public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private static final String LOG = "[DHT服务端处理类]-";
+
+	//当前处理器针对的nodeId索引
+	private final int index;
 
 	private final Bencode bencode;
 	private final Config config;
@@ -37,7 +33,9 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 
 
-	public UDPServerHandler(Bencode bencode, Config config, UDPProcessorManager udpProcessorManager, ProcessQueue processQueue) {
+	public UDPServerHandler(int index,Bencode bencode, Config config, UDPProcessorManager udpProcessorManager,
+							ProcessQueue processQueue) {
+		this.index = index;
 		this.bencode = bencode;
 		this.config = config;
 		this.udpProcessorManager = udpProcessorManager;
@@ -49,7 +47,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		log.info("{}通道激活", LOG);
 		//给发送器工具类的channel赋值
-		SendUtil.setChannel(ctx.channel());
+		SendUtil.setChannel(ctx.channel(),this.index);
 	}
 
 
@@ -62,7 +60,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		InetSocketAddress sender = packet.sender();
 
 		//责任链处理
-		processQueue.put(new ProcessQueue.A(bytes,sender));
+		processQueue.put(new ProcessQueue.A(bytes,sender,index));
 	}
 
 	/**

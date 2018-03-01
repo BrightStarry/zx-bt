@@ -18,8 +18,8 @@ public class PingRequestUDPProcessor  extends UDPProcessor{
 	@Override
 	boolean process1(ProcessObject processObject) {
 		SendUtil.pingReceive(processObject.getSender(),
-				processObject.getConfig().getMain().getNodeId(),
-				processObject.getMessageInfo().getMessageId());
+				nodeIds.get(processObject.getIndex()),
+				processObject.getMessageInfo().getMessageId(),processObject.getIndex());
 		return true;
 	}
 

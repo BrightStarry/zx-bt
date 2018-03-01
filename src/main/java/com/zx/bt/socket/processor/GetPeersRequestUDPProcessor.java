@@ -29,11 +29,11 @@ import java.util.Map;
 public class GetPeersRequestUDPProcessor extends UDPProcessor{
 	private static final String LOG = "[GET_PEERS]";
 
-	private final RoutingTable routingTable;
+	private final List<RoutingTable> routingTables;
 	private final GetPeersTask getPeersTask;
 
-	public GetPeersRequestUDPProcessor(RoutingTable routingTable, GetPeersTask getPeersTask) {
-		this.routingTable = routingTable;
+	public GetPeersRequestUDPProcessor(List<RoutingTable>  routingTables, GetPeersTask getPeersTask) {
+		this.routingTables = routingTables;
 		this.getPeersTask = getPeersTask;
 	}
 
@@ -42,20 +42,21 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 		Map<String, Object> rawMap = processObject.getRawMap();
 		MessageInfo messageInfo = processObject.getMessageInfo();
 		InetSocketAddress sender = processObject.getSender();
-		Config config = processObject.getConfig();
+		int index = processObject.getIndex();
 
 		Map<String, Object> aMap = BTUtil.getParamMap(rawMap, "a", "GET_PEERS,找不到a参数.map:" + rawMap);
 		String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1));
 		byte[] id = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1);
-		List<Node> nodes = routingTable.getForTop8(CodeUtil.hexStr2Bytes(info_hash));
+		List<Node> nodes = routingTables.get(index).getForTop8(CodeUtil.hexStr2Bytes(info_hash));
 //                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
 		//回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
-		SendUtil.getPeersReceive(messageInfo.getMessageId(), sender, CodeUtil.generateSimilarInfoHashString(info_hash, config.getMain().getSimilarNodeIdNum()),
-				config.getMain().getToken(), nodes);
+		SendUtil.getPeersReceive(messageInfo.getMessageId(), sender,
+				CodeUtil.generateSimilarInfoHashString(info_hash, config.getMain().getSimilarNodeIdNum()),
+				config.getMain().getToken(), nodes, index);
 		//加入路由表
-		routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS.getCode()));
+		routingTables.get(index).put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS.getCode()));
 		//开始查找任务
-		getPeersTask.put(info_hash);
+		getPeersTask.put(info_hash, index);
 		return true;
 	}
 

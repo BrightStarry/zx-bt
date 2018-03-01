@@ -24,10 +24,10 @@ import java.util.Map;
 @Component
 public class FindNodeRequestUDPProcessor extends UDPProcessor{
 
-	private final RoutingTable routingTable;
+	private final List<RoutingTable> routingTables;
 
-	public FindNodeRequestUDPProcessor(RoutingTable routingTable) {
-		this.routingTable = routingTable;
+	public FindNodeRequestUDPProcessor(List<RoutingTable> routingTables) {
+		this.routingTables = routingTables;
 	}
 
 	@Override
@@ -38,12 +38,12 @@ public class FindNodeRequestUDPProcessor extends UDPProcessor{
 				.getBytes(CharsetUtil.ISO_8859_1);
 		byte[] id = BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//查找
-		List<Node> nodes = routingTable.getForTop8(targetNodeId);
+		List<Node> nodes = routingTables.get(processObject.getIndex()).getForTop8(targetNodeId);
 //                    log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);
 		SendUtil.findNodeReceive(processObject.getMessageInfo().getMessageId(), processObject.getSender(),
-				processObject.getConfig().getMain().getNodeId(), nodes);
+				nodeIds.get(processObject.getIndex()), nodes,processObject.getIndex());
 		//操作路由表
-		routingTable.put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE.getCode()));
+		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE.getCode()));
 		return true;
 	}
 

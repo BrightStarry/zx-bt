@@ -1,7 +1,12 @@
 package com.zx.bt.socket.processor;
 
+import com.zx.bt.config.Config;
 import com.zx.bt.exception.BTException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -9,7 +14,18 @@ import lombok.extern.slf4j.Slf4j;
  * udp处理器接口
  */
 @Slf4j
+@Component
 public abstract class UDPProcessor {
+
+	protected  Config config;
+	protected  List<String> nodeIds;
+
+	@Autowired
+	public void init(Config config) {
+		this.config = config;
+		this.nodeIds = config.getMain().getNodeIds();
+	}
+
 	/**
 	 * 下一个处理器
 	 */

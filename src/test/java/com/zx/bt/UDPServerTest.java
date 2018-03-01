@@ -40,7 +40,7 @@ public class UDPServerTest extends BtApplicationTests{
 			String[] addArr = peerAddress.split(";");
 			for (String s : addArr) {
 				String[] ipPort = s.split(":");
-				log.info("ip:{},port:{},infoHash:{}",ipPort[0],Integer.parseInt(ipPort[1]),infoHash.getInfoHash());
+				log.info("ip:{},ports:{},infoHash:{}",ipPort[0],Integer.parseInt(ipPort[1]),infoHash.getInfoHash());
 				tcpClient.connection(new InetSocketAddress(ipPort[0],Integer.parseInt(ipPort[1])),
 						infoHash.getInfoHash(), BTUtil.generateNodeId());
 			}

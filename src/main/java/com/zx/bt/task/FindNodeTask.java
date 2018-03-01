@@ -22,26 +22,24 @@ import java.util.concurrent.*;
 public class FindNodeTask {
 
     private final Config config;
-    private final String nodeId;
-    private final RoutingTable routingTable;
+    private final List<String> nodeIds;
+    private final List<RoutingTable> routingTables;
     private final ProcessQueue processQueue;
+    private final  ScheduledExecutorService scheduledExecutorService;
 
-    public FindNodeTask(Config config, RoutingTable routingTable, ProcessQueue processQueue) {
+    public FindNodeTask(Config config, List<RoutingTable> routingTables, ProcessQueue processQueue) {
         this.config = config;
-        nodeId = config.getMain().getNodeId();
-        this.routingTable = routingTable;
+        this.nodeIds = config.getMain().getNodeIds();
+        this.routingTables = routingTables;
         this.processQueue = processQueue;
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     /**
      * 循环执行该任务
      */
     public void start() {
-
         //定时群发路由表线程
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
-
-
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
                     findNode();
@@ -56,13 +54,19 @@ public class FindNodeTask {
      * 向路由表群发
      */
     private void findNode() {
-        long size = routingTable.size();
-        long l = (size >> 6) + 1;
-        log.info("[FindNodeTask]当前路由表长度:{},l:{},当前处理队列长度:{}", size,l,processQueue.size());
-        for (int i = 0; i < l; i++) {
-            byte[] target = BTUtil.generateNodeId();
-            List<Node> nodeList = routingTable.getForTop8(target);
-            nodeList.forEach(node -> SendUtil.findNode(node.toAddress(), nodeId, config.getMain().getTargetNodeId()));
+        for (int i = 0; i < routingTables.size(); i++) {
+            RoutingTable routingTable = routingTables.get(i);
+            String nodeId = nodeIds.get(i);
+            long size = routingTable.size();
+            long l = (size >> 10) + 1;
+            log.info("[FindNodeTask]当前路由表长度:{},l:{},当前处理队列长度:{}", size,l,processQueue.size());
+            for (int j = 0; j < l; j++) {
+                byte[] target = BTUtil.generateNodeId();
+                List<Node> nodeList = routingTable.getForTop8(target);
+                for (Node node : nodeList) {
+                    SendUtil.findNode(node.toAddress(), nodeId, config.getMain().getTargetNodeId(),i);
+                }
+            }
         }
     }
 

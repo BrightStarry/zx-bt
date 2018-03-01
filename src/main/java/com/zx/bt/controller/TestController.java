@@ -11,14 +11,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/")
 public class TestController {
-	private final RoutingTable routingTable;
 
-	public TestController(RoutingTable routingTable) {
-		this.routingTable = routingTable;
-	}
-
-	@RequestMapping("/")
-	public Long routingTableSize() {
-		return routingTable.size();
-	}
 }

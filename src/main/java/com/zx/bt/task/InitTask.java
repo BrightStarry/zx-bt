@@ -6,6 +6,7 @@ import com.zx.bt.util.SendUtil;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -26,12 +27,17 @@ public class InitTask {
      */
     public void run() {
         //获取初始化地址
-        InetSocketAddress[] initAddressArray = config.getMain().getInitAddressArray();
+        final InetSocketAddress[] initAddressArray = config.getMain().getInitAddressArray();
 
-        String nodeId = config.getMain().getNodeId();
-        //向每个地址发送请求
-        for (InetSocketAddress address : initAddressArray) {
-            SendUtil.findNode(address,nodeId, BTUtil.generateNodeIdString());
+        List<String> nodeIds = config.getMain().getNodeIds();
+        for (int i = 0; i < nodeIds.size(); i++) {
+            String nodeId = nodeIds.get(i);
+            //向每个地址发送请求
+            for (InetSocketAddress address : initAddressArray) {
+                SendUtil.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
+            }
         }
+
+
     }
 }

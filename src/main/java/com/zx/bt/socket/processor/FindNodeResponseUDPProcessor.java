@@ -27,10 +27,10 @@ import java.util.Map;
 public class FindNodeResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[FIND_NODE_RECEIVE]";
 
-	private final RoutingTable routingTable;
+	private final  List<RoutingTable> routingTables;
 
-	public FindNodeResponseUDPProcessor(RoutingTable routingTable) {
-		this.routingTable = routingTable;
+	public FindNodeResponseUDPProcessor(List<RoutingTable> routingTables) {
+		this.routingTables = routingTables;
 	}
 
 	@Override
@@ -44,9 +44,9 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		}
 		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//将发送消息的节点加入路由表
-		routingTable.put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
+		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
 		//向这些节点发送find_node请求.
-		nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), processObject.getConfig().getMain().getNodeId(), BTUtil.generateNodeIdString()));
+		nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(processObject.getIndex()), BTUtil.generateNodeIdString(),processObject.getIndex()));
 //                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
 		return true;
 	}

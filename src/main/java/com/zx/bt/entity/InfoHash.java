@@ -39,7 +39,7 @@ public class InfoHash {
     private Integer type;
 
     /**
-     * 如果是announce_peer类型(type == 1),则保存其peer的ip:port
+     * 如果是announce_peer类型(type == 1),则保存其peer的ip:ports
      */
     private String peerAddress = "";
 

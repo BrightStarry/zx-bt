@@ -37,7 +37,7 @@ public class Peer {
         ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
                 , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
 
-        //port
+        //ports
         byte[] portBytes = ArrayUtils.subarray(bytes, 4, 6);
         port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
     }

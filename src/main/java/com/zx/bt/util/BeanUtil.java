@@ -59,7 +59,7 @@ public class BeanUtil {
 
 
     public static void main(String[] args) {
-//        String nodeId = BTUtil.generateNodeIdString();
+//        String nodeIds = BTUtil.generateNodeIdString();
 //        byte[] bytes = new byte[26];
 //        for (int i = 0; i < 20; i++) {
 //            bytes[i] = 111;

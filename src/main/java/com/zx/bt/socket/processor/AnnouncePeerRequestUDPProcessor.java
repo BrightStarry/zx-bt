@@ -1,5 +1,6 @@
 package com.zx.bt.socket.processor;
 
+import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.dto.method.AnnouncePeer;
 import com.zx.bt.entity.InfoHash;
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,12 +33,13 @@ import java.util.Map;
 public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 	private static final String LOG = "[ANNOUNCE_PEER]";
 
-	private final RoutingTable routingTable;
+	private final List<RoutingTable> routingTables;
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
 
-	public AnnouncePeerRequestUDPProcessor(RoutingTable routingTable, InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
-		this.routingTable = routingTable;
+	public AnnouncePeerRequestUDPProcessor(List<RoutingTable> routingTables, InfoHashRepository infoHashRepository,
+										   NodeRepository nodeRepository) {
+		this.routingTables = routingTables;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
 	}
@@ -46,10 +49,11 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 		InetSocketAddress sender = processObject.getSender();
 		Map<String, Object> rawMap = processObject.getRawMap();
 		MessageInfo messageInfo = processObject.getMessageInfo();
+		int index = processObject.getIndex();
 
 		AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(rawMap, sender.getPort());
 
-		log.info("{}ANNOUNCE_PEER.发送者:{},port:{},info_hash:{},map:{}",
+		log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}",
 				LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(),rawMap);
 
 		InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(requestContent.getInfo_hash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
@@ -65,10 +69,10 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 		infoHashRepository.save(infoHash);
 
 		//回复
-		SendUtil.announcePeerReceive(messageInfo.getMessageId(), sender, processObject.getConfig().getMain().getNodeId());
+		SendUtil.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index),index);
 		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
 		//加入路由表
-		routingTable.put(node);
+		routingTables.get(index).put(node);
 		//入库
 		nodeRepository.save(node);
 		return true;

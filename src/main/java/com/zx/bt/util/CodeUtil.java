@@ -35,7 +35,7 @@ public class CodeUtil {
     }
 
     /**
-     * 生成一个和指定info_hash(nodeId)异或值仅相差若干位的info_hash(nodeId)
+     * 生成一个和指定info_hash(nodeIds)异或值仅相差若干位的info_hash(nodeIds)
      */
     public static byte[] generateSimilarNodeId(byte[] hash, int num) {
         byte[] result = new byte[hash.length];

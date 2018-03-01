@@ -33,7 +33,6 @@ import java.util.function.Consumer;
  * 使用Trie Tree实现, 空间换取时间, 插入和查询复杂度都为O(k),k为key的长度,此处key为nodeId,即160位
  */
 @Slf4j
-@Component
 public class RoutingTable {
     private static final String LOG = "[路由表]";
 
@@ -161,10 +160,10 @@ public class RoutingTable {
      *
      * @param config
      */
-    public RoutingTable(Config config) {
+    public RoutingTable(Config config,byte[] nodeId,int port) {
         //参数
         this.config = config;
-        nodeId = config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1);
+        this.nodeId = nodeId;
         maxStorePrefixLen = config.getPerformance().getRoutingTablePrefixLen();
         lockNum = config.getPerformance().getRoutingTableLockNum();
 
@@ -179,58 +178,10 @@ public class RoutingTable {
         root.getNext()[0] = new TrieNode(0);
         root.getNext()[1] = new TrieNode(0);
         //存入主节点(自己的nodeId)
-        put(new Node(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1), config.getMain().getIp(), config.getMain().getPort(), Integer.MAX_VALUE));
+        put(new Node(this.nodeId, config.getMain().getIp(), port, Integer.MAX_VALUE));
     }
 
-    @SneakyThrows
-    public static void main(String[] args) {
-        //创建
-        RoutingTable routingTable = new RoutingTable(new Config().setMain(
-                new Config.Main().setNodeId(BTUtil.generateNodeIdString())
-                        .setIp("106.14.7.29")
-                        .setPort(6881)
-        )
-        );
 
-        AtomicInteger errorNum = new AtomicInteger(0);
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        CountDownLatch latch = new CountDownLatch(60);
-        for (int i = 0; i < 30; i++) {
-            new Thread(() -> {
-                for (int j = 0; j < 99999; j++) {
-                    try {
-                        Node node = new Node(BTUtil.generateNodeId(), "106.14.7.29", j);
-                        routingTable.put(node);
-                    } catch (Exception e) {
-                        errorNum.getAndIncrement();
-                    }
-                }
-                latch.countDown();
-            }).start();
-        }
-
-
-        for (int i = 0; i < 30; i++) {
-            new Thread(() -> {
-                for (int j = 0; j < 99999; j++) {
-                    try {
-                        routingTable.getForTop8(BTUtil.generateNodeId());
-                    } catch (Exception e) {
-                        errorNum.getAndIncrement();
-                    }
-                }
-                latch.countDown();
-            }).start();
-        }
-
-        latch.await();
-        stopWatch.stop();
-        System.out.println(stopWatch.getTotalTimeSeconds());
-        System.out.println(errorNum.intValue());
-
-
-    }
 
     /**
      * 新增若干节点
@@ -249,7 +200,7 @@ public class RoutingTable {
     public boolean put(Node node) {
 
 
-        //nodeId -> 160位二进制
+        //nodeIds -> 160位二进制
         byte[] bits = CodeUtil.getBitAll(node.getNodeIdBytes());
 
         TrieNode currentNode = root;
@@ -364,7 +315,7 @@ public class RoutingTable {
         if (nodeId.length != 20)
             return null;
         TrieNode currentNode = root;
-        //nodeId -> 160位二进制
+        //nodeIds -> 160位二进制
         byte[] bits = CodeUtil.getBitAll(nodeId);
 
         try {
@@ -400,7 +351,7 @@ public class RoutingTable {
      */
     public List<Node> getForTop8(byte[] nodeId) {
         List<Node> nodes = new LinkedList<>();
-        //nodeId -> 160位二进制
+        //nodeIds -> 160位二进制
         byte[] bits = CodeUtil.getBitAll(nodeId);
         TrieNode currentNode = root;
         TrieNode lastNode = null;//上一节点
