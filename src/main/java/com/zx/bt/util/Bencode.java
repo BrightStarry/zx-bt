@@ -1,6 +1,6 @@
 package com.zx.bt.util;
 
-import com.zx.bt.dto.Ping;
+import com.zx.bt.dto.method.Ping;
 import com.zx.bt.exception.BTException;
 import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;

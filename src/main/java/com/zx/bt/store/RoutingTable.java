@@ -101,7 +101,6 @@ public class RoutingTable {
             return result;
         }
 
-
         /**
          * 判断该节点的nodes中是否包含某个Node
          */
@@ -139,6 +138,21 @@ public class RoutingTable {
             //清空当前节点
             this.count = 0;
             this.nodes = null;
+        }
+
+        /**
+         * 返回该节点的nodes中rank值最低的node的索引
+         */
+        public int getMinRankNodeIndex() {
+            int minRank = Integer.MAX_VALUE;
+            int minIndex = count -1;
+            for (int i = 0; nodes != null && i < count; i++) {
+                if (nodes[i].getRank() < minRank) {
+                    minRank = nodes[i].getRank();
+                    minIndex = i;
+                }
+            }
+            return minIndex;
         }
     }
 
@@ -278,12 +292,16 @@ public class RoutingTable {
                         //分裂节点
                         currentNode.split();
                         isSplit = true;
-                        //此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
-
                     }
+
+                    //此处表示.整个路由表已经满了.替换
+                    int minRankNodeIndex = currentNode.getMinRankNodeIndex();
+                    if(currentNode.nodes[minRankNodeIndex].getRank() <= node.getRank())
+                        currentNode.nodes[minRankNodeIndex] = node;
                 } finally {
                     unlock(currentNode.lockId);
                 }
+                //此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
                 if (isSplit)
                     put(node);
 

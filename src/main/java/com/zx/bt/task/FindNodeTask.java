@@ -47,10 +47,6 @@ public class FindNodeTask {
                 log.error("[FindNodeTask]定时群发路由表异常:{}", e.getMessage(), e);
             }
         }, 0, config.getPerformance().getFindNodeTaskIntervalSecond(), TimeUnit.SECONDS);
-
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-            log.info("[FindNodeTask]当前路由表长度:{}", routingTable.size());
-        }, 0, 5, TimeUnit.SECONDS);
     }
 
 
@@ -58,13 +54,13 @@ public class FindNodeTask {
      * 向路由表群发
      */
     private void findNode() {
-        long l = (routingTable.size() >> 6) + 1;
+        long size = routingTable.size();
+        long l = (size >> 6) + 1;
+        log.info("[FindNodeTask]当前路由表长度:{},l:{}", size,l);
         for (int i = 0; i < l; i++) {
             byte[] target = BTUtil.generateNodeId();
             List<Node> nodeList = routingTable.getForTop8(target);
-            nodeList.forEach(node -> {
-                SendUtil.findNode(new InetSocketAddress(node.getIp(), node.getPort()), nodeId, config.getMain().getTargetNodeId());
-            });
+            nodeList.forEach(node -> SendUtil.findNode(node.toAddress(), nodeId, config.getMain().getTargetNodeId()));
         }
     }
 

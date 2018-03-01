@@ -1,4 +1,4 @@
-package com.zx.bt.dto;
+package com.zx.bt.dto.method;
 
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
@@ -44,7 +44,7 @@ public interface Ping {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Request extends CommonRequest{
+    public static class Request extends CommonRequest {
 
         /**主体,包含请求发送方的nodeID(也就是自己的)*/
         private Content a;
@@ -73,7 +73,7 @@ public interface Ping {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Response extends CommonResponse{
+    public static class Response extends CommonResponse {
         /**主体,包含回复者的nodeID*/
         private Content r;
 

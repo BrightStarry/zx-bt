@@ -1,17 +1,13 @@
-package com.zx.bt.dto;
+package com.zx.bt.dto.method;
 
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.CodeUtil;
-import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-
-import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -48,7 +44,7 @@ public interface FindNode {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Request extends CommonRequest{
+    public static class Request extends CommonRequest {
 
         /**主体,包含请求发送方的nodeID*/
         private RequestContent a = new RequestContent();
@@ -97,7 +93,7 @@ public interface FindNode {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Response extends CommonResponse{
+    public static class Response extends CommonResponse {
 
         /**主体,包含请求发送方的nodeID(也就是自己的)*/
         private ResponseContent r;

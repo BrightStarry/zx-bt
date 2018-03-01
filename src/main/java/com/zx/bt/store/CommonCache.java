@@ -4,13 +4,17 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.zx.bt.config.Config;
 import com.zx.bt.enums.CacheMethodEnum;
+import com.zx.bt.util.BTUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,15 +25,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CommonCache<T> {
 
-	public static void main(String[] args) {
-		CommonCache<String> cache = new CommonCache<>(CacheMethodEnum.AFTER_WRITE, 120, 1 << 16);
-		cache.put("1","111");
-		String s = cache.get("1");
-		System.out.println(s);
 
-	}
-
-	public CommonCache(CacheMethodEnum cacheMethodEnum,int expireTime,int capacity) {
+	public CommonCache(CacheMethodEnum cacheMethodEnum, int expireTime, int capacity) {
 		Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
 				.initialCapacity(capacity / 2)
 				.maximumSize(capacity);
@@ -104,5 +101,43 @@ public class CommonCache<T> {
 	@Data
 	public static class GetPeersSendInfo {
 		private String infoHash;
+
+		/**
+		 * 已发送get_peers请求的nodeIds
+		 */
+		private List<byte[]> sentNodeIds = new LinkedList<>();
+
+		/**
+		 * 判断当前对象的sentNodeIds是否包含传入的nodeId
+		 */
+		public boolean contains(byte[] nodeId) {
+			return sentNodeIds.contains(nodeId);
+		}
+
+		/**
+		 * 将对象加入到sentNodeIds
+		 */
+		public GetPeersSendInfo put(List<byte[]> bytes) {
+			if (CollectionUtils.isEmpty(bytes))
+				return this;
+			bytes.forEach(this::put);
+			return this;
+		}
+
+		/**
+		 * 将对象加入到sentNodeIds
+		 */
+		public GetPeersSendInfo put(byte[] bytes) {
+			if(!sentNodeIds.contains(bytes))
+				sentNodeIds.add(bytes);
+			return this;
+		}
+
+		public GetPeersSendInfo(String infoHash) {
+			this.infoHash = infoHash;
+		}
 	}
+
+
+
 }

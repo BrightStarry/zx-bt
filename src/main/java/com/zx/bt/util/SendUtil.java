@@ -1,9 +1,10 @@
 package com.zx.bt.util;
 
-import com.zx.bt.dto.*;
+import com.zx.bt.dto.method.AnnouncePeer;
+import com.zx.bt.dto.method.FindNode;
+import com.zx.bt.dto.method.GetPeers;
+import com.zx.bt.dto.method.Ping;
 import com.zx.bt.entity.Node;
-import com.zx.bt.enums.MethodEnum;
-import com.zx.bt.enums.YEnum;
 import com.zx.bt.exception.BTException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

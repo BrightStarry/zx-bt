@@ -1,11 +1,15 @@
 package com.zx.bt.config;
 
 import com.zx.bt.enums.CacheMethodEnum;
+import com.zx.bt.socket.processor.UDPProcessor;
+import com.zx.bt.socket.processor.UDPProcessorManager;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.util.Bencode;
 import io.netty.util.CharsetUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -31,5 +35,16 @@ public class BeanConfig {
                 CacheMethodEnum.AFTER_WRITE,
                 config.getPerformance().getGetPeersTaskExpireSecond(),
                 config.getPerformance().getDefaultCacheLen());
+    }
+
+    /**
+     * udp 处理器管理器
+     * 可通过See{@link org.springframework.core.annotation.Order}改变处理器顺序
+     */
+    @Bean
+    public UDPProcessorManager udpProcessorManager(List<UDPProcessor> udpProcessors) {
+        UDPProcessorManager udpProcessorManager = new UDPProcessorManager();
+        udpProcessors.forEach(udpProcessorManager::register);
+        return udpProcessorManager;
     }
 }

@@ -2,6 +2,7 @@ package com.zx.bt.util;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.dto.method.CommonRequest;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
@@ -33,9 +34,11 @@ public class BTUtil {
 
     //用于递增消息ID
     private static AtomicInteger messageIDGenerator = new AtomicInteger(1);
+    private static AtomicInteger getPeersMessageIDGenerator = new AtomicInteger(1);
     //递增刷新阈值
     private static int maxMessageID = 1<<15;
     //用于生成20位随机字符,也就是byte[20]的nodeId
+    @Deprecated
     private static RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder()
             .withinRange('0', 'z').build();
 
@@ -65,17 +68,35 @@ public class BTUtil {
         return new String(generateNodeId(), CharsetUtil.ISO_8859_1);
     }
 
+
+    /**
+     * 生成一个递增的t,相当于消息id
+     * 使用指定生成器
+     */
+    private static String generateMessageID(AtomicInteger generator) {
+        int result;
+        //当大于阈值时,重置为0
+        if ((result = generator.getAndIncrement()) > maxMessageID) {
+            generator.lazySet(1);
+        }
+        return new String(CodeUtil.int2TwoBytes(result), CharsetUtil.ISO_8859_1);
+    }
+
     /**
      * 生成一个递增的t,相当于消息id
      */
     public static String generateMessageID() {
-        int result;
-        //当大于阈值时,重置为0
-        if ((result = messageIDGenerator.getAndIncrement()) > maxMessageID) {
-            messageIDGenerator.lazySet(1);
-        }
-        return new String(CodeUtil.int2TwoBytes(result), CharsetUtil.ISO_8859_1);
+        return generateMessageID(messageIDGenerator);
     }
+
+    /**
+     * 生成一个递增的t,相当于消息id
+     * 用于get_peers请求
+     */
+    public static String generateMessageIDOfGetPeers() {
+        return generateMessageID(getPeersMessageIDGenerator);
+    }
+
 
     /**
      * 根据解析后的消息map,获取消息信息,例如 消息方法(ping/find_node等)/ 消息状态(请求/回复/异常)
@@ -86,22 +107,15 @@ public class BTUtil {
         /**
          * 状态 请求/回复/异常
          */
-        Object yObj = map.get("y");
-        if (yObj == null)
-            throw new BTException("y属性不存在.map:" + map);
-        String y = yObj.toString();
+        String y = getParamString(map, "y", "y属性不存在.map:" + map);
         Optional<YEnum> yEnumOptional = EnumUtil.getByCode(y, YEnum.class);
-        if (!yEnumOptional.isPresent())
-            throw new BTException("y属性值不正确.map:" + map);
+        yEnumOptional.orElseThrow(() -> new BTException("y属性值不正确.map:" + map));
         messageInfo.setStatus(yEnumOptional.get());
 
         /**
          * 消息id
          */
-        Object tObj = map.get("t");
-        if (tObj == null)
-            throw new BTException("t属性不存在.map:" + map);
-        String t = tObj.toString();
+        String t = getParamString(map, "t", "t属性不存在.map:" + map);
         messageInfo.setMessageId(t);
 
         /**
@@ -109,13 +123,10 @@ public class BTUtil {
          */
         //如果是请求, 直接从请求主体获取其方法
         if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.QUERY)) {
-            Object qObj = map.get("q");
-            if (qObj == null)
-                throw new BTException("q属性不存在.map:" + map);
-            String q = qObj.toString();
+            String q = getParamString(map, "q", "q属性不存在.map:" + map);
+
             Optional<MethodEnum> qEnumOptional = EnumUtil.getByCode(q, MethodEnum.class);
-            if (!qEnumOptional.isPresent())
-                throw new BTException("q属性值不正确.map:" + map);
+            qEnumOptional.orElseThrow(() -> new BTException("q属性值不正确.map:" + map));
             messageInfo.setMethod(qEnumOptional.get());
 
         } else  if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.RECEIVE))  {

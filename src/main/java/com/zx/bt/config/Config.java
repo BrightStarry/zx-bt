@@ -107,7 +107,7 @@ public class Config {
     @Data
     public static class Performance{
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 10;
+        private Integer udpServerMainThreadNum = 30;
 
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;
@@ -123,12 +123,12 @@ public class Config {
         /**
          * 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
          */
-        private Integer routingTablePrefixLen = 10;
+        private Integer routingTablePrefixLen = 13;
 
         /**
          * get_peers任务过期时间
          */
-        private Integer getPeersTaskExpireSecond = 1200;
+        private Integer getPeersTaskExpireSecond = 600;
 
         /**
          * get_peers任务, info_hash等待队列长度

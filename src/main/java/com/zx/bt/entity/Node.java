@@ -14,6 +14,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.persistence.*;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -80,6 +81,13 @@ public class Node {
         if(StringUtils.isBlank(nodeId) || nodeId.length() != 40 ||
                 StringUtils.isBlank(ip) || port == null || port < 1024 || port > 65535)
             throw new BTException("该节点信息有误:" + this);
+    }
+
+    /**
+     * Node 转 InetSocketAddress
+     */
+    public InetSocketAddress toAddress() {
+        return new InetSocketAddress(this.ip, this.port);
     }
 
     /**
@@ -152,6 +160,13 @@ public class Node {
         this.nodeId = nodeId;
         this.ip = ip;
         this.port = port;
+        this.rank = rank;
+    }
+
+    public Node(String nodeId, InetSocketAddress sender, Integer rank) {
+        this.nodeId = nodeId;
+        this.ip = BTUtil.getIpBySender(sender);
+        this.port = sender.getPort();
         this.rank = rank;
     }
 }

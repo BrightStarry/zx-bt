@@ -1,8 +1,7 @@
-package com.zx.bt.dto;
+package com.zx.bt.dto.method;
 
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
-import com.zx.bt.util.BTUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -45,7 +44,7 @@ public interface GetPeers {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Request extends CommonRequest{
+    public static class Request extends CommonRequest {
 
         /**主体,包含请求发送方的nodeID(也就是自己的)*/
         private GetPeers.RequestContent a;
@@ -100,7 +99,7 @@ public interface GetPeers {
     @AllArgsConstructor
     @NoArgsConstructor
     @Accessors(chain = true)
-    public static class Response extends CommonResponse{
+    public static class Response extends CommonResponse {
 
         /**主体,*/
         private GetPeers.ResponseContent r;

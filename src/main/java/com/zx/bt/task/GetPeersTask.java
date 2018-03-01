@@ -91,7 +91,7 @@ public class GetPeersTask {
 				//从队列中获取
 				String infoHash = null;
 				try {
-					infoHash = infoHashQueue.poll(2, TimeUnit.MINUTES);
+					infoHash = infoHashQueue.poll(1, TimeUnit.MINUTES);
 				} catch (InterruptedException e) {
 					//..不可能发生
 				}
@@ -113,12 +113,15 @@ public class GetPeersTask {
 	private void start(String infoHashHexStr) {
 		//获取最近的8个地址
 		List<Node> nodeList = routingTable.getForTop8(CodeUtil.hexStr2Bytes(infoHashHexStr));
-		List<InetSocketAddress> addresses = nodeList.stream().map(node -> new InetSocketAddress(node.getIp(), node.getPort())).collect(Collectors.toList());
+		//目标nodeId
+		List<byte[]> nodeIdList = nodeList.stream().map(node -> CodeUtil.hexStr2Bytes(node.getNodeId())).collect(Collectors.toList());
+		//目标地址
+		List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 		//消息id
-		String messageId = BTUtil.generateMessageID();
+		String messageId = BTUtil.generateMessageIDOfGetPeers();
 		log.info("{}开始新任务.消息Id:{},infoHash:{}",LOG,messageId,infoHashHexStr);
 		//存入缓存
-		getPeersCache.put(messageId,new CommonCache.GetPeersSendInfo(infoHashHexStr));
+		getPeersCache.put(messageId,new CommonCache.GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
 		//批量发送
 		SendUtil.getPeersBatch(addresses, config.getMain().getNodeId(), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1),messageId);
 	}
