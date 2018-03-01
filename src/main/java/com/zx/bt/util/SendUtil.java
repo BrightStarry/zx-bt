@@ -10,6 +10,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ public class SendUtil {
     /**
      * 使用channel发送消息
      */
+    @SneakyThrows
     public static void writeAndFlush(byte[] bytes, InetSocketAddress address) {
         if (!channel.isWritable()) {
             channel.close();
@@ -63,6 +65,7 @@ public class SendUtil {
     /**
      * 发送find_node请求
      */
+    @SneakyThrows
     public static void findNode(InetSocketAddress address, String nodeId,String targetNodeId) {
         FindNode.Request request = new FindNode.Request(nodeId, targetNodeId);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(request)), address);
@@ -71,7 +74,7 @@ public class SendUtil {
 
 
     /**
-     * 回复find_node请求
+     * 回复find_node回复
      */
     public static void findNodeReceive(String messageId,InetSocketAddress address, String nodeId, List<Node> nodeList) {
         FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
@@ -111,7 +114,7 @@ public class SendUtil {
             try {
                 writeAndFlush(encode,address);
             } catch (Exception e) {
-                log.error("发送GET_PEERS,失败.");
+                log.error("发送GET_PEERS,失败.e:{}",e.getMessage());
             }
         }
     }

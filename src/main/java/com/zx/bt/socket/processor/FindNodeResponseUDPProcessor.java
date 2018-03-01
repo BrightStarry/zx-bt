@@ -42,7 +42,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		if (CollectionUtils.isEmpty(nodeList)){
 			return true;
 		}
-		String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1));
+		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//将发送消息的节点加入路由表
 		routingTable.put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
 		//向这些节点发送find_node请求.

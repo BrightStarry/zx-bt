@@ -68,7 +68,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		}
 
 
-		String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes(CharsetUtil.ISO_8859_1));
+		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
 		//如果返回的是nodes
 		if (rMap.get("nodes") != null) {
 			List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
@@ -84,14 +84,14 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 //                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
 
 			//取出未发送过请求的节点
-			List<Node> unSentNodeList = nodeList.stream().filter(node -> !getPeersSendInfo.contains(CodeUtil.hexStr2Bytes(node.getNodeId()))).collect(Collectors.toList());
+			List<Node> unSentNodeList = nodeList.stream().filter(node -> !getPeersSendInfo.contains(node.getNodeIdBytes())).collect(Collectors.toList());
 			//为空退出
 			if (CollectionUtils.isEmpty(unSentNodeList)){
 				log.info("{}发送者:{},info_hash:{},消息id:{},所有节点已经发送过请求.",LOG,sender,getPeersSendInfo.getInfoHash(),messageInfo.getMessageId());
 				return true;
 			}
 			//未发送过请求的节点id
-			List<byte[]> unSentNodeIdList = unSentNodeList.stream().map(node -> CodeUtil.hexStr2Bytes(node.getNodeId())).collect(Collectors.toList());
+			List<byte[]> unSentNodeIdList = unSentNodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
 			//未发送过请求节点的地址
 			List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 			//将其加入已发送队列
@@ -103,7 +103,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			List<String> rawPeerList = BTUtil.getParamList(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + rawMap);
 			if (CollectionUtils.isEmpty(rawPeerList)) {
 //				log.info("{}发送者:{},info_hash:{},消息id:{},返回peers为空:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), rMap);
-				routingTable.delete(CodeUtil.hexStr2Bytes(id));
+				routingTable.delete(id);
 				return true;
 			}
 
@@ -133,7 +133,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			}
 			infoHashRepository.save(infoHash);
 			//节点入库
-			nodeRepository.save(new Node("", BTUtil.getIpBySender(sender), sender.getPort()));
+			nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 			routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
 		}
 		//否则是格式错误,不做任何处理

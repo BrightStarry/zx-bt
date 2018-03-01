@@ -114,7 +114,7 @@ public class RoutingTable {
          */
         public int containForIndex(byte[] nodeId) {
             for (int i = 0; i < count; i++) {
-                if (nodes != null && CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(nodes[i].getNodeId())))
+                if (nodes != null && CodeUtil.equalsBytes(nodeId, nodes[i].getNodeIdBytes()))
                     return i;
             }
             return -1;
@@ -131,7 +131,7 @@ public class RoutingTable {
             //将原来的所有节点分配到新节点
             for (Node itemNode : this.nodes) {
                 //获取itemNode的下一位二进制值
-                byte nextBit = CodeUtil.getBitByIndex(CodeUtil.hexStr2Bytes(itemNode.getNodeId()), this.prefixLen + 1);
+                byte nextBit = CodeUtil.getBitByIndex(itemNode.getNodeIdBytes(), this.prefixLen + 1);
                 //给对应子节点的nodes赋值
                 this.next[nextBit].getNodes()[this.next[nextBit].count++] = itemNode;
             }
@@ -179,7 +179,7 @@ public class RoutingTable {
         root.getNext()[0] = new TrieNode(0);
         root.getNext()[1] = new TrieNode(0);
         //存入主节点(自己的nodeId)
-        put(new Node(CodeUtil.bytes2HexStr(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1)), config.getMain().getIp(), config.getMain().getPort(), Integer.MAX_VALUE));
+        put(new Node(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1), config.getMain().getIp(), config.getMain().getPort(), Integer.MAX_VALUE));
     }
 
     @SneakyThrows
@@ -200,7 +200,7 @@ public class RoutingTable {
             new Thread(() -> {
                 for (int j = 0; j < 99999; j++) {
                     try {
-                        Node node = new Node(CodeUtil.bytes2HexStr(BTUtil.generateNodeId()), "106.14.7.29", j);
+                        Node node = new Node(BTUtil.generateNodeId(), "106.14.7.29", j);
                         routingTable.put(node);
                     } catch (Exception e) {
                         errorNum.getAndIncrement();
@@ -248,10 +248,9 @@ public class RoutingTable {
      */
     public boolean put(Node node) {
 
-        byte[] nodeId = CodeUtil.hexStr2Bytes(node.getNodeId());
 
         //nodeId -> 160位二进制
-        byte[] bits = CodeUtil.getBitAll(nodeId);
+        byte[] bits = CodeUtil.getBitAll(node.getNodeIdBytes());
 
         TrieNode currentNode = root;
         TrieNode nextNode;
@@ -271,9 +270,12 @@ public class RoutingTable {
                 boolean isSplit = false;
                 try {
                     lock(currentNode.lockId);
+                    if(currentNode.nodes == null)
+                        return false;
+
                     //如果已经包含该nodeId
                     int oldNodeIndex;
-                    if ((oldNodeIndex = currentNode.containForIndex(nodeId)) != -1) {
+                    if ((oldNodeIndex = currentNode.containForIndex(node.getNodeIdBytes())) != -1) {
                         //累加rank值,更新最后更新时间,暂不考虑nodeId冲突的可能
                         currentNode.nodes[oldNodeIndex].addRank(node.getRank()).setLastActiveTime(new Date());
                         return true;
@@ -292,12 +294,16 @@ public class RoutingTable {
                         //分裂节点
                         currentNode.split();
                         isSplit = true;
+                    }else{
+                        //此处表示.整个路由表已经满了.替换
+                        int minRankNodeIndex = currentNode.getMinRankNodeIndex();
+                        if (currentNode.nodes[minRankNodeIndex].getRank() <= node.getRank()) {
+                            currentNode.nodes[minRankNodeIndex] = node;
+                            return true;
+                        }
                     }
 
-                    //此处表示.整个路由表已经满了.替换
-                    int minRankNodeIndex = currentNode.getMinRankNodeIndex();
-                    if(currentNode.nodes[minRankNodeIndex].getRank() <= node.getRank())
-                        currentNode.nodes[minRankNodeIndex] = node;
+
                 } finally {
                     unlock(currentNode.lockId);
                 }
@@ -309,7 +315,7 @@ public class RoutingTable {
                 return false;
             }
         } catch (Exception e) {
-            log.error("{}put失败.", LOG);
+            log.error("{}put失败.e:{}", LOG,e.getMessage(),e);
         }
         return false;
     }
@@ -329,7 +335,7 @@ public class RoutingTable {
             //循环保存了该节点的trieNode的nodes
             for (int i = 0; i < trieNode.count; i++) {
                 //如果有相同的
-                if (CodeUtil.equalsBytes(nodeId, CodeUtil.hexStr2Bytes(nodes[i].getNodeId()))) {
+                if (CodeUtil.equalsBytes(nodeId, nodes[i].getNodeIdBytes())) {
                     nodes[i] = null;
                     //如果不是末尾,将末尾的值赋值到该索引
                     if (i != trieNode.count - 1) {

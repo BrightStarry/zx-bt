@@ -39,6 +39,7 @@ public class GetPeersTask {
 	private final ExecutorService service;
 	private final InfoHashRepository infoHashRepository;
 	private final ReentrantLock lock;
+	private final Condition condition;
 
 	public GetPeersTask(CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, RoutingTable routingTable,
 						Config config, InfoHashRepository infoHashRepository) {
@@ -49,6 +50,7 @@ public class GetPeersTask {
 		this.infoHashRepository = infoHashRepository;
 		this.service = Executors.newSingleThreadExecutor();
 		this.lock = new ReentrantLock();
+		this.condition = this.lock.newCondition();
 	}
 
 	//info_hash等待队列
@@ -72,21 +74,13 @@ public class GetPeersTask {
 	 */
 	public void start() {
 		service.execute(() -> {
-			Condition condition = lock.newCondition();
 			long taskNum;
 			while (true) {
 				//如果当前查找任务过多. 暂停30s再继续
 				if((taskNum = getPeersCache.size()) > config.getPerformance().getGetPeersTaskConcurrentNum()){
-					try {
-						log.info("{}当前任务数过多:{},暂停获取新任务线程30s.",LOG,taskNum);
-						lock.lock();
-						condition.await(20, TimeUnit.SECONDS);
-						continue;
-					} catch (Exception e){
-						//..不可能发生
-					}finally {
-						lock.unlock();
-					}
+					log.info("{}当前任务数过多:{},暂停获取新任务线程30s.",LOG,taskNum);
+					pause(20, TimeUnit.SECONDS);
+					continue;
 				}
 				//从队列中获取
 				String infoHash = null;
@@ -96,13 +90,30 @@ public class GetPeersTask {
 					//..不可能发生
 				}
 				//开启新任务
-				if(infoHash != null)
+				if (infoHash != null) {
 					start(infoHash);
-				else{
-					log.error("{}长时间没有get_peers任务入队...",LOG);
+					//开始一个任务后,暂停1s.
+					pause(1,TimeUnit.SECONDS);
+				} else {
+					log.error("{}长时间没有get_peers任务入队...", LOG);
 				}
 			}
 		});
+	}
+
+
+	/**
+	 * 暂停指定时间
+	 */
+	public void pause(long time, TimeUnit timeUnit) {
+		try {
+			lock.lock();
+			condition.await(time, timeUnit);
+		} catch (Exception e){
+			//..不可能发生
+		}finally {
+			lock.unlock();
+		}
 	}
 
 
@@ -114,7 +125,7 @@ public class GetPeersTask {
 		//获取最近的8个地址
 		List<Node> nodeList = routingTable.getForTop8(CodeUtil.hexStr2Bytes(infoHashHexStr));
 		//目标nodeId
-		List<byte[]> nodeIdList = nodeList.stream().map(node -> CodeUtil.hexStr2Bytes(node.getNodeId())).collect(Collectors.toList());
+		List<byte[]> nodeIdList = nodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
 		//目标地址
 		List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 		//消息id

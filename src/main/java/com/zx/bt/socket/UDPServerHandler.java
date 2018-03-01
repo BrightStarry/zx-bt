@@ -33,13 +33,15 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private final Bencode bencode;
 	private final Config config;
 	private final UDPProcessorManager udpProcessorManager;
+	private final ProcessQueue processQueue;
 
 
 
-	public UDPServerHandler(Bencode bencode, Config config, UDPProcessorManager udpProcessorManager) {
+	public UDPServerHandler(Bencode bencode, Config config, UDPProcessorManager udpProcessorManager, ProcessQueue processQueue) {
 		this.bencode = bencode;
 		this.config = config;
 		this.udpProcessorManager = udpProcessorManager;
+		this.processQueue = processQueue;
 	}
 
 
@@ -58,32 +60,9 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
 		byte[] bytes = getBytes(packet);
 		InetSocketAddress sender = packet.sender();
-		//解码为map
-		Map<String, Object> map;
-		try {
-			map = bencode.decode(bytes, Map.class);
-		} catch (BTException e) {
-			log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
-			return;
-		} catch (Exception e) {
-			log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
-			return;
-		}
-
-		//解析出MessageInfo
-		MessageInfo messageInfo;
-		try {
-			messageInfo = BTUtil.getMessageInfo(map);
-		} catch (BTException e) {
-			log.error("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage());
-			return;
-		} catch (Exception e) {
-			log.error("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
-			return;
-		}
 
 		//责任链处理
-		udpProcessorManager.process(new ProcessObject(messageInfo, map, sender, config));
+		processQueue.put(new ProcessQueue.A(bytes,sender));
 	}
 
 	/**
@@ -102,7 +81,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 */
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		log.error("{}发生异常:{}", LOG, cause.getMessage(), cause);
+		log.error("{}发生异常:{}", LOG, cause.getMessage(),cause);
 		//这个巨坑..发生异常(包括我自己抛出来的)后,就关闭了连接,..
 //        ctx.close();
 	}

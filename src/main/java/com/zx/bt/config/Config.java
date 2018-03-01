@@ -107,7 +107,7 @@ public class Config {
     @Data
     public static class Performance{
         /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 30;
+        private Integer udpServerMainThreadNum = 5;
 
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;

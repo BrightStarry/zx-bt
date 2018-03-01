@@ -12,6 +12,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,9 +61,9 @@ public class ScheduleTask {
 			//rank值较大节点超时时间
 			int specialNodeTimeoutMinute = config.getPerformance().getSpecialNodeTimeoutMinute();
 			//自己的节点Id
-			String nodeId = CodeUtil.bytes2HexStr(config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1));
+			byte[] nodeId = config.getMain().getNodeId().getBytes(CharsetUtil.ISO_8859_1);
 			//等待清理队列
-			List<String> waitClearNodeIds = new LinkedList<>();
+			List<byte[]> waitClearNodeIds = new LinkedList<>();
 
 
 			routingTable.loop(trieNode ->{
@@ -78,9 +79,9 @@ public class ScheduleTask {
 						//true(超时,并且不是自己这个节点):清理该节点
 						if ((item.getRank() > minRank && unActiveMinute > specialNodeTimeoutMinute
 								|| item.getRank() < minRank && unActiveMinute > generalNodeTimeoutMinute)
-								&&  !nodeId.equals(item.getNodeId()))
+								&&  !Arrays.equals(nodeId,item.getNodeIdBytes()))
 							//加入待清理队列
-							waitClearNodeIds.add(item.getNodeId());
+							waitClearNodeIds.add(item.getNodeIdBytes());
 					} catch (Exception e) {
 						log.error("[清理节点任务]异常.e:{}",e.getMessage(),e);
 					}
@@ -88,9 +89,9 @@ public class ScheduleTask {
 			});
 
 			//遍历.清理
-			for (String item : waitClearNodeIds) {
+			for (byte[] item : waitClearNodeIds) {
 				try {
-					routingTable.delete(CodeUtil.hexStr2Bytes(item));
+					routingTable.delete(item);
 				} catch (Exception e) {
 					log.error("[清理节点任务]异常.e:{}",e.getMessage(),e);
 				}

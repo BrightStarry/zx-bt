@@ -35,7 +35,7 @@ public class UDPServer {
     public void start() {
         new Thread(this::run).start();
         //等待连接成功,获取到发送用的channel,再进行下一步
-        Thread.sleep(2000);
+        Thread.sleep(4000);
     }
 
     /**
@@ -64,7 +64,7 @@ public class UDPServer {
             //创建引导程序
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(eventLoopGroup).channel(NioDatagramChannel.class)//通道类型也为UDP
-                    .option(ChannelOption.SO_BROADCAST, true)//是广播,也就是UDP连接
+//                    .option(ChannelOption.SO_BROADCAST, true)//是广播,也就是UDP连接
                     .option(ChannelOption.SO_RCVBUF, 10000 * 1024)// 设置UDP读缓冲区为3M
                     .option(ChannelOption.SO_SNDBUF, 10000 * 1024)// 设置UDP写缓冲区为3M
                     .handler(UDPServerHandler);//配置的业务处理类

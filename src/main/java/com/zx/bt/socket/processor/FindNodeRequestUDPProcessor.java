@@ -36,8 +36,7 @@ public class FindNodeRequestUDPProcessor extends UDPProcessor{
 		Map<String, Object> aMap = BTUtil.getParamMap(processObject.getRawMap(), "a", "FIND_NODE,找不到a参数.map:" + processObject.getRawMap());
 		byte[] targetNodeId = BTUtil.getParamString(aMap, "target", "FIND_NODE,找不到target参数.map:" + processObject.getRawMap())
 				.getBytes(CharsetUtil.ISO_8859_1);
-		String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap())
-				.getBytes(CharsetUtil.ISO_8859_1));
+		byte[] id = BTUtil.getParamString(aMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//查找
 		List<Node> nodes = routingTable.getForTop8(targetNodeId);
 //                    log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);

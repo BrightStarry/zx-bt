@@ -39,14 +39,22 @@ public class Node {
     @GeneratedValue
     private Long id;
 
+
     /**
      * 存储16进制形式的String, byte[20] 转的16进制String,长度固定为40
      */
-    private String nodeId;
+    private String nodeId  = "";
+
 
     private String ip;
 
     private Integer port;
+
+    /**
+     * nodeId 字节表示
+     */
+    @Transient
+    private byte[] nodeIdBytes;
 
     /**
      * 最后活动时间(收到请求或收到回复)
@@ -78,7 +86,7 @@ public class Node {
      * 检查该节点信息是否完整
      */
     public void check() {
-        if(StringUtils.isBlank(nodeId) || nodeId.length() != 40 ||
+        if(nodeIdBytes == null || nodeIdBytes.length != 20 ||
                 StringUtils.isBlank(ip) || port == null || port < 1024 || port > 65535)
             throw new BTException("该节点信息有误:" + this);
     }
@@ -110,7 +118,6 @@ public class Node {
         check();
         //nodeId
         byte[] nodeBytes = new byte[Config.NODE_BYTES_LEN];
-        byte[] nodeIdBytes = CodeUtil.hexStr2Bytes(nodeId);
         System.arraycopy(nodeIdBytes, 0, nodeBytes, 0, 20);
 
         //ip
@@ -137,8 +144,7 @@ public class Node {
         if (bytes.length != Config.NODE_BYTES_LEN)
             throw new BTException("转换为Node需要bytes长度为26,当前为:" + bytes.length);
         //nodeId
-        byte[] nodeIdBytes = ArrayUtils.subarray(bytes, 0, 20);
-        nodeId = CodeUtil.bytes2HexStr(nodeIdBytes);
+        nodeIdBytes = ArrayUtils.subarray(bytes, 0, 20);
 
         //ip
         byte[] ipBytes = ArrayUtils.subarray(bytes, 20, 24);
@@ -148,25 +154,37 @@ public class Node {
         //port
         byte[] portBytes = ArrayUtils.subarray(bytes, 24, Config.NODE_BYTES_LEN);
         port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+
+        initHexStrNodeId();
     }
 
-    public Node(String nodeId, String ip, Integer port) {
-        this.nodeId = nodeId;
+    public Node(byte[] nodeIdBytes, String ip, Integer port) {
+        this.nodeIdBytes = nodeIdBytes;
         this.ip = ip;
         this.port = port;
+        initHexStrNodeId();
+
     }
 
-    public Node(String nodeId, String ip, Integer port, Integer rank) {
-        this.nodeId = nodeId;
+    public Node(byte[] nodeIdBytes, String ip, Integer port, Integer rank) {
+        this.nodeIdBytes = nodeIdBytes;
         this.ip = ip;
         this.port = port;
         this.rank = rank;
+        initHexStrNodeId();
     }
 
-    public Node(String nodeId, InetSocketAddress sender, Integer rank) {
-        this.nodeId = nodeId;
+    public Node(byte[] nodeIdBytes, InetSocketAddress sender, Integer rank) {
+        this.nodeIdBytes = nodeIdBytes;
         this.ip = BTUtil.getIpBySender(sender);
         this.port = sender.getPort();
         this.rank = rank;
+        initHexStrNodeId();
+    }
+
+    //生成nodeId
+    public void initHexStrNodeId() {
+        if(this.nodeIdBytes != null)
+            this.nodeId = CodeUtil.bytes2HexStr(this.nodeIdBytes);
     }
 }

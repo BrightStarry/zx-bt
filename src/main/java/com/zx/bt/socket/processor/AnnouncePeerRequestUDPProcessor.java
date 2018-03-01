@@ -12,6 +12,7 @@ import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
+import com.zx.bt.util.CodeUtil;
 import com.zx.bt.util.SendUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,7 +66,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 
 		//回复
 		SendUtil.announcePeerReceive(messageInfo.getMessageId(), sender, processObject.getConfig().getMain().getNodeId());
-		Node node = new Node(requestContent.getId(), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
+		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
 		//加入路由表
 		routingTable.put(node);
 		//入库

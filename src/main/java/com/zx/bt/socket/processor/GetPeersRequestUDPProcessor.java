@@ -46,7 +46,7 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 
 		Map<String, Object> aMap = BTUtil.getParamMap(rawMap, "a", "GET_PEERS,找不到a参数.map:" + rawMap);
 		String info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "GET_PEERS,找不到info_hash参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1));
-		String id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1));
+		byte[] id = BTUtil.getParamString(aMap, "id", "GET_PEERS,找不到id参数.map:" + rawMap).getBytes(CharsetUtil.ISO_8859_1);
 		List<Node> nodes = routingTable.getForTop8(CodeUtil.hexStr2Bytes(info_hash));
 //                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
 		//回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
