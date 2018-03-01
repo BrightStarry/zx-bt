@@ -114,6 +114,7 @@ public class SendUtil {
         for (InetSocketAddress address : addresses) {
             try {
                 writeAndFlush(encode,address,index);
+                Thread.sleep(100);
             } catch (Exception e) {
                 log.error("发送GET_PEERS,失败.e:{}",e.getMessage());
             }

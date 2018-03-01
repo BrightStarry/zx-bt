@@ -39,15 +39,15 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[GET_PEERS_RECEIVE]";
 
 	private final List<RoutingTable> routingTables;
-	private final List<CommonCache<CommonCache.GetPeersSendInfo>> getPeersCaches;
+	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
-										List<CommonCache<CommonCache.GetPeersSendInfo>> getPeersCaches,
+										CommonCache<CommonCache.GetPeersSendInfo> getPeersCache,
 										InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
 		this.routingTables = routingTables;
-		this.getPeersCaches = getPeersCaches;
+		this.getPeersCache = getPeersCache;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
 	}
@@ -61,7 +61,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		RoutingTable routingTable = routingTables.get(index);
 
 		//查询缓存
-		CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCaches.get(index).get(messageInfo.getMessageId());
+		CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
 		//查询rMap,此处rMap不可能不存在
 		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了
@@ -128,7 +128,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			//从数据库中查找infoHash
 			InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
 			//清除该任务缓存
-			getPeersCaches.get(index).remove(messageInfo.getMessageId());
+			getPeersCache.remove(messageInfo.getMessageId());
 			//如果不为空
 			if (infoHash == null) {
 				//如果为空,则新建

@@ -2,6 +2,7 @@ package com.zx.bt.socket;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.socket.processor.UDPProcessorManager;
+import com.zx.bt.task.ProcessTask;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
@@ -29,17 +30,17 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private final Bencode bencode;
 	private final Config config;
 	private final UDPProcessorManager udpProcessorManager;
-	private final ProcessQueue processQueue;
+	private final ProcessTask processTask;
 
 
 
-	public UDPServerHandler(int index,Bencode bencode, Config config, UDPProcessorManager udpProcessorManager,
-							ProcessQueue processQueue) {
+	public UDPServerHandler(int index, Bencode bencode, Config config, UDPProcessorManager udpProcessorManager,
+							ProcessTask processTask) {
 		this.index = index;
 		this.bencode = bencode;
 		this.config = config;
 		this.udpProcessorManager = udpProcessorManager;
-		this.processQueue = processQueue;
+		this.processTask = processTask;
 	}
 
 
@@ -60,7 +61,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		InetSocketAddress sender = packet.sender();
 
 		//责任链处理
-		processQueue.put(new ProcessQueue.A(bytes,sender,index));
+		processTask.put(new ProcessTask.A(bytes,sender,index));
 	}
 
 	/**
@@ -79,7 +80,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 */
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		log.error("{}发生异常:{}", LOG, cause.getMessage(),cause);
+		log.error("{}索引:{},发生异常:{}", LOG, index,cause.getMessage());
 		//这个巨坑..发生异常(包括我自己抛出来的)后,就关闭了连接,..
 //        ctx.close();
 	}

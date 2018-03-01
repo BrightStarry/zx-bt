@@ -1,7 +1,7 @@
 package com.zx.bt.config;
 
 import com.zx.bt.enums.CacheMethodEnum;
-import com.zx.bt.socket.ProcessQueue;
+import com.zx.bt.task.ProcessTask;
 import com.zx.bt.socket.UDPServerHandler;
 import com.zx.bt.socket.processor.UDPProcessor;
 import com.zx.bt.socket.processor.UDPProcessorManager;
@@ -43,16 +43,13 @@ public class BeanConfig {
      * get_peers请求消息缓存
      */
     @Bean
-    public List<CommonCache<CommonCache.GetPeersSendInfo>> getPeersCache(Config config) {
-        int size = config.getMain().getPorts().size();
-        List<CommonCache<CommonCache.GetPeersSendInfo>> result = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            result.add(new CommonCache<>(
-                    CacheMethodEnum.AFTER_WRITE,
-                    config.getPerformance().getGetPeersTaskExpireSecond(),
-                    config.getPerformance().getDefaultCacheLen()));
-        }
-        return result;
+    public CommonCache<CommonCache.GetPeersSendInfo> getPeersCache(Config config) {
+
+
+        return new CommonCache<>(
+                CacheMethodEnum.AFTER_WRITE,
+                config.getPerformance().getGetPeersTaskExpireSecond(),
+                config.getPerformance().getDefaultCacheLen());
     }
 
     /**
@@ -85,11 +82,11 @@ public class BeanConfig {
      */
     @Bean
     public List<UDPServerHandler> udpServerHandlers(Bencode bencode, Config config,
-                                                    UDPProcessorManager udpProcessorManager, ProcessQueue processQueue) {
+                                                    UDPProcessorManager udpProcessorManager, ProcessTask processTask) {
         int size = config.getMain().getNodeIds().size();
         List<UDPServerHandler> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            result.add(new UDPServerHandler(i, bencode, config, udpProcessorManager, processQueue));
+            result.add(new UDPServerHandler(i, bencode, config, udpProcessorManager, processTask));
         }
         return result;
     }

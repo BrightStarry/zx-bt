@@ -3,11 +3,12 @@ package com.zx.bt.task;
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.NodeRankEnum;
+import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -29,11 +30,20 @@ public class ScheduleTask {
 	private final Config config;
 	private final List<RoutingTable> routingTables;
 	private final List<String> nodeIds;
+	private final FindNodeTask findNodeTask;
+	private final ProcessTask processTask;
+	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+	private final GetPeersTask getPeersTask;
 
-	public ScheduleTask(Config config,  List<RoutingTable> routingTables) {
+	public ScheduleTask(Config config, List<RoutingTable> routingTables, FindNodeTask findNodeTask, ProcessTask processTask,
+						CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask) {
 		this.config = config;
 		this.routingTables = routingTables;
 		this.nodeIds = config.getMain().getNodeIds();
+		this.findNodeTask = findNodeTask;
+		this.processTask = processTask;
+		this.getPeersCache = getPeersCache;
+		this.getPeersTask = getPeersTask;
 	}
 
 	/**
@@ -107,11 +117,35 @@ public class ScheduleTask {
 
 	}
 
-	public static void main(String[] args) {
-		Date a = new Date();
-		Date b = DateUtils.addMinutes(new Date(), 15);
-		long i = b.getTime() - a.getTime();
-		long convert = TimeUnit.MINUTES.convert(i, TimeUnit.MILLISECONDS);
-		System.out.println(convert);
+
+	/**
+	 * 每x分钟,往find_node队列中增加要发送的目标地址
+	 */
+	@Scheduled(cron = "0 0/8 * * * ? ")
+	public void autoPutToFindNodeQueue() {
+			for (int j = 0; j < routingTables.size(); j++) {
+				RoutingTable routingTable = routingTables.get(j);
+				try {
+					List<Node> nodeList = routingTable.getForTop8(BTUtil.generateNodeId());
+					if(CollectionUtils.isNotEmpty(nodeList))
+						nodeList.forEach(item ->findNodeTask.put(item.toAddress()));
+				} catch (Exception e) {
+					log.info("[autoPutToFindNodeQueue]异常.e:{}",e.getMessage(),e);
+				}
+			}
 	}
+
+	/**
+	 * 状态提示
+	 * 每x秒执行一次
+	 */
+	@Scheduled(cron = "0/10 * * * * ? ")
+	public void status() {
+		log.info("[状态报告]findNde队列:{},process队列:{},getPeers缓存:{},getPeers队列:{}",findNodeTask.size(),processTask.size(),getPeersCache.size(),getPeersTask.size());
+		for (int i = 0; i < routingTables.size(); i++) {
+			log.info("[状态报告]索引:{},routingTable长度:{}",i,routingTables.get(i).size());
+		}
+	}
+
+
 }

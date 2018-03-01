@@ -1,4 +1,4 @@
-package com.zx.bt.socket;
+package com.zx.bt.task;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
@@ -28,7 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Slf4j
 @Component
-public class ProcessQueue {
+public class ProcessTask {
 	private static final String LOG = "[DHT服务端处理类]-";
 	private final Config config;
 
@@ -44,12 +44,12 @@ public class ProcessQueue {
 	private final Bencode bencode;
 
 
-	public ProcessQueue(Config config, UDPProcessorManager udpProcessorManager, Bencode bencode) {
+	public ProcessTask(Config config, UDPProcessorManager udpProcessorManager, Bencode bencode) {
 		this.config = config;
 		this.udpProcessorManager = udpProcessorManager;
 		this.bencode = bencode;
 		this.queue = new LinkedBlockingQueue<>();
-		this.service = Executors.newFixedThreadPool(5);
+		this.service = Executors.newFixedThreadPool(40);
 
 	}
 
@@ -68,7 +68,7 @@ public class ProcessQueue {
 	}
 
 	public void start() {
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 40; i++) {
 			service.execute(()->{
 				while (true) {
 					try {

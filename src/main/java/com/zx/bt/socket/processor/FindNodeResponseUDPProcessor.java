@@ -4,10 +4,9 @@ import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
-import com.zx.bt.exception.BTException;
 import com.zx.bt.store.RoutingTable;
+import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.CodeUtil;
 import com.zx.bt.util.SendUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +27,11 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[FIND_NODE_RECEIVE]";
 
 	private final  List<RoutingTable> routingTables;
+	private final FindNodeTask findNodeTask;
 
-	public FindNodeResponseUDPProcessor(List<RoutingTable> routingTables) {
+	public FindNodeResponseUDPProcessor(List<RoutingTable> routingTables, FindNodeTask findNodeTask) {
 		this.routingTables = routingTables;
+		this.findNodeTask = findNodeTask;
 	}
 
 	@Override
@@ -45,8 +46,10 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//将发送消息的节点加入路由表
 		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
-		//向这些节点发送find_node请求.
-		nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(processObject.getIndex()), BTUtil.generateNodeIdString(),processObject.getIndex()));
+		//将nodes加入发送队列
+
+//		nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(processObject.getIndex()), BTUtil.generateNodeIdString(),processObject.getIndex()));
+		nodeList.forEach(item -> findNodeTask.put(item.toAddress()));
 //                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
 		return true;
 	}

@@ -1,6 +1,6 @@
 package com.zx.bt;
 
-import com.zx.bt.socket.ProcessQueue;
+import com.zx.bt.task.ProcessTask;
 import com.zx.bt.socket.UDPServer;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.task.GetPeersTask;
@@ -19,14 +19,14 @@ public class BtApplication implements CommandLineRunner{
 	private final InitTask initTask;
 	private final FindNodeTask findNodeTask;
 	private final GetPeersTask getPeersTask;
-	private final ProcessQueue processQueue;
+	private final ProcessTask processTask;
 
-	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, ProcessQueue processQueue) {
+	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, ProcessTask processTask) {
 		this.udpServer = udpServer;
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
 		this.getPeersTask = getPeersTask;
-		this.processQueue = processQueue;
+		this.processTask = processTask;
 	}
 
 	public static void main(String[] args) {
@@ -48,7 +48,7 @@ public class BtApplication implements CommandLineRunner{
 		//同步执行初始化任务
 		initTask.run();
 		//异步启动处理队列
-		processQueue.start();
+		processTask.start();
 		//异步启动find_node任务
 		findNodeTask.start();
 		//异步启动get_peers任务
