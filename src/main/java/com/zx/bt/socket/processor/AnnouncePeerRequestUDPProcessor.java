@@ -63,14 +63,14 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 					BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
 		} else if(StringUtils.isEmpty(infoHash.getPeerAddress()) || infoHash.getPeerAddress().split(";").length <= 16){
 			//如果不为空,并且长度小于一定值,则追加
-			infoHash.setPeerAddress(infoHash.getPeerAddress() + ";" + BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
+			infoHash.setPeerAddress(infoHash.getPeerAddress()+ BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
 		}
 		//入库
 		infoHashRepository.save(infoHash);
 
 		//回复
 		SendUtil.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index),index);
-		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.ANNOUNCE_PEER.getCode());
+		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), sender, NodeRankEnum.ANNOUNCE_PEER.getCode());
 		//加入路由表
 		routingTables.get(index).put(node);
 		//入库

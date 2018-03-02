@@ -58,10 +58,10 @@ public interface AnnouncePeer {
             info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "ANNOUNCE_PEER,找不到info_hash参数.map:" + map)
                     .getBytes(CharsetUtil.ISO_8859_1));
             if (aMap.get("implied_port") == null || ((int) aMap.get("implied_port") )== 0) {
-                Object portObj = aMap.get("ports");
+                Object portObj = aMap.get("port");
                 if(portObj == null)
-                    throw new BTException("ANNOUNCE_PEER,找不到info_hash参数.map:" + map);
-                port = ((Long) portObj).intValue();
+                    throw new BTException("ANNOUNCE_PEER,找不到port参数.map:" + map);
+                port = (Integer) portObj;
             }else
                 port = defaultPort;
             id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "ANNOUNCE_PEER,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));

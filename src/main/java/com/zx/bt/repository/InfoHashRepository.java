@@ -1,6 +1,7 @@
 package com.zx.bt.repository;
 
 import com.zx.bt.entity.InfoHash;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

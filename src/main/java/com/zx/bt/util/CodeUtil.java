@@ -51,8 +51,8 @@ public class CodeUtil {
     /**
      * 包装generateSimilarInfoHash()方法参数和返回值为string
      */
-    public static String generateSimilarInfoHashString(String hash,int num) {
-        return new String(generateSimilarNodeId(hash.getBytes(CharsetUtil.ISO_8859_1),num),CharsetUtil.ISO_8859_1);
+    public static String generateSimilarInfoHashString(byte[] nodeId,int num) {
+        return new String(generateSimilarNodeId(nodeId,num),CharsetUtil.ISO_8859_1);
     }
 
 

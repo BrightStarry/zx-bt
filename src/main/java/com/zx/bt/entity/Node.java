@@ -86,8 +86,9 @@ public class Node {
      * 检查该节点信息是否完整
      */
     public void check() {
+        //此处对小于1024的私有端口.不作为错误.
         if(nodeIdBytes == null || nodeIdBytes.length != 20 ||
-                StringUtils.isBlank(ip) || port == null || port < 1024 || port > 65535)
+                StringUtils.isBlank(ip) || port == null ||  port > 65535)
             throw new BTException("该节点信息有误:" + this);
     }
 

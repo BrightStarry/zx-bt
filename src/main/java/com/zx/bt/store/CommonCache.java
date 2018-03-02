@@ -1,5 +1,6 @@
 package com.zx.bt.store;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.zx.bt.config.Config;
@@ -13,9 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * author:ZhengXing
@@ -88,6 +92,13 @@ public class CommonCache<T> {
 	 */
 	public boolean isExist(T obj) {
 		return cache.asMap().values().parallelStream().filter(item -> item.equals(obj)).count() > 0;
+	}
+
+	/**
+	 * 判断某个属性是否存在, 自行传入方法
+	 */
+	public  boolean isExist(Function<Collection<T>,Boolean> function) {
+		return function.apply(cache.asMap().values());
 	}
 
 

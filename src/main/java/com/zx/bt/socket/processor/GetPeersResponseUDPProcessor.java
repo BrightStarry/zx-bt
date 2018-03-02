@@ -77,14 +77,14 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
 			//如果nodes为空
 			if (CollectionUtils.isEmpty(nodeList)) {
-				log.info("{}发送者:{},info_hash:{},消息id:{},返回nodes为空.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
+//				log.info("{}发送者:{},info_hash:{},消息id:{},返回nodes为空.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
+				routingTable.delete(id);
 				return true;
 			}
 			//向新节点发送消息
 			nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(),index));
 			//将消息发送者加入路由表.
-			routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(),
-					NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
+			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
 //                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
 
 			//取出未发送过请求的节点
@@ -121,8 +121,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			}
 			//将peers连接为字符串
 			final StringBuilder peersInfoBuilder = new StringBuilder();
-			peerList.forEach(peer -> peersInfoBuilder.append(";").append(peer.getIp()).append(":").append(peer.getPort()));
-			peersInfoBuilder.deleteCharAt(0);
+			peerList.forEach(peer -> peersInfoBuilder.append(peer.getIp()).append(":").append(peer.getPort()).append(";"));
 
 			log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), peersInfoBuilder.toString());
 			//从数据库中查找infoHash
@@ -135,12 +134,12 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 				infoHash = new InfoHash(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), peersInfoBuilder.toString());
 			} else if(StringUtils.isEmpty(infoHash.getPeerAddress()) || infoHash.getPeerAddress().split(";").length <= 16){
 				//如果当前存储的peer个数<=16或为空. 则将追加新的peers
-				infoHash.setPeerAddress(infoHash.getPeerAddress() + ";" + peersInfoBuilder.toString());
+				infoHash.setPeerAddress(infoHash.getPeerAddress() + peersInfoBuilder.toString());
 			}
 			infoHashRepository.save(infoHash);
 			//节点入库
 			nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
-			routingTable.put(new Node(id, BTUtil.getIpBySender(sender), sender.getPort(), NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
+			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
 		}
 		//否则是格式错误,不做任何处理
 		return true;

@@ -1,13 +1,11 @@
 package com.zx.bt.config;
 
-import com.zx.bt.task.ScheduleTask;
+import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -49,7 +47,7 @@ public class Config {
     public static final Integer BASIC_HASH_LEN = 20;
 
     //获取种子元信息时,第一条握手信息的前缀, 28位byte. 第2-20位,是ASCII码的BitTorrent protocol,
-    // 第一位19,是固定的,表示这个字符串的长度.后面八位是BT协议的版本.可以全为0,不必理会.
+    // 第一位19,是固定的,表示这个字符串的长度.后面八位是BT协议的版本.可以全为0,某些软件对协议进行了扩展,协议号不全为0,不必理会.
     public static final byte[] GET_METADATA_HANDSHAKE_PRE_BYTES = {19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114,
             111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 16, 0, 1};
 
@@ -96,7 +94,7 @@ public class Config {
 
         /**
          * 要查询的目标节点
-         * see {@link ScheduleTask#updateTargetNodeId()}
+         * see {@link FindNodeTask#updateTargetNodeId()}
          */
         private volatile String targetNodeId = BTUtil.generateNodeIdString();
 
@@ -174,7 +172,14 @@ public class Config {
         private Integer defaultCacheLen = 1<<16;
 
         /**FindNodeTask群发路由表线程,间隔时间(s)*/
+        @Deprecated
         private Integer findNodeTaskIntervalSecond = 10;
+
+        /**
+         * find_node任务, 发送间隔. 毫秒, 建议在1 - 5毫秒之间,端口开启越多,可越短
+         * see {@link FindNodeTask#start()}
+         */
+        private Integer findNodeTaskIntervalMillisecond = 1;
 
     }
 

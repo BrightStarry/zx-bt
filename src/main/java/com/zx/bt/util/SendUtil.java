@@ -7,9 +7,14 @@ import com.zx.bt.dto.method.GetPeers;
 import com.zx.bt.dto.method.Ping;
 import com.zx.bt.entity.Node;
 import com.zx.bt.exception.BTException;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
+import io.netty.channel.*;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.*;
 
 /**
@@ -34,7 +40,6 @@ public class SendUtil {
     /**
      * 使用channel发送消息
      */
-    @SneakyThrows
     public static void writeAndFlush(byte[] bytes, InetSocketAddress address,int index) {
         if (!channels.get(index).isWritable()) {
             channels.get(index).close();
@@ -79,7 +84,6 @@ public class SendUtil {
      */
     public static void findNodeReceive(String messageId,InetSocketAddress address, String nodeId, List<Node> nodeList,int index) {
         FindNode.Response response = new FindNode.Response(nodeId, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
-//        log.info("发送FIND_NODE-RECEIVE,对方地址:{},消息:{}",address,response);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address,index);
     }
 
@@ -90,7 +94,6 @@ public class SendUtil {
      */
     public static void announcePeerReceive(String messageId,InetSocketAddress address, String nodeId,int index) {
         AnnouncePeer.Response response = new AnnouncePeer.Response(nodeId,messageId);
-        log.info("发送ANNOUNCE_PEER-RECEIVE,对方地址:{},消息:{}",address,response);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address,index);
     }
 
@@ -99,22 +102,19 @@ public class SendUtil {
      */
     public static void getPeersReceive(String messageId,InetSocketAddress address, String nodeId, String token, List<Node> nodeList,int index) {
         GetPeers.Response response = new GetPeers.Response(nodeId, token, new String(Node.toBytes(nodeList), CharsetUtil.ISO_8859_1),messageId);
-//        log.info("发送GET_PEERS-RECEIVE,对方地址:{},消息:{}",address,response);
         writeAndFlush(bencode.encode(BeanUtil.beanToMap(response)),address,index);
     }
 
     /**
      * 批量发送get_peers
-     * @return 消息Id
      */
     public static void getPeersBatch(List<InetSocketAddress> addresses, String nodeId,String infoHash,String messageId,int index) {
         GetPeers.Request request = new GetPeers.Request(nodeId, infoHash,messageId);
-//        log.info("批量发送GET_PEERS,消息:{}",request);
         byte[] encode = bencode.encode(BeanUtil.beanToMap(request));
         for (InetSocketAddress address : addresses) {
             try {
                 writeAndFlush(encode,address,index);
-                Thread.sleep(100);
+                Thread.sleep(50);
             } catch (Exception e) {
                 log.error("发送GET_PEERS,失败.e:{}",e.getMessage());
             }

@@ -25,8 +25,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  * datetime:2018/3/1 0001 14:04
  * 处理队列
  * 该类将接收到的消息暂存,另开线程匀速处理,尝试以此解决java.net.SocketException: Network dropped connection on reset: no further information
+ *
+ * 废弃. 想了下.对处理任务进行缓存会导致get_peers等任务,被长期延迟处理(因为无法很好的控制速率).
+ * 如果积累过多任务,还会导致需要丢弃一部分任务.
+ * 其实只需要控制发送速率. 也就可以间接控制接收速率了.
  */
 @Slf4j
+@Deprecated
 @Component
 public class ProcessTask {
 	private static final String LOG = "[DHT服务端处理类]-";

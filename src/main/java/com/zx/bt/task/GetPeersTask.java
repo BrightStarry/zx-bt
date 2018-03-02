@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
@@ -61,11 +62,11 @@ public class GetPeersTask {
     /**
      * 入队
      */
-    public void put(String infoHashHexStr, int index) {
+    public void put(String infoHashHexStr) {
         //去重
         if (infoHashRepository.countByInfoHashAndType(infoHashHexStr, InfoHashTypeEnum.ANNOUNCE_PEER.getCode()) > 0 ||
                 queue.parallelStream().filter(item -> item.equals(infoHashHexStr)).count() > 0 ||
-                getPeersCache.isExist(new CommonCache.GetPeersSendInfo(infoHashHexStr)))
+                getPeersCache.isExist(values ->values.parallelStream().filter(v -> v.getInfoHash().equals(infoHashHexStr)).count() > 0))
             return;
         queue.offer(infoHashHexStr);
     }
@@ -82,9 +83,6 @@ public class GetPeersTask {
      */
     public void start() {
         service.execute(() -> {
-            int max = Integer.MAX_VALUE - 10000;
-            int i = 0;
-            int size = nodeIds.size();
             while (true) {
                 //如果当前查找任务过多. 暂停30s再继续
                 if ( getPeersCache.size() > config.getPerformance().getGetPeersTaskConcurrentNum()) {
@@ -101,11 +99,9 @@ public class GetPeersTask {
                 }
                 //开启新任务
                 if (infoHash != null) {
-                    start(infoHash, i++ % size);
-                    //开始一个任务后,暂停1s.
-                    pause(1, TimeUnit.SECONDS);
-                    if(i > max)
-                        i = 0;
+                    start(infoHash);
+                    //开始一个任务后,暂停3s.
+                    pause(3, TimeUnit.SECONDS);
                 } else {
                     log.error("{}长时间没有get_peers任务入队...", LOG);
                 }
@@ -134,20 +130,25 @@ public class GetPeersTask {
     /**
      * 开始任务
      */
-    private void start(String infoHashHexStr, int index) {
-        //获取最近的8个地址
-        List<Node> nodeList = routingTables.get(index).getForTop8(CodeUtil.hexStr2Bytes(infoHashHexStr));
-        //目标nodeId
-        List<byte[]> nodeIdList = nodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
-        //目标地址
-        List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
+    private void start(String infoHashHexStr) {
         //消息id
         String messageId = BTUtil.generateMessageIDOfGetPeers();
-        log.info("{}索引:{},开始新任务.消息Id:{},infoHash:{},首次发送地址数:{}", LOG,index, messageId, infoHashHexStr,addresses.size());
+        log.info("{}开始新任务.消息Id:{},infoHash:{}", LOG, messageId, infoHashHexStr);
+
+        //当前已发送节点id
+        List<byte[]> nodeIdList = new ArrayList<>();
+        for (int i = 0; i < routingTables.size(); i++) {
+            //获取最近的8个地址
+            List<Node> nodeList = routingTables.get(i).getForTop8(CodeUtil.hexStr2Bytes(infoHashHexStr));
+            //目标nodeId
+            nodeIdList.addAll(nodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList()));
+            //目标地址
+            List<InetSocketAddress> addresses = nodeList.stream().map(Node::toAddress).collect(Collectors.toList());
+            //批量发送
+            SendUtil.getPeersBatch(addresses,nodeIds.get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, i);
+        }
         //存入缓存
         getPeersCache.put(messageId, new CommonCache.GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
-        //批量发送
-        SendUtil.getPeersBatch(addresses, nodeIds.get(index), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, index);
     }
 
 }

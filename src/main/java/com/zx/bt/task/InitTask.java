@@ -37,7 +37,5 @@ public class InitTask {
                 SendUtil.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
             }
         }
-
-
     }
 }

@@ -1,8 +1,12 @@
 package com.zx.bt.socket;
 
 import com.zx.bt.config.Config;
+import com.zx.bt.dto.MessageInfo;
+import com.zx.bt.exception.BTException;
+import com.zx.bt.socket.processor.ProcessObject;
 import com.zx.bt.socket.processor.UDPProcessorManager;
 import com.zx.bt.task.ProcessTask;
+import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
@@ -13,6 +17,7 @@ import io.netty.channel.socket.DatagramPacket;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -60,8 +65,32 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		byte[] bytes = getBytes(packet);
 		InetSocketAddress sender = packet.sender();
 
-		//责任链处理
-		processTask.put(new ProcessTask.A(bytes,sender,index));
+		//解码为map
+		Map<String, Object> map;
+		try {
+			map = bencode.decode(bytes, Map.class);
+		} catch (BTException e) {
+			log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
+			return;
+		} catch (Exception e) {
+			log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
+			return;
+		}
+
+		//解析出MessageInfo
+		MessageInfo messageInfo;
+		try {
+			messageInfo = BTUtil.getMessageInfo(map);
+		} catch (BTException e) {
+			log.error("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage());
+			return;
+		} catch (Exception e) {
+			log.error("{}解析MessageInfo异常.异常:{}", LOG, e.getMessage(), e);
+			return;
+		}
+
+		udpProcessorManager.process(new ProcessObject(messageInfo, map, sender,this.index));
+
 	}
 
 	/**
