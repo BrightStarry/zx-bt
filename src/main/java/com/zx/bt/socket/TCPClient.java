@@ -33,34 +33,109 @@ public class TCPClient {
 
     private final Config config;
     private final BootstrapFactory bootstrapFactory;
+    private final Bencode bencode;
 
-    public TCPClient(Config config, BootstrapFactory bootstrapFactory) {
+    public TCPClient(Config config, BootstrapFactory bootstrapFactory, Bencode bencode) {
         this.config = config;
         this.bootstrapFactory = bootstrapFactory;
+        this.bencode = bencode;
     }
 
-    public void connection(InetSocketAddress address, String infoHashHexStr, byte[] peerId) {
+    public void connection(InetSocketAddress address, String infoHashHexStr, byte[] peerId,Map<String, String[]> result) {
         bootstrapFactory.build()
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(new DelimiterBasedFrameDecoder(Integer.MAX_VALUE,Unpooled.copiedBuffer("ÿÿÿÿÿÿÿÿÿÿÿ".getBytes(CharsetUtil.ISO_8859_1))))
+//                                .addLast(new DelimiterBasedFrameDecoder(Integer.MAX_VALUE,Unpooled.copiedBuffer("ÿÿÿÿÿÿÿÿÿÿÿ".getBytes(CharsetUtil.ISO_8859_1))))
                                 .addLast(new SimpleChannelInboundHandler<ByteBuf>() {
 
                                     @Override
                                     protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-                                        log.info("{}收到消息", infoHashHexStr, ctx.channel().id());
+
                                         byte[] bytes = new byte[msg.readableBytes()];
                                         msg.readBytes(bytes);
 
-                                        StringBuilder sb = new StringBuilder("字节:");
-                                        sb.append("{");
-                                        for (int i = 0; i < bytes.length; i++) {
-                                            sb.append(bytes[i]).append(",");
+                                        String messageStr = new String(bytes, CharsetUtil.ISO_8859_1);
+
+//                                        StringBuilder sb = new StringBuilder("字节:");
+//                                        sb.append("{");
+//                                        for (int i = 0; i < bytes.length; i++) {
+//                                            sb.append(bytes[i]).append(",");
+//                                        }
+//                                        sb.append("}");
+//                                        log.info("{}消息字节:{}",infoHashHexStr,sb.toString());
+//
+                                        log.info("{}收到消息ISO:{}", infoHashHexStr,messageStr);
+                                        log.info("{}收到消息UTF:{}", infoHashHexStr,new String(bytes,CharsetUtil.UTF_8));
+                                        log.info("{}收到消息UTF-16:{}", infoHashHexStr,new String(bytes,CharsetUtil.UTF_16));
+
+                                        //收到握手消息回复
+                                        if (bytes[0] == (byte) 19) {
+                                            //发送扩展消息
+                                            Map<String, Object> extendMessageMap = new LinkedHashMap<>();
+                                            Map<String, Object> extendMessageMMap = new LinkedHashMap<>();
+                                            extendMessageMMap.put("ut_metadata", 1);
+                                            extendMessageMap.put("m", extendMessageMMap);
+                                            byte[] tempExtendBytes = bencode.encode(extendMessageMap);
+                                            byte[] extendMessageBytes = new byte[tempExtendBytes.length + 6];
+                                            extendMessageBytes[4] = 20;
+                                            extendMessageBytes[5] = 0;
+                                            byte[] lenBytes = CodeUtil.int2Bytes(tempExtendBytes.length + 2);
+                                            System.arraycopy(lenBytes,0,extendMessageBytes,0,4);
+                                            System.arraycopy(tempExtendBytes,0,extendMessageBytes,6,tempExtendBytes.length);
+                                            log.info("{}发送扩展消息:{}",infoHashHexStr,new String(extendMessageBytes,CharsetUtil.ISO_8859_1));
+                                            ctx.channel().writeAndFlush(Unpooled.copiedBuffer(extendMessageBytes));
                                         }
-                                        sb.append("}");
-                                        log.info("{}消息字节:{}",infoHashHexStr,sb.toString());
+
+                                        //如果收到的消息中包含ut_metadata,提取出ut_metadata的值
+                                        String utMetadataStr = "ut_metadata";
+                                        String metadataSizeStr = "metadata_size";
+                                        if (messageStr.contains(utMetadataStr)) {
+                                            int utMetadataIndex = messageStr.indexOf(utMetadataStr) + utMetadataStr.length() + 1;
+                                            //ut_metadata值
+                                            int utMetadataValue = Integer.parseInt(messageStr.substring(utMetadataIndex, utMetadataIndex + 1));
+                                            int metadataSizeIndex = messageStr.indexOf(metadataSizeStr) + metadataSizeStr.length() + 1;
+                                            String otherStr = messageStr.substring(metadataSizeIndex);
+                                            //metadata_size值
+                                            int metadataSize = Integer.parseInt(otherStr.substring(0, otherStr.indexOf("e")));
+                                            //分块数
+                                            int blockSum = (int) Math.ceil((double)metadataSize / Config.METADATA_PIECE_SIZE);
+
+                                            if (!result.containsKey(infoHashHexStr)) {
+                                                result.put(infoHashHexStr, new String[blockSum]);
+                                            }
+
+                                            //发送metadata请求
+
+                                            for (int i = 0; i < blockSum; i++) {
+                                                Map<String, Object> metadataRequestMap = new LinkedHashMap<>();
+                                                metadataRequestMap.put("msg_type", 0);
+                                                metadataRequestMap.put("piece", i);
+                                                byte[] metadataRequestMapBytes = bencode.encode(metadataRequestMap);
+                                                byte[] metadataRequestBytes = new byte[metadataRequestMapBytes.length + 6];
+                                                metadataRequestBytes[4] = 20;
+                                                metadataRequestBytes[5] = (byte)utMetadataValue;
+                                                byte[] lenBytes = CodeUtil.int2Bytes(metadataRequestMapBytes.length + 2);
+                                                System.arraycopy(lenBytes,0,metadataRequestBytes,0,4);
+                                                System.arraycopy(metadataRequestMapBytes,0,metadataRequestBytes,6,metadataRequestMapBytes.length);
+                                                ctx.channel().writeAndFlush(Unpooled.copiedBuffer(metadataRequestBytes));
+                                                log.info("{}发送metadata请求消息:{}",infoHashHexStr,new String(metadataRequestBytes,CharsetUtil.ISO_8859_1));
+                                            }
+                                        }
+
+                                        //如果是分片信息
+                                        if (messageStr.contains("total_size")) {
+                                            log.info("收到分片消息:{}",messageStr);
+                                            String[] resultStrings = result.get(infoHashHexStr);
+                                            for (int i = 0; i < resultStrings.length; i++) {
+                                                if (resultStrings[i] == null) {
+                                                    resultStrings[i] = messageStr;
+                                                }
+                                            }
+
+                                        }
+
 
 
 
@@ -69,7 +144,7 @@ public class TCPClient {
 
                                     @Override
                                     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                                        log.error("异常:{}", cause.getMessage());
+                                        log.error("异常:{}", cause.getMessage(),cause);
                                     }
                                 });
 
@@ -92,75 +167,9 @@ public class TCPClient {
 
 
     public static void main(String[] args) {
-//		byte[] bytes = new byte[]{19,66,105,116,84,111,114,114,101,110,116,32,112,114,111,116,111,99,111,108,0,0,0,0,0,16,0,5,-81,71,107,106,19,-121,-1,-51,-21,127,74,-82,5,41,-103,106,-20,-67,127,91,45,66,84,55,97,51,83,45,71,-83,79,13,7,-103,30,-44,88,-34,98,86,0,0,0,-22,20,0,100,49,58,101,105,48,101,52,58,105,112,118,52,52,58,114,77,-78,-29,49,50,58,99,111,109,112,108,101,116,101,95,97,103,111,105,49,101,49,58,109,100,49,49,58,117,112,108,111,97,100,95,111,110,108,121,105,51,101,49,49,58,108,116,95,100,111,110,116,104,97,118,101,105,55,101,49,50,58,117,116,95,104,111,108,101,112,117,110,99,104,105,52,101,49,49,58,117,116,95,109,101,116,97,100,97,116,97,105,50,101,54,58,117,116,95,112,101,120,105,49,101,49,48,58,117,116,95,99,111,109,109,101,110,116,105,54,101,101,49,51,58,109,101,116,97,100,97,116,97,95,115,105,122,101,105,49,48,54,52,53,48,101,49,58,112,105,52,54,57,51,51,101,52,58,114,101,113,113,105,50,53,53,101,49,58,118,49,55,58,66,105,116,84,111,114,114,101,110,116,32,55,46,49,48,46,51,50,58,121,112,105,53,56,52,48,50,101,54,58,121,111,117,114,105,112,52,58,115,-57,-79,-69,101,0,0,2,-103,5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-17,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-65,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,127,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,127,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-73,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-3,-1,-1,-65,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-65,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-65,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-67,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,0,0,0,5,4,0,0,15,113,0,0,0,5,4,0,0,20,102,0,0,0,5,4,0,0,4,-92,0,0,0,5,4,0,0,10,-79,0,0,0,5,4,0,0,5,-34,0,0,0,5,};
-        byte[] bytes = new byte[]{19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114, 111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 16, 0, 1, -85, 51, 0, -98, 19, 10, -101, 62, -126, 76, 85, -96, -5, -81, -42, -87, 103, 108, 117, -104, 45, 66, 67, 48, 49, 52, 55, 45, 12, 15, 112, -124, 84, -86, -126, -34, -50, -30, 45, 41, 0, 0, 0, 3, 9, 61, 33, 0, 0, 0, 119, 20, 0, 100, 49, 58, 101, 105, 48, 101, 49, 58, 109, 100, 49, 49, 58, 117, 116, 95, 109, 101, 116, 97, 100, 97, 116, 97, 105, 49, 101, 54, 58, 117, 116, 95, 112, 101, 120, 105, 50, 101, 101, 49, 51, 58, 109, 101, 116, 97, 100, 97, 116, 97, 95, 115, 105, 122, 101, 105, 50, 51, 54, 49, 57, 101, 49, 58, 112, 105, 49, 53, 54, 52, 57, 101, 52, 58, 114, 101, 113, 113, 105, 53, 48, 101, 49, 58, 118, 49, 51, 58, 66, 105, 116, 67, 111, 109, 101, 116, 32, 49, 46, 52, 55, 54, 58, 121, 111, 117, 114, 105, 112, 52, 58, -73, -100, 103, -32, 101, 0, 0, 0, -109, 5, 127, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,};
-
-        //协议长度
-        int protocolLen = bytes[0] & 0xff;
-        //协议字节
-        byte[] protocolBytes = ArrayUtils.subarray(bytes, 1, protocolLen + 1);
-        //协议字符
-        String protocol = new String(protocolBytes, CharsetUtil.ISO_8859_1);
-
-        //版本号
-        byte[] versionBytes = ArrayUtils.subarray(bytes, protocolLen + 1, protocolLen + 1 + 8);
-
-
-        //info_hash字节
-        byte[] infoHashBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8, protocolLen + 1 + 8 + 20);
-        //info_hash字符
-        String infoHashHexStr = CodeUtil.bytes2HexStr(infoHashBytes);
-
-        //peerId字节
-        byte[] peerIdBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8 + 20, protocolLen + 1 + 8 + 20 + 20);
-        //peerId字符
-        String peerId = new String(protocolBytes, CharsetUtil.ISO_8859_1);
-        String peerId1 = new String(protocolBytes, CharsetUtil.UTF_8);
-
-        byte[] otherBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8 + 20 + 20, bytes.length);
-        //最多循环三次,尝试找到bencode编码的字符串消息
-        String message = null;
-        byte[] messageBytes = null;
-        int index = 0;
-        for (int i = 0; i < 3; i++) {
-            //扩展消息长度(该长度包括 消息id和扩展消息id)
-            byte[] messageLenBytes = ArrayUtils.subarray(otherBytes, index, index + 4);
-            int messageLen = CodeUtil.bytes2Int(messageLenBytes);
-
-            //消息id, 固定为20
-            byte messageIdByte = otherBytes[index + 4];
-            int messageId = messageIdByte & 0xff;
-
-            //扩展消息id, 0:握手; >0:握手指定的扩展消息
-            byte extendMessageIdByte = otherBytes[index + 4 + 1];
-            int extendMessageId = extendMessageIdByte & 0xff;
-
-            //消息主体
-            messageBytes = ArrayUtils.subarray(otherBytes, index + 4 + 1 + 1, index + 4 + messageLen);
-            message = new String(messageBytes, CharsetUtil.ISO_8859_1);
-
-            index += 4 + messageLen;
-
-            //找了,退出循环
-            if (message.substring(0, 1).equals("d") && message.substring(message.length() - 1).equals("e"))
-                break;
-
-        }
-
-
+        String a = "d8:msg_typei1e5:piecei0e10:total_sizei18836eed5:filesld6:lengthi9279965e4:pathl3:CD141:01. Rag'n'Bone Man - Human (Acoustic).mp3eed6:lengthi8544609e4:pathl3:CD143:02. James Arthur - Say You Won't Let Go.mp3ee";
         Bencode bencode = new Bencode();
-        Map<String, Object> messageMap = bencode.decode(messageBytes, Map.class);
-        System.out.println("消息Map:" + messageMap);
-
-        if (!messageMap.containsKey("metadata_size")) {
-            log.info("该peer不支持bep-009协议.");
-            return;
-        }
-
-        //总长度
-        Integer metadataSize = BTUtil.getParamInteger(messageMap, "metadata_size", "metadata_size属性不存在");
-        //总分块数
-        int blockSum = (int) Math.ceil(metadataSize.doubleValue() / Config.METADATA_PIECE_SIZE);
+        Map decode = bencode.decode(a.getBytes(CharsetUtil.ISO_8859_1), Map.class);
 
 
     }
