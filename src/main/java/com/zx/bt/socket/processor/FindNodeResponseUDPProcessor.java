@@ -13,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * author:ZhengXing
@@ -43,19 +45,26 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		if (CollectionUtils.isEmpty(nodeList)){
 			return true;
 		}
+		//去重
+		nodeList = nodeList.stream().distinct().collect(Collectors.toList());
 		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 		//将发送消息的节点加入路由表
 		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
 		//将nodes加入发送队列
 
-//		nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(processObject.getIndex()), BTUtil.generateNodeIdString(),processObject.getIndex()));
 		nodeList.forEach(item -> findNodeTask.put(item.toAddress()));
-//                log.info("{}FIND_NODE-RECEIVE.发送者:{},返回节点:{}", LOG, sender,nodeList);
 		return true;
 	}
 
 	@Override
 	boolean isProcess(ProcessObject processObject) {
 		return MethodEnum.FIND_NODE.equals(processObject.getMessageInfo().getMethod()) && YEnum.RECEIVE.equals(processObject.getMessageInfo().getStatus());
+	}
+
+	public static void main(String[] args) {
+		Node xx = new Node(new byte[]{1}, "xx", 1);
+		List<Node> nodes = Arrays.asList(xx, new Node(BTUtil.generateNodeId(), "aa", 22), xx, new Node(BTUtil.generateNodeId(), "aa", 22), xx);
+		List<Node> collect = nodes.stream().distinct().collect(Collectors.toList());
+		System.out.println(collect);
 	}
 }

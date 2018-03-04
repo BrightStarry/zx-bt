@@ -176,6 +176,7 @@ public class Bencode {
 
     /**
      * 封装任意类型解码
+     * @param tClass 返回的类型 可选Map/String/Integer/List
      */
     @SuppressWarnings("unchecked")
     public <T> T decode(byte[] bytes, Class<T> tClass) {

@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * author:ZhengXing
@@ -148,6 +149,31 @@ public class CodeUtil {
     }
 
     /**
+     * int 转 byte[4]
+     */
+    public static byte[] int2Bytes(int value) {
+        byte[] des = new byte[4];
+        des[3] = (byte) (value & 0xff);
+        des[2] = (byte) ((value >> 8) & 0xff);
+        des[1] = (byte) ((value >> 16) & 0xff);
+        des[0] = (byte) ((value >> 24) & 0xff);
+        return des;
+    }
+
+    /**
+     * int 转 2个字节的byte[]
+     * 舍弃16位最高位,只保留16位,两个字节的低位.
+     * 这个字节数组的顺序需要是这样的.. 目前我收到其他节点的信息,他们的字节数组大多是这样的/
+     * 并且按照惯性思维,左边的(也就是byte[0]),的确应该是高位的.
+     */
+    public static int bytes2Int(byte[] intBytes) {
+        return   intBytes[3] & 0xFF |
+                (intBytes[2] & 0xFF) << 8 |
+                (intBytes[1] & 0xFF) << 16 |
+                (intBytes[0] & 0xFF) << 24;
+    }
+
+    /**
      * byte 转 byte[8](8个bit)
      */
     public static byte[] byte2Bit(byte b) {
@@ -196,12 +222,53 @@ public class CodeUtil {
         return true;
     }
 
+    /**
+     * byte[4] 转 string with "." split ip
+     */
+    public static String bytes2Ip(byte[] ipBytes) {
+        if (ipBytes.length != 4) {
+            throw new BTException("bytes2Ip失败,bytes长度不为4.当前长度:" + ipBytes.length);
+        }
+        return String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
+                , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
+    }
+
+    /**
+     *   string with "." split ip 转 byte[4]
+     */
+    public static byte[] ip2Bytes(String ip) {
+        if (StringUtils.isBlank(ip)) {
+            throw new BTException("ip2Bytes失败,ip为空");
+        }
+        String[] ips = ip.split("\\.");
+        if (ips.length != 4) {
+            throw new BTException("ip2Bytes失败,ip的段数长度不为4.ip:" + ip);
+        }
+        return new byte[]{
+               Integer.valueOf( ips[0]).byteValue(),
+               Integer.valueOf( ips[1]).byteValue(),
+               Integer.valueOf( ips[2]).byteValue(),
+               Integer.valueOf( ips[3]).byteValue(),
+        };
+    }
+
+
+
+    /**
+     * byte[2] 转 int port
+     * 大端序
+     */
+    public static int bytes2Port(byte[] portBytes) {
+        if (portBytes.length != 2) {
+            throw new BTException("bytes2Port失败,bytes长度不为2.当前长度:" + portBytes.length);
+        }
+        return portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+    }
+
     public static void main(String[] args) {
-        byte[] a = new byte[]{0, 124, 123, -45, 65, -76, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 112, -128};
-        byte[] b = new byte[]{0, 124, 123, -34, 65, 43, 123, 54, 43, -34, 99, -54, 32, 56, -35, 82, 73, 34, 123, 123};
-        byte[] bitByBytesAll = getBitAll(a);
-
-
+        String ip = "106.14.7.29";
+        byte[] bytes = ip2Bytes(ip);
+        String s = bytes2Ip(bytes);
     }
 
 

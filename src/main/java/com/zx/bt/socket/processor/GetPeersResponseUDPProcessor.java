@@ -1,6 +1,5 @@
 package com.zx.bt.socket.processor;
 
-import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.dto.Peer;
 import com.zx.bt.entity.InfoHash;
@@ -13,6 +12,7 @@ import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
+import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
 import com.zx.bt.util.SendUtil;
@@ -42,14 +42,16 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
+	private final FindNodeTask findNodeTask;
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
 										CommonCache<CommonCache.GetPeersSendInfo> getPeersCache,
-										InfoHashRepository infoHashRepository, NodeRepository nodeRepository) {
+										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask) {
 		this.routingTables = routingTables;
 		this.getPeersCache = getPeersCache;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
+		this.findNodeTask = findNodeTask;
 	}
 
 	@Override
@@ -140,6 +142,9 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			//节点入库
 			nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
+			//并向该节点发送findNode请求
+			findNodeTask.put(sender);
+
 		}
 		//否则是格式错误,不做任何处理
 		return true;

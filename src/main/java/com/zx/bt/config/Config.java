@@ -51,6 +51,10 @@ public class Config {
     public static final byte[] GET_METADATA_HANDSHAKE_PRE_BYTES = {19, 66, 105, 116, 84, 111, 114, 114, 101, 110, 116, 32, 112, 114,
             111, 116, 111, 99, 111, 108, 0, 0, 0, 0, 0, 16, 0, 1};
 
+    //metadata数据, 每一分片大小 16KB, 此处为byte
+    public static final long METADATA_PIECE_SIZE = 16 << 10;
+
+
 
 
 
@@ -179,7 +183,7 @@ public class Config {
          * find_node任务, 发送间隔. 毫秒, 建议在1 - 5毫秒之间,端口开启越多,可越短
          * see {@link FindNodeTask#start()}
          */
-        private Integer findNodeTaskIntervalMillisecond = 1;
+        private Integer findNodeTaskIntervalMillisecond = 10;
 
     }
 

@@ -19,8 +19,11 @@ import java.util.concurrent.TimeUnit;
  * author:ZhengXing
  * datetime:2018/3/2 0002 14:10
  * 路由表清理任务
+ *
+ * 废弃: 想了下, 满了之后,直接替换掉rank值过小的节点即可.
  */
-@Component
+@Deprecated
+//@Component
 @Slf4j
 public class ClearRoutingTableTask {
 

@@ -2,6 +2,7 @@ package com.zx.bt.store;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
+import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.exception.BTException;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
@@ -20,6 +21,7 @@ import org.springframework.util.StopWatch;
 import javax.persistence.Transient;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -246,9 +248,11 @@ public class RoutingTable {
                         currentNode.split();
                         isSplit = true;
                     }else{
-                        //此处表示.整个路由表已经满了.替换
+                        //此处表示.整个路由表已经满了.如果旧节点rank值小于一定值, 或 rank较大但超过一定时间未活动, 替换
                         int minRankNodeIndex = currentNode.getMinRankNodeIndex();
-                        if (currentNode.nodes[minRankNodeIndex].getRank() <= node.getRank()) {
+                        if (currentNode.nodes[minRankNodeIndex].getRank() <= NodeRankEnum.ANNOUNCE_PEER.getCode() ||
+                                TimeUnit.MINUTES.convert(System.currentTimeMillis() - currentNode.nodes[minRankNodeIndex].getLastActiveTime().getTime(),
+                                        TimeUnit.MILLISECONDS) > 60) {
                             currentNode.nodes[minRankNodeIndex] = node;
                             return true;
                         }

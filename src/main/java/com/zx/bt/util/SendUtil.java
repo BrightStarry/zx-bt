@@ -18,6 +18,7 @@ import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -122,7 +123,21 @@ public class SendUtil {
     }
 
 
+    public static void main(String[] args) {
+        Bencode bencode = new Bencode();
+        //扩展消息头
+        Map<String, Object> extendMetadataHeader = new LinkedHashMap<>();
+        extendMetadataHeader.put("e", 0);
+        extendMetadataHeader.put("complete_ago", 1);
+        Map<String, Object> extendMetadataHeaderM = new LinkedHashMap<>();
+        extendMetadataHeaderM.put("ut_metadata", 2);
+        extendMetadataHeaderM.put("ut_pex", 1);
 
+        extendMetadataHeader.put("m",extendMetadataHeaderM);
+        extendMetadataHeader.put("reqq", 255);
+        extendMetadataHeader.put("yourip", new String(CodeUtil.ip2Bytes("192.168.0.1"),CharsetUtil.ISO_8859_1));
+        byte[] extendMetadataHeaderBytes = bencode.encode(extendMetadataHeader);
+    }
 
 
 

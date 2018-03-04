@@ -162,6 +162,14 @@ public class BTUtil {
     }
 
     /**
+     * 从Map中获取Integer属性
+     */
+    public static Integer getParamInteger(Map<String, Object> map, String key, String log) {
+        Object obj = getParam(map, key, log);
+        return (Integer) obj;
+    }
+
+    /**
      * 从Map中获取List属性
      */
 

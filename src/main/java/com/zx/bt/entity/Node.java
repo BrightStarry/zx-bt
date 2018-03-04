@@ -148,13 +148,10 @@ public class Node {
         nodeIdBytes = ArrayUtils.subarray(bytes, 0, 20);
 
         //ip
-        byte[] ipBytes = ArrayUtils.subarray(bytes, 20, 24);
-        ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
-                , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
+        ip = CodeUtil.bytes2Ip(ArrayUtils.subarray(bytes, 20, 24));
 
         //ports
-        byte[] portBytes = ArrayUtils.subarray(bytes, 24, Config.NODE_BYTES_LEN);
-        port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+        port = CodeUtil.bytes2Port( ArrayUtils.subarray(bytes, 24, Config.NODE_BYTES_LEN));
 
         initHexStrNodeId();
     }

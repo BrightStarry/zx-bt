@@ -25,7 +25,7 @@ import java.util.Map;
  * dht服务端处理类
  */
 @Slf4j
-@ChannelHandler.Sharable//此处,该注解是为了重启时,不会报错,而非该对象可以被复用
+@ChannelHandler.Sharable//此处,该注解是为了重启时,不会报错,而非该对象可以被复用(因为重启时,上一个服务可能未完全停止,会报错)
 public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private static final String LOG = "[DHT服务端处理类]-";
 

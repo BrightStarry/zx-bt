@@ -2,6 +2,7 @@ package com.zx.bt.task;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
+import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.SendUtil;
@@ -87,7 +88,7 @@ public class FindNodeTask {
     }
 
     /**
-     * 每x分钟,往find_node队列中增加要发送的目标地址
+     * 每x分钟,取出rank值较大的节点发送findNode请求
      */
     @Scheduled(cron = "0 0/10 * * * ? ")
     public void autoPutToFindNodeQueue() {
@@ -97,6 +98,14 @@ public class FindNodeTask {
                 List<Node> nodeList = routingTable.getForTop8(BTUtil.generateNodeId());
                 if(CollectionUtils.isNotEmpty(nodeList))
                     nodeList.forEach(item ->put(item.toAddress()));
+                routingTable.loop(trieNode -> {
+                    Node[] nodes = trieNode.getNodes();
+                    for (int i = 0; i < trieNode.getCount(); i++) {
+                        if (nodes[i].getRank() > NodeRankEnum.GET_PEERS.getCode()) {
+                            put(nodes[i].toAddress());
+                        }
+                    }
+                });
             } catch (Exception e) {
                 log.info("[autoPutToFindNodeQueue]异常.e:{}",e.getMessage(),e);
             }

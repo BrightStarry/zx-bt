@@ -33,12 +33,9 @@ public class Peer {
         if (bytes.length != Config.PEER_BYTES_LEN)
             throw new BTException("转换为Peer需要bytes长度为6,当前为:" + bytes.length);
         //ip
-        byte[] ipBytes = ArrayUtils.subarray(bytes, 0, 4);
-        ip = String.join(".", Integer.toString(ipBytes[0] & 0xFF), Integer.toString(ipBytes[1] & 0xFF)
-                , Integer.toString(ipBytes[2] & 0xFF), Integer.toString(ipBytes[3] & 0xFF));
+        ip = CodeUtil.bytes2Ip(ArrayUtils.subarray(bytes, 0, 4));
 
         //ports
-        byte[] portBytes = ArrayUtils.subarray(bytes, 4, 6);
-        port = portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
+        port = CodeUtil.bytes2Port(ArrayUtils.subarray(bytes, 4, 6));
     }
 }

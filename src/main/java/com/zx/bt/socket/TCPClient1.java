@@ -7,20 +7,22 @@ import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * author:ZhengXing
@@ -29,12 +31,12 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class TCPClient {
+public class TCPClient1 {
 
     private final Config config;
     private final BootstrapFactory bootstrapFactory;
 
-    public TCPClient(Config config, BootstrapFactory bootstrapFactory) {
+    public TCPClient1(Config config, BootstrapFactory bootstrapFactory) {
         this.config = config;
         this.bootstrapFactory = bootstrapFactory;
     }
@@ -50,19 +52,126 @@ public class TCPClient {
 
                                     @Override
                                     protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-                                        log.info("{}收到消息", infoHashHexStr, ctx.channel().id());
+                                        log.info("收到:{}消息", infoHashHexStr, ctx.channel().id());
                                         byte[] bytes = new byte[msg.readableBytes()];
                                         msg.readBytes(bytes);
 
+                                        //如果不是握手协议
+                                        if (bytes[0] != (byte) 19) {
+                                            //如果不包含msg_type
+//                                            if (!new String(ArrayUtils.subarray(bytes, 0, 50), CharsetUtil.ISO_8859_1).contains("msg_type")) {
+//                                                return;
+//                                            }
+                                            //收到metadata分片信息
+                                            log.info("收到:{},metadata分片信息:{}", infoHashHexStr, new String(bytes, CharsetUtil.ISO_8859_1));
+                                            return;
+                                        }
+
+
+                                        byte[] b = new byte[]{1,};
                                         StringBuilder sb = new StringBuilder("字节:");
                                         sb.append("{");
                                         for (int i = 0; i < bytes.length; i++) {
                                             sb.append(bytes[i]).append(",");
                                         }
                                         sb.append("}");
-                                        log.info("{}消息字节:{}",infoHashHexStr,sb.toString());
+                                        System.out.println(sb);
+
+                                        System.out.println("消息:" + new String(bytes, CharsetUtil.ISO_8859_1));
+                                        //协议长度
+                                        int protocolLen = bytes[0] & 0xff;
+                                        //协议字节
+                                        byte[] protocolBytes = ArrayUtils.subarray(bytes, 1, protocolLen + 1);
+                                        //协议字符
+                                        String protocol = new String(protocolBytes, CharsetUtil.ISO_8859_1);
+
+                                        //版本号
+                                        byte[] versionBytes = ArrayUtils.subarray(bytes, protocolLen + 1, protocolLen + 1 + 8);
 
 
+                                        //info_hash字节
+                                        byte[] infoHashBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8, protocolLen + 1 + 8 + 20);
+                                        //info_hash字符
+                                        String infoHashHexStr = CodeUtil.bytes2HexStr(infoHashBytes);
+
+                                        //peerId字节
+                                        byte[] peerIdBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8 + 20, protocolLen + 1 + 8 + 20 + 20);
+                                        //peerId字符
+                                        String peerId = new String(protocolBytes, CharsetUtil.ISO_8859_1);
+                                        String peerId1 = new String(protocolBytes, CharsetUtil.UTF_8);
+
+
+                                        byte[] otherBytes = ArrayUtils.subarray(bytes, protocolLen + 1 + 8 + 20 + 20, bytes.length);
+                                        //最多循环三次,尝试找到bencode编码的字符串消息
+                                        String message = null;
+                                        byte[] messageBytes = null;
+                                        int index = 0;
+                                        for (int i = 0; i < 3; i++) {
+                                            //扩展消息长度(该长度包括 消息id和扩展消息id)
+                                            byte[] messageLenBytes = ArrayUtils.subarray(otherBytes, index, index + 4);
+                                            int messageLen = CodeUtil.bytes2Int(messageLenBytes);
+
+                                            //消息id, 固定为20
+                                            byte messageIdByte = otherBytes[index + 4];
+                                            int messageId = messageIdByte & 0xff;
+
+                                            //扩展消息id, 0:握手; >0:握手指定的扩展消息
+                                            byte extendMessageIdByte = otherBytes[index + 4 + 1];
+                                            int extendMessageId = extendMessageIdByte & 0xff;
+
+                                            //消息主体
+                                            messageBytes = ArrayUtils.subarray(otherBytes, index + 4 + 1 + 1, index + 4 + messageLen);
+                                            message = new String(messageBytes, CharsetUtil.ISO_8859_1);
+                                            //找了,退出循环
+                                            if (message.substring(0, 1).equals("d") && message.substring(message.length() - 1).equals("e"))
+                                                break;
+                                            index += 4 + messageLen;
+                                        }
+
+                                        Bencode bencode = new Bencode();
+                                        Map<String, Object> messageMap = bencode.decode(messageBytes, Map.class);
+                                        log.info("消息:{},Map:{}", infoHashHexStr, messageMap);
+
+//                                        if(!messageMap.containsKey("m") || !BTUtil.getParamMap(messageMap,"m","").containsKey("ut_metadata")){
+                                        if (!messageMap.containsKey("metadata_size")) {
+                                            log.info("该peer不支持bep-009协议.");
+                                            return;
+                                        }
+
+                                        //总长度
+                                        Integer metadataSize = BTUtil.getParamInteger(messageMap, "metadata_size", "metadata_size属性不存在");
+                                        //总分块数
+                                        int blockSum = (int) Math.ceil(metadataSize.doubleValue() / Config.METADATA_PIECE_SIZE);
+
+                                        //发送若干次请求.请求metadata分块数据
+                                        Map<String, Object> metadataRequest = new LinkedHashMap<>();
+                                        metadataRequest.put("msg_type", 0);
+                                        metadataRequest.put("piece", 0);
+                                        //数据是 4字节的长度 + (byte)20(表示扩展消息) + (byte)2(表示ut_metadata)
+                                        byte[] encodeBytes = bencode.encode(metadataRequest);
+                                        byte[] metadataRequestBytes = new byte[encodeBytes.length + 4 + 1 + 1];
+                                        System.arraycopy(encodeBytes, 0, metadataRequestBytes, 6, encodeBytes.length);
+                                        System.arraycopy(CodeUtil.int2Bytes(encodeBytes.length + 1 + 1), 0, metadataRequestBytes, 0, 4);
+                                        metadataRequestBytes[4] = 20;
+                                        metadataRequestBytes[5] = 2;
+
+                                        //扩展消息头
+                                        Map<String, Object> extendMetadataHeader = new LinkedHashMap<>();
+                                        extendMetadataHeader.put("e", 0);
+                                        extendMetadataHeader.put("complete_ago", 1);
+                                        Map<String, Object> extendMetadataHeaderM = new LinkedHashMap<>();
+                                        extendMetadataHeaderM.put("ut_metadata", 2);
+                                        extendMetadataHeaderM.put("ut_pex", 1);
+
+                                        extendMetadataHeader.put("m",extendMetadataHeaderM);
+                                        extendMetadataHeader.put("reqq", 255);
+                                        extendMetadataHeader.put("yourip", new String(CodeUtil.ip2Bytes("192.168.0.1"),CharsetUtil.ISO_8859_1));
+                                        byte[] extendMetadataHeaderBytes = bencode.encode(extendMetadataHeader);
+                                        byte[] send = ArrayUtils.addAll(extendMetadataHeaderBytes, metadataRequestBytes);
+
+
+                                        log.info("发送metadata请求:{}", new String(send, CharsetUtil.ISO_8859_1));
+                                        ctx.channel().writeAndFlush(Unpooled.copiedBuffer(send));
 
 
                                     }
