@@ -41,7 +41,7 @@ public class TCPClient {
         this.bencode = bencode;
     }
 
-    public void connection(InetSocketAddress address, String infoHashHexStr, byte[] peerId,Map<String, String[]> result) {
+    public void connection(InetSocketAddress address, String infoHashHexStr, byte[] peerId, Map<String, byte[]> result) {
         bootstrapFactory.build()
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
@@ -66,9 +66,7 @@ public class TCPClient {
 //                                        sb.append("}");
 //                                        log.info("{}消息字节:{}",infoHashHexStr,sb.toString());
 //
-                                        log.info("{}收到消息ISO:{}", infoHashHexStr,messageStr);
-                                        log.info("{}收到消息UTF:{}", infoHashHexStr,new String(bytes,CharsetUtil.UTF_8));
-                                        log.info("{}收到消息UTF-16:{}", infoHashHexStr,new String(bytes,CharsetUtil.UTF_16));
+                                        log.info("{}收到消息ISO:{}", infoHashHexStr, messageStr);
 
                                         //收到握手消息回复
                                         if (bytes[0] == (byte) 19) {
@@ -82,9 +80,9 @@ public class TCPClient {
                                             extendMessageBytes[4] = 20;
                                             extendMessageBytes[5] = 0;
                                             byte[] lenBytes = CodeUtil.int2Bytes(tempExtendBytes.length + 2);
-                                            System.arraycopy(lenBytes,0,extendMessageBytes,0,4);
-                                            System.arraycopy(tempExtendBytes,0,extendMessageBytes,6,tempExtendBytes.length);
-                                            log.info("{}发送扩展消息:{}",infoHashHexStr,new String(extendMessageBytes,CharsetUtil.ISO_8859_1));
+                                            System.arraycopy(lenBytes, 0, extendMessageBytes, 0, 4);
+                                            System.arraycopy(tempExtendBytes, 0, extendMessageBytes, 6, tempExtendBytes.length);
+                                            log.info("{}发送扩展消息:{}", infoHashHexStr, new String(extendMessageBytes, CharsetUtil.ISO_8859_1));
                                             ctx.channel().writeAndFlush(Unpooled.copiedBuffer(extendMessageBytes));
                                         }
 
@@ -100,11 +98,9 @@ public class TCPClient {
                                             //metadata_size值
                                             int metadataSize = Integer.parseInt(otherStr.substring(0, otherStr.indexOf("e")));
                                             //分块数
-                                            int blockSum = (int) Math.ceil((double)metadataSize / Config.METADATA_PIECE_SIZE);
+                                            int blockSum = (int) Math.ceil((double) metadataSize / Config.METADATA_PIECE_SIZE);
+                                            log.info("该种子metadata大小:{},分块数:{}",metadataSize,blockSum);
 
-                                            if (!result.containsKey(infoHashHexStr)) {
-                                                result.put(infoHashHexStr, new String[blockSum]);
-                                            }
 
                                             //发送metadata请求
 
@@ -115,36 +111,32 @@ public class TCPClient {
                                                 byte[] metadataRequestMapBytes = bencode.encode(metadataRequestMap);
                                                 byte[] metadataRequestBytes = new byte[metadataRequestMapBytes.length + 6];
                                                 metadataRequestBytes[4] = 20;
-                                                metadataRequestBytes[5] = (byte)utMetadataValue;
+                                                metadataRequestBytes[5] = (byte) utMetadataValue;
                                                 byte[] lenBytes = CodeUtil.int2Bytes(metadataRequestMapBytes.length + 2);
-                                                System.arraycopy(lenBytes,0,metadataRequestBytes,0,4);
-                                                System.arraycopy(metadataRequestMapBytes,0,metadataRequestBytes,6,metadataRequestMapBytes.length);
+                                                System.arraycopy(lenBytes, 0, metadataRequestBytes, 0, 4);
+                                                System.arraycopy(metadataRequestMapBytes, 0, metadataRequestBytes, 6, metadataRequestMapBytes.length);
                                                 ctx.channel().writeAndFlush(Unpooled.copiedBuffer(metadataRequestBytes));
-                                                log.info("{}发送metadata请求消息:{}",infoHashHexStr,new String(metadataRequestBytes,CharsetUtil.ISO_8859_1));
+                                                log.info("{}发送metadata请求消息:{}", infoHashHexStr, new String(metadataRequestBytes, CharsetUtil.ISO_8859_1));
                                             }
                                         }
 
                                         //如果是分片信息
                                         if (messageStr.contains("total_size")) {
-                                            log.info("收到分片消息:{}",messageStr);
-                                            String[] resultStrings = result.get(infoHashHexStr);
-                                            for (int i = 0; i < resultStrings.length; i++) {
-                                                if (resultStrings[i] == null) {
-                                                    resultStrings[i] = messageStr;
-                                                }
+                                            log.info("收到分片消息:{}", messageStr);
+
+                                            String resultStr = messageStr.substring(messageStr.indexOf("ee") + 2, messageStr.length());
+                                            byte[] bytes1 = result.get(infoHashHexStr);
+                                            if (bytes1 != null) {
+                                                result.put(infoHashHexStr, ArrayUtils.addAll(bytes1, resultStr.getBytes(CharsetUtil.ISO_8859_1)));
+                                            }else{
+                                                result.put(infoHashHexStr, resultStr.getBytes(CharsetUtil.ISO_8859_1));
                                             }
-
                                         }
-
-
-
-
-
                                     }
 
                                     @Override
                                     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                                        log.error("异常:{}", cause.getMessage(),cause);
+                                        log.error("异常:{}", cause.getMessage(), cause);
                                     }
                                 });
 
@@ -167,7 +159,7 @@ public class TCPClient {
 
 
     public static void main(String[] args) {
-        String a = "d8:msg_typei1e5:piecei0e10:total_sizei18836eed5:filesld6:lengthi9279965e4:pathl3:CD141:01. Rag'n'Bone Man - Human (Acoustic).mp3eed6:lengthi8544609e4:pathl3:CD143:02. James Arthur - Say You Won't Let Go.mp3ee";
+        String a = "d6:lengthi347252558e4:name81:[ Torrent9.info ] American.Horror.Story.S06E10.FiNAL.FRENCH.HDTV.XViD-EXTREME.avi12:piece lengthi262144ee";
         Bencode bencode = new Bencode();
         Map decode = bencode.decode(a.getBytes(CharsetUtil.ISO_8859_1), Map.class);
 

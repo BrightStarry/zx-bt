@@ -17,8 +17,11 @@ import java.util.List;
  * author:ZhengXing
  * datetime:2018/3/2 0002 14:16
  * 统计任务
+ *
+ * 废弃. 更换为http请求查询
  */
-@Component
+@Deprecated
+//@Component
 @Slf4j
 public class StatTask {
 

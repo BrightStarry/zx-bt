@@ -10,7 +10,9 @@ import javafx.beans.binding.StringExpression;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -24,7 +26,7 @@ public class TestController {
 	private final FindNodeTask findNodeTask;
 	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
 	private final GetPeersTask getPeersTask;
-	private final List<String> nodeIds;
+	private final  List<Integer> ports;
 	private final Config config;
 
 	public TestController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
@@ -34,20 +36,22 @@ public class TestController {
 		this.getPeersCache = getPeersCache;
 		this.getPeersTask = getPeersTask;
 		this.config = config;
-		this.nodeIds = config.getMain().getNodeIds();
+		this.ports = config.getMain().getPorts();
 	}
 
-	private static final String format = "[状态报告]findNde队列:%d,getPeers缓存:%d,getPeers队列:%d\n\t";
 
 	@RequestMapping("/stat")
-	public String stat() {
-		StringExpression format = StringFormatter.format(TestController.format, findNodeTask.size(), getPeersCache.size(), getPeersTask.size());
-		StringBuilder sb = new StringBuilder(format.getValue());
-
+	public Map<String, Object> stat() {
+		Map<String, Object> result = new HashMap<>();
+		result.put("findNde队列", findNodeTask.size());
+		result.put("getPeers缓存",  getPeersCache.size());
+		result.put("getPeers队列",  getPeersTask.size());
+		HashMap<String, Object> port = new HashMap<>();
 		for (int i = 0; i < routingTables.size(); i++) {
-			sb.append(StringFormatter.format("[状态报告]端口:%d,routingTable长度:%d", nodeIds.get(i), routingTables.get(i).size()).getValue()).append("\n\t");
+			port.put(String.valueOf(ports.get(i)), routingTables.get(i).size());
 		}
-		return sb.toString();
+		result.put("端口信息",port);
+		return result;
 	}
 
 }

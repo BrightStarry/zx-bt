@@ -40,13 +40,13 @@ public class BtApplication implements CommandLineRunner{
 	@Order(Integer.MIN_VALUE)
 	@Override
 	public void run(String... strings) throws Exception {
-		//异步启动udp服务端
-		udpServer.start();
-		//同步执行初始化任务
-		initTask.run();
-		//异步启动find_node任务
-		findNodeTask.start();
-		//异步启动get_peers任务
-		getPeersTask.start();
+//		//异步启动udp服务端
+//		udpServer.start();
+//		//同步执行初始化任务
+//		initTask.run();
+//		//异步启动find_node任务
+//		findNodeTask.start();
+//		//异步启动get_peers任务
+//		getPeersTask.start();
 	}
 }

@@ -2,7 +2,9 @@ package com.zx.bt.factory;
 
 import com.zx.bt.config.Config;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +23,10 @@ public class BootstrapFactory {
     @Autowired
     public BootstrapFactory(Config config) {
         this.bootstrap = new Bootstrap()
-            .group(new NioEventLoopGroup(config.getPerformance().getTcpClientThreadNum()))
+                .group(new NioEventLoopGroup(config.getPerformance().getTcpClientThreadNum()))
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,config.getPerformance().getTcpConnectTimeoutMs());
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getPerformance().getTcpConnectTimeoutMs())
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1, 102400, Integer.MAX_VALUE));
     }
 
     public Bootstrap build() {
