@@ -1,6 +1,5 @@
 package com.zx.bt;
 
-import com.zx.bt.task.ProcessTask;
 import com.zx.bt.socket.UDPServer;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.task.GetPeersTask;
@@ -19,14 +18,12 @@ public class BtApplication implements CommandLineRunner{
 	private final InitTask initTask;
 	private final FindNodeTask findNodeTask;
 	private final GetPeersTask getPeersTask;
-	private final ProcessTask processTask;
 
-	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, ProcessTask processTask) {
+	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask) {
 		this.udpServer = udpServer;
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
 		this.getPeersTask = getPeersTask;
-		this.processTask = processTask;
 	}
 
 	public static void main(String[] args) {
@@ -43,13 +40,13 @@ public class BtApplication implements CommandLineRunner{
 	@Order(Integer.MIN_VALUE)
 	@Override
 	public void run(String... strings) throws Exception {
-//		//异步启动udp服务端
-//		udpServer.start();
-//		//同步执行初始化任务
-//		initTask.run();
-//		//异步启动find_node任务
-//		findNodeTask.start();
-//		//异步启动get_peers任务
-//		getPeersTask.start();
+		//异步启动udp服务端
+		udpServer.start();
+		//同步执行初始化任务
+		initTask.run();
+		//异步启动find_node任务
+		findNodeTask.start();
+		//异步启动get_peers任务
+		getPeersTask.start();
 	}
 }

@@ -1,6 +1,5 @@
 package com.zx.bt.socket.processor;
 
-import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
@@ -10,7 +9,7 @@ import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.GetPeersTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,10 +30,12 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 
 	private final List<RoutingTable> routingTables;
 	private final GetPeersTask getPeersTask;
+	private final Sender sender;
 
-	public GetPeersRequestUDPProcessor(List<RoutingTable>  routingTables, GetPeersTask getPeersTask) {
+	public GetPeersRequestUDPProcessor(List<RoutingTable> routingTables, GetPeersTask getPeersTask, Sender sender) {
 		this.routingTables = routingTables;
 		this.getPeersTask = getPeersTask;
+		this.sender = sender;
 	}
 
 	@Override
@@ -50,7 +51,7 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 		List<Node> nodes = routingTables.get(index).getForTop8(infoHash);
 //                    log.info("{}GET_PEERS,发送者:{},info_hash:{}", LOG, sender,info_hash);
 		//回复时,将自己的nodeId伪造为 和该节点异或值相差不大的值
-		SendUtil.getPeersReceive(messageInfo.getMessageId(), sender,
+		this.sender.getPeersReceive(messageInfo.getMessageId(), sender,
 				CodeUtil.generateSimilarInfoHashString(id, config.getMain().getSimilarNodeIdNum()),
 				config.getMain().getToken(), nodes, index);
 		//加入路由表

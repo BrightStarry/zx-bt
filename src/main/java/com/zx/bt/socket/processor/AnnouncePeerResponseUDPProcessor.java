@@ -1,24 +1,9 @@
 package com.zx.bt.socket.processor;
 
-import com.zx.bt.dto.MessageInfo;
-import com.zx.bt.dto.method.AnnouncePeer;
-import com.zx.bt.entity.InfoHash;
-import com.zx.bt.entity.Node;
-import com.zx.bt.enums.InfoHashTypeEnum;
 import com.zx.bt.enums.MethodEnum;
-import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
-import com.zx.bt.repository.InfoHashRepository;
-import com.zx.bt.repository.NodeRepository;
-import com.zx.bt.store.RoutingTable;
-import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.SendUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 /**
  * author:ZhengXing

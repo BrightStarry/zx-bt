@@ -3,9 +3,10 @@ package com.zx.bt.task;
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.Node;
 import com.zx.bt.enums.NodeRankEnum;
+import com.zx.bt.function.Pauseable;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,18 +30,20 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Component
 @Slf4j
-public class FindNodeTask {
+public class FindNodeTask implements Pauseable {
 
     private final Config config;
     private final List<String> nodeIds;
     private final ReentrantLock lock;
     private final Condition condition;
     private final List<RoutingTable> routingTables;
+    private final Sender sender;
 
-    public FindNodeTask(Config config, List<RoutingTable> routingTables) {
+    public FindNodeTask(Config config, List<RoutingTable> routingTables, Sender sender) {
         this.config = config;
         this.nodeIds = config.getMain().getNodeIds();
         this.routingTables = routingTables;
+        this.sender = sender;
         this.queue = new LinkedBlockingDeque<>(10240);
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
@@ -69,22 +72,22 @@ public class FindNodeTask {
      */
     public void start() {
         //暂停时长
-        int pauseTime = config.getPerformance().getFindNodeTaskIntervalMillisecond();
-        new Thread(()->{
-            int max = Integer.MAX_VALUE - 10000;
-            int i = 0;
-            int size = nodeIds.size();
-            while (true) {
-                try {
-                    run(i++ % size);
-                    pause(pauseTime,TimeUnit.MILLISECONDS);
-                    if(i > max)
-						i = 0;
-                } catch (Exception e) {
-                    log.error("[FindNodeTask]异常.error:{}",e.getMessage(),e);
+        int pauseTime = config.getPerformance().getFindNodeTaskIntervalMS();
+        for (int i = 0; i < config.getPerformance().getFindNodeTaskThreadNum(); i++) {
+            new Thread(()->{
+                int size = nodeIds.size();
+                while (true) {
+                    try {
+                        for (int j = 0; j < size; j++) {
+                            run(j);
+                            pause(lock, condition, pauseTime, TimeUnit.MILLISECONDS);
+                        }
+                    } catch (Exception e) {
+                        log.error("[FindNodeTask]异常.error:{}",e.getMessage());
+                    }
                 }
-            }
-        }).start();
+            }).start();
+        }
     }
 
     /**
@@ -128,22 +131,10 @@ public class FindNodeTask {
      */
     @SneakyThrows
     public void run(int index) {
-        SendUtil.findNode(queue.take().getAddress(),nodeIds.get(index),BTUtil.generateNodeIdString(),index);
+        sender.findNode(queue.take().getAddress(),nodeIds.get(index),BTUtil.generateNodeIdString(),index);
     }
 
-    /**
-     * 暂停指定时间
-     */
-    public void pause(long time, TimeUnit timeUnit) {
-        try {
-            lock.lock();
-            condition.await(time, timeUnit);
-        } catch (Exception e){
-            //..不可能发生
-        }finally {
-            lock.unlock();
-        }
-    }
+
 
     /**
      * 长度

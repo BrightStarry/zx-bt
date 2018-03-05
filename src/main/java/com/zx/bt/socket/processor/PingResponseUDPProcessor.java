@@ -2,7 +2,6 @@ package com.zx.bt.socket.processor;
 
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.YEnum;
-import com.zx.bt.util.SendUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

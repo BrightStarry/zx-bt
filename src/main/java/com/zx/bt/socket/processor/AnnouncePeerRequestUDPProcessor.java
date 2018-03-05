@@ -1,6 +1,5 @@
 package com.zx.bt.socket.processor;
 
-import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.dto.method.AnnouncePeer;
 import com.zx.bt.entity.InfoHash;
@@ -11,10 +10,12 @@ import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
+import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
+import com.zx.bt.task.GetPeersTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -36,12 +37,19 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 	private final List<RoutingTable> routingTables;
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
+	private final GetPeersTask getPeersTask;
+	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+	private final Sender sender;
+
 
 	public AnnouncePeerRequestUDPProcessor(List<RoutingTable> routingTables, InfoHashRepository infoHashRepository,
-										   NodeRepository nodeRepository) {
+										   NodeRepository nodeRepository, GetPeersTask getPeersTask, CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, Sender sender) {
 		this.routingTables = routingTables;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
+		this.getPeersTask = getPeersTask;
+		this.getPeersCache = getPeersCache;
+		this.sender = sender;
 	}
 
 	@Override
@@ -69,12 +77,15 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor{
 		infoHashRepository.save(infoHash);
 
 		//回复
-		SendUtil.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index),index);
+		this.sender.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index),index);
 		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), sender, NodeRankEnum.ANNOUNCE_PEER.getCode());
 		//加入路由表
 		routingTables.get(index).put(node);
 		//入库
 		nodeRepository.save(node);
+		//尝试从get_peers等待任务队列 和 正在进行的缓存中删除 该任务
+		getPeersTask.remove(infoHash.getInfoHash());
+		//正在进行的任务可以不删除..因为删除比较麻烦.要遍历value
 		return true;
 	}
 

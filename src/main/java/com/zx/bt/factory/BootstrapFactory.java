@@ -23,7 +23,7 @@ public class BootstrapFactory {
         this.bootstrap = new Bootstrap()
             .group(new NioEventLoopGroup(config.getPerformance().getTcpClientThreadNum()))
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,config.getPerformance().getTcpConnectTimeoutMillis());
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,config.getPerformance().getTcpConnectTimeoutMs());
     }
 
     public Bootstrap build() {

@@ -15,7 +15,7 @@ import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,15 +43,17 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private final InfoHashRepository infoHashRepository;
 	private final NodeRepository nodeRepository;
 	private final FindNodeTask findNodeTask;
+	private final Sender sender;
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
 										CommonCache<CommonCache.GetPeersSendInfo> getPeersCache,
-										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask) {
+										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask, Sender sender) {
 		this.routingTables = routingTables;
 		this.getPeersCache = getPeersCache;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
 		this.findNodeTask = findNodeTask;
+		this.sender = sender;
 	}
 
 	@Override
@@ -84,7 +86,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 				return true;
 			}
 			//向新节点发送消息
-			nodeList.forEach(item -> SendUtil.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(),index));
+			nodeList.forEach(item -> this.sender.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(),index));
 			//将消息发送者加入路由表.
 			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
 //                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
@@ -103,7 +105,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			//将其加入已发送队列
 			getPeersSendInfo.put(unSentNodeIdList);
 			//批量发送请求
-			SendUtil.getPeersBatch(unSentAddressList, nodeIds.get(index),
+			this.sender.getPeersBatch(unSentAddressList, nodeIds.get(index),
 					new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
 					messageInfo.getMessageId(),index);
 		} else if (rMap.get("values") != null) {

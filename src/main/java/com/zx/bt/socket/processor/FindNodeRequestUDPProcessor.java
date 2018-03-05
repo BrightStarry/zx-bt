@@ -6,8 +6,7 @@ import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.CodeUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,9 +24,11 @@ import java.util.Map;
 public class FindNodeRequestUDPProcessor extends UDPProcessor{
 
 	private final List<RoutingTable> routingTables;
+	private final Sender sender;
 
-	public FindNodeRequestUDPProcessor(List<RoutingTable> routingTables) {
+	public FindNodeRequestUDPProcessor(List<RoutingTable> routingTables, Sender sender) {
 		this.routingTables = routingTables;
+		this.sender = sender;
 	}
 
 	@Override
@@ -40,7 +41,7 @@ public class FindNodeRequestUDPProcessor extends UDPProcessor{
 		//查找
 		List<Node> nodes = routingTables.get(processObject.getIndex()).getForTop8(targetNodeId);
 //                    log.info("{}FIND_NODE.发送者:{},返回的nodes:{}", LOG, sender,nodes);
-		SendUtil.findNodeReceive(processObject.getMessageInfo().getMessageId(), processObject.getSender(),
+		this.sender.findNodeReceive(processObject.getMessageInfo().getMessageId(), processObject.getSender(),
 				nodeIds.get(processObject.getIndex()), nodes,processObject.getIndex());
 		//操作路由表
 		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE.getCode()));

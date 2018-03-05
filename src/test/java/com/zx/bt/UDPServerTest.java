@@ -43,7 +43,7 @@ public class UDPServerTest extends BtApplicationTests{
 				.withinRange('0', '9').build();
 		String a = "-ZX0001-" + randomStringGenerator.generate(12);
 		byte[] peerId = a.getBytes(CharsetUtil.ISO_8859_1);
-		InfoHash one = infoHashRepository.findOne(1764L);
+		InfoHash one = infoHashRepository.findOne(1837L);
 		List<InfoHash> all = Collections.singletonList(one);
 //		List<InfoHash> all = infoHashRepository.findAll();
 		all.stream().forEach(infoHash -> {

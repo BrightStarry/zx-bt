@@ -5,10 +5,8 @@ import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.exception.BTException;
 import com.zx.bt.socket.processor.ProcessObject;
 import com.zx.bt.socket.processor.UDPProcessorManager;
-import com.zx.bt.task.ProcessTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
-import com.zx.bt.util.SendUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,17 +33,17 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	private final Bencode bencode;
 	private final Config config;
 	private final UDPProcessorManager udpProcessorManager;
-	private final ProcessTask processTask;
+	private final Sender sender;
 
 
 
 	public UDPServerHandler(int index, Bencode bencode, Config config, UDPProcessorManager udpProcessorManager,
-							ProcessTask processTask) {
+							Sender sender) {
 		this.index = index;
 		this.bencode = bencode;
 		this.config = config;
 		this.udpProcessorManager = udpProcessorManager;
-		this.processTask = processTask;
+		this.sender = sender;
 	}
 
 
@@ -53,13 +51,14 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		log.info("{}通道激活", LOG);
 		//给发送器工具类的channel赋值
-		SendUtil.setChannel(ctx.channel(),this.index);
+		this.sender.setChannel(ctx.channel(),this.index);
 	}
 
 
 	/**
 	 * 接收到消息
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
 		byte[] bytes = getBytes(packet);

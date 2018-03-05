@@ -7,7 +7,6 @@ import com.zx.bt.enums.YEnum;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.FindNodeTask;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.SendUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;

@@ -2,7 +2,7 @@ package com.zx.bt.task;
 
 import com.zx.bt.config.Config;
 import com.zx.bt.util.BTUtil;
-import com.zx.bt.util.SendUtil;
+import com.zx.bt.socket.Sender;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -17,9 +17,11 @@ import java.util.List;
 public class InitTask {
 
     private final Config config;
+    private final Sender sender;
 
-    public InitTask(Config config) {
+    public InitTask(Config config, Sender sender) {
         this.config = config;
+        this.sender = sender;
     }
 
     /**
@@ -34,7 +36,7 @@ public class InitTask {
             String nodeId = nodeIds.get(i);
             //向每个地址发送请求
             for (InetSocketAddress address : initAddressArray) {
-                SendUtil.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
+                this.sender.findNode(address,nodeId, BTUtil.generateNodeIdString(),i);
             }
         }
     }

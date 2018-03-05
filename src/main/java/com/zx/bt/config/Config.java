@@ -63,8 +63,6 @@ public class Config {
     @Data
     public static class Main{
 
-
-
         /**
          * 机器的ip
          */
@@ -127,14 +125,40 @@ public class Config {
      */
     @Data
     public static class Performance{
-        /**UDP服务器主任务线程数*/
-        private Integer udpServerMainThreadNum = 3;
+        /**UDP服务器主任务线程数,单个端口的数量*/
+        private Integer udpServerMainThreadNum = 5;
+
+        /**
+         * find_node任务, 发送间隔. 毫秒
+         * see {@link FindNodeTask#start()}
+         */
+        private Integer findNodeTaskIntervalMS = 10;
+
+        /**
+         * get_peers任务, 开启新任务最大间隔
+         */
+        private Integer getPeersTaskCreateIntervalMs = 1000;
+
+        /**
+         * get_peers任务, 任务满载后,暂停开启新任务时间
+         */
+        private Integer getPeersTaskPauseSecond = 10;
+
+        /**
+         * get_peers请求, 最小发送间隔
+         */
+        private Integer getPeersRequestSendIntervalMs = 10;
+
+        /**
+         * find_node任务,线程数
+         */
+        private Integer findNodeTaskThreadNum = 20;
 
         /**TCP处理任务线程数*/
         private Integer tcpClientThreadNum = 2;
 
         /**TCP连接超时时间(ms)*/
-        private Integer tcpConnectTimeoutMillis = 5000;
+        private Integer tcpConnectTimeoutMs = 5000;
 
         /**
          * 路由表分段锁 数量
@@ -144,7 +168,7 @@ public class Config {
         /**
          * 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
          */
-        private Integer routingTablePrefixLen = 13;
+        private Integer routingTablePrefixLen = 10;
 
         /**
          * get_peers任务过期时间
@@ -162,11 +186,13 @@ public class Config {
         /**
          * 普通节点超时时间
          */
+        @Deprecated
         private Integer generalNodeTimeoutMinute = 10;
 
         /**
          * rank值较高的节点超时时间
          */
+        @Deprecated
         private Integer specialNodeTimeoutMinute = 120;
 
         /**
@@ -175,15 +201,8 @@ public class Config {
          */
         private Integer defaultCacheLen = 1<<16;
 
-        /**FindNodeTask群发路由表线程,间隔时间(s)*/
-        @Deprecated
-        private Integer findNodeTaskIntervalSecond = 10;
 
-        /**
-         * find_node任务, 发送间隔. 毫秒, 建议在1 - 5毫秒之间,端口开启越多,可越短
-         * see {@link FindNodeTask#start()}
-         */
-        private Integer findNodeTaskIntervalMillisecond = 10;
+
 
     }
 

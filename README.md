@@ -18,6 +18,8 @@
 - 自己手贱,在netty的handle的异常捕获方法中,当发生异常就关闭该udp连接,导致各种bug...
 - !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
 否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
+- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新
+- maven分模块时,如果在父模块写了<modules>标签,寻找子模块会有bug.其原来的优先级应该是 相对路径 - 本地仓库 - 远程仓库
 
 #### 注意点
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
