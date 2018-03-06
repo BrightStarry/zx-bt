@@ -109,6 +109,13 @@
             <version>4.5.5</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.11.2</version>
+        </dependency>
+
+
 
     </dependencies>
 

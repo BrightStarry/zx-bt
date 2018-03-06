@@ -20,6 +20,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
@@ -106,6 +107,25 @@ public class HttpClientUtil {
         httpPost.setHeaders(headers);
         httpPost.setEntity(entity);
         return httpPost;
+    }
+
+    /**
+     * 根据请求url/headers构造 httppost
+     */
+    public HttpGet buildHttpGet(String url, Header[] headers) {
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.setHeaders(headers);
+        return httpGet;
+    }
+
+    /**
+     * 构建一个简单的有基本header信息的request发起get请求
+     */
+    public String doGetForBasicBrowser(String url) {
+        HttpGet httpGet = buildHttpGet(url, new BasicHeader[]{
+                new BasicHeader("User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36")});
+        return doRequest(httpGet);
     }
 
     /**

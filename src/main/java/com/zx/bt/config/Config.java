@@ -197,6 +197,16 @@ public class Config {
         private Integer fetchMetadataByPeerTaskQueueNum = 200;
 
         /**
+         * fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
+         */
+        private Integer fetchMetadataByOtherWebTaskQueueNum = 1024000;
+
+        /**
+         *  fetchMetadataByOtherWebTask,线程数
+         */
+        private Integer fetchMetadataByOtherWebTaskThreadNum = 10;
+
+        /**
          * 普通节点超时时间
          */
         @Deprecated

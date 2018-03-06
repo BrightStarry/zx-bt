@@ -26,6 +26,18 @@ public class EnumUtil {
         return Optional.empty();
     }
 
+    /**
+     * 根据Code返回枚举
+     */
+    public static <T extends CodeEnum<X>,X> T getByCodeNullable(X code, Class<T> enumClass) {
+        for (T each : enumClass.getEnumConstants()) {
+            if (each.getCode().equals(code)) {
+                return each;
+            }
+        }
+        return null;
+    }
+
 
     /**
      * 某个 code 和某个枚举的的code是否一致
