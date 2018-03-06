@@ -32,7 +32,7 @@ public class Bencode {
     private BiFunction<byte[], Integer, MethodResult>[] functions = new BiFunction[4];
 
     //string类型分隔符(冒号)的byte形式.
-    private final byte stringTypeSeparator;
+    private  byte stringTypeSeparator;
 
     //bencode编码中的若干类型前缀和后缀------------
     private final String intTypePre = "i";
@@ -40,7 +40,16 @@ public class Bencode {
     private final String dictTypePre = "d";
     private final String typeSuf = "e";
 
+    public Bencode(Charset charset) {
+        this.charset = charset;
+        init();
+    }
+
     public Bencode() {
+        init();
+    }
+
+    public void init() {
         stringTypeSeparator = ":".getBytes(charset)[0];
 
         //使用方法引用简写
@@ -84,16 +93,18 @@ public class Bencode {
      * int 解码
      * 从指定位置开始
      */
-    public MethodResult<Integer> decodeInt(byte[] bytes, int start) {
+    public MethodResult<Long> decodeInt(byte[] bytes, int start) {
         if (start >= bytes.length || bytes[start] != intTypePre.charAt(0))
             throw new BTException(LOG + "解码Int类型异常,start异常. start:" + start);
         //结束索引
         int endIndex = ArrayUtils.indexOf(bytes, typeSuf.getBytes(charset)[0], start + 1);
         if (endIndex == -1)
             throw new BTException(LOG + "解码Int类型异常,无法找到结束符");
-        int result;
+        long result;
         try {
-            result = Integer.parseInt(new String(ArrayUtils.subarray(bytes, start + 1, endIndex)));
+            //此处的解码必须为long,因为metadata中的一些数值可能超过int.
+            //该类的其他int是没事的,因为只是索引大小.暂时不做字节长度超过int的考虑
+            result = Long.parseLong(new String(ArrayUtils.subarray(bytes, start + 1, endIndex)));
         } catch (NumberFormatException e) {
             throw new BTException(LOG + "解码Int类型异常,值非int类型");
         }
@@ -196,7 +207,7 @@ public class Bencode {
     /**
      * int 编码
      */
-    public String encodeInt(int i) {
+    public String encodeLong(long i) {
         return intTypePre + i + typeSuf;
     }
 
@@ -235,7 +246,9 @@ public class Bencode {
     public String encodeAny(Object obj) {
         try {
             if (obj instanceof Integer) {
-                return encodeInt((int) obj);
+                return encodeLong(Integer.toUnsignedLong((int)obj) );
+            }else if(obj instanceof Long){
+                return encodeLong((long)obj );
             } else if (obj instanceof String) {
                 return encodeString((String) obj);
             } else if (obj instanceof Map) {

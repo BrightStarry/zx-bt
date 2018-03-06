@@ -1,6 +1,8 @@
 package com.zx.bt.socket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.config.Config;
+import com.zx.bt.entity.Metadata;
 import com.zx.bt.factory.BootstrapFactory;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
@@ -58,14 +60,6 @@ public class TCPClient {
 
                                         String messageStr = new String(bytes, CharsetUtil.ISO_8859_1);
 
-//                                        StringBuilder sb = new StringBuilder("字节:");
-//                                        sb.append("{");
-//                                        for (int i = 0; i < bytes.length; i++) {
-//                                            sb.append(bytes[i]).append(",");
-//                                        }
-//                                        sb.append("}");
-//                                        log.info("{}消息字节:{}",infoHashHexStr,sb.toString());
-//
                                         log.info("{}收到消息ISO:{}", infoHashHexStr, messageStr);
 
                                         //收到握手消息回复
@@ -89,7 +83,7 @@ public class TCPClient {
                                         //如果收到的消息中包含ut_metadata,提取出ut_metadata的值
                                         String utMetadataStr = "ut_metadata";
                                         String metadataSizeStr = "metadata_size";
-                                        if (messageStr.contains(utMetadataStr)) {
+                                        if (messageStr.contains(utMetadataStr) && messageStr.contains(metadataSizeStr)) {
                                             int utMetadataIndex = messageStr.indexOf(utMetadataStr) + utMetadataStr.length() + 1;
                                             //ut_metadata值
                                             int utMetadataValue = Integer.parseInt(messageStr.substring(utMetadataIndex, utMetadataIndex + 1));
@@ -121,7 +115,7 @@ public class TCPClient {
                                         }
 
                                         //如果是分片信息
-                                        if (messageStr.contains("total_size")) {
+                                        if (messageStr.contains("msg_type")) {
                                             log.info("收到分片消息:{}", messageStr);
 
                                             String resultStr = messageStr.substring(messageStr.indexOf("ee") + 2, messageStr.length());
@@ -159,11 +153,11 @@ public class TCPClient {
 
 
     public static void main(String[] args) {
-        String a = "d6:lengthi347252558e4:name81:[ Torrent9.info ] American.Horror.Story.S06E10.FiNAL.FRENCH.HDTV.XViD-EXTREME.avi12:piece lengthi262144ee";
-        Bencode bencode = new Bencode();
-        Map decode = bencode.decode(a.getBytes(CharsetUtil.ISO_8859_1), Map.class);
+        String a = "d5:filesld6:lengthi898365e4:pathl2:BK12:IMG_0001.jpgeed6:lengthi1042574e4:pathl2:BK12:IMG_0002.jpgeed6:lengthi2346980e4:pathl2:BK12:IMG_0003.jpgeed6:lengthi2129668e4:pathl2:BK12:IMG_0004.jpgeed6:lengthi1221991e4:pathl2:BK12:IMG_0005.jpgeed6:lengthi1093433e4:pathl2:BK12:IMG_0006.jpgeed6:lengthi1644002e4:pathl2:BK12:IMG_0007.jpgeed6:lengthi580397e4:pathl2:BK12:IMG_0008.jpgeed6:lengthi481513e4:pathl2:BK12:IMG_0009.jpgeed6:lengthi1006799e4:pathl2:BK12:IMG_0010.jpgeed6:lengthi144512e4:pathl10:Cover1.jpgeed6:lengthi259951e4:pathl10:Cover2.jpgeed6:lengthi25669111e4:pathl4:FLAC36:01. ろまんちっく☆2Night.flaceed6:lengthi28988677e4:pathl4:FLAC22:02. With…you….flaceed6:lengthi24600024e4:pathl4:FLAC51:03. ろまんちっく☆2Night (Instrumental).flaceed6:lengthi27671024e4:pathl4:FLAC37:04. With…you… (Instrumental).flaceee4:name166:[얼티메이트] [130904] TVアニメ「神のみぞ知るセカイ」神のみキャラCD.000 エルシィ&ハクア starring 伊藤かな恵&早見沙織 (FLAC+BK)12:piece lengthi131072ee";
+        Bencode bencode = new Bencode(CharsetUtil.UTF_8);
+        Map decode = bencode.decode(a.getBytes(CharsetUtil.UTF_8), Map.class);
 
-
+        Metadata q = Metadata.map2Metadata(decode, new ObjectMapper(), "c96df909117fdcd1c87858caf0a8736f45d2b5e1");
     }
 
 }

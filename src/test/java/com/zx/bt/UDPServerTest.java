@@ -1,10 +1,12 @@
 package com.zx.bt;
 
+import com.sun.javafx.binding.StringFormatter;
 import com.zx.bt.entity.InfoHash;
 import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.socket.TCPClient;
-import com.zx.bt.socket.TCPClient1;
+import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
+import com.zx.bt.util.HttpClientUtil;
 import io.netty.util.CharsetUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +47,7 @@ public class UDPServerTest extends BtApplicationTests{
 				.withinRange('0', '9').build();
 		String a = "-ZX0001-" + randomStringGenerator.generate(12);
 		byte[] peerId = a.getBytes(CharsetUtil.ISO_8859_1);
-		InfoHash one = infoHashRepository.findOne(16802L);
+		InfoHash one = infoHashRepository.findOne(43110L);
 		List<InfoHash> all = Collections.singletonList(one);
 //		List<InfoHash> all = infoHashRepository.findAll();
 		all.stream().forEach(infoHash -> {
@@ -70,11 +72,31 @@ public class UDPServerTest extends BtApplicationTests{
 				byte[] bytes1 = DigestUtils.sha1(bytes);
 				String s = CodeUtil.bytes2HexStr(bytes1);
 				log.info("xxxxxxxxxxxxxxxxxxxx:{}",s);
+
+				String metadataStr = new String(bytes, CharsetUtil.ISO_8859_1);
+				String metadataBencodeStr = metadataStr.substring(0, metadataStr.indexOf("6:pieces")) + "e";
+				Bencode bencode = new Bencode();
+				Map resultMap = bencode.decode(metadataBencodeStr.getBytes(CharsetUtil.ISO_8859_1), Map.class);
+				System.out.println(resultMap);
+
 			}
 		}
 
 	}
 
+
+	@Test
+	public void test3() {
+		String magnet2TorrentURLFormat = "http://bt.box.n0808.com/%s/%s/%s.torrent";
+
+
+		String magnet = "3a4f576a9b3feac68d42625b3835a6610f61a521";
+		String result = StringFormatter.format(magnet2TorrentURLFormat,
+				magnet.substring(0, 2), magnet.substring(38), magnet).getValue();
+
+		HttpClientUtil httpClientUtil = new HttpClientUtil();
+		String s = httpClientUtil.doGet(result);
+	}
 
 
 

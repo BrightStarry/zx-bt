@@ -78,6 +78,7 @@ public class FindNodeTask implements Pauseable {
                 int size = nodeIds.size();
                 while (true) {
                     try {
+                        //轮询使用每个端口向外发送请求
                         for (int j = 0; j < size; j++) {
                             run(j);
                             pause(lock, condition, pauseTime, TimeUnit.MILLISECONDS);

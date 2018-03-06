@@ -2,7 +2,7 @@ package com.zx.bt.config;
 
 import com.zx.bt.enums.CacheMethodEnum;
 import com.zx.bt.socket.Sender;
-import com.zx.bt.socket.UDPServerHandler;
+import com.zx.bt.socket.UDPServer;
 import com.zx.bt.socket.processor.UDPProcessor;
 import com.zx.bt.socket.processor.UDPProcessorManager;
 import com.zx.bt.store.CommonCache;
@@ -81,13 +81,13 @@ public class BeanConfig {
      * udp handler类
      */
     @Bean
-    public List<UDPServerHandler> udpServerHandlers(Bencode bencode, Config config,
-                                                    UDPProcessorManager udpProcessorManager,
-                                                    Sender sender) {
+    public List<UDPServer.UDPServerHandler> udpServerHandlers(Bencode bencode, Config config,
+                                                              UDPProcessorManager udpProcessorManager,
+                                                              Sender sender) {
         int size = config.getMain().getNodeIds().size();
-        List<UDPServerHandler> result = new ArrayList<>(size);
+        List<UDPServer.UDPServerHandler> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            result.add(new UDPServerHandler(i, bencode, config, udpProcessorManager, sender));
+            result.add(new UDPServer.UDPServerHandler(i, bencode, config, udpProcessorManager, sender));
         }
         return result;
     }

@@ -28,15 +28,16 @@ import java.util.regex.Pattern;
  * author:ZhengXing
  * datetime:2018-02-17 10:19
  * tcp连接客户端
+ * 废弃, 之前为了解析清楚 extend协议返回的消息. 逐个参数解析. 真正使用时,可取巧解析出 metadata info
  */
+@Deprecated
 @Slf4j
-@Component
-public class TCPClient1 {
+public class DeprecatedTCPClient {
 
     private final Config config;
     private final BootstrapFactory bootstrapFactory;
 
-    public TCPClient1(Config config, BootstrapFactory bootstrapFactory) {
+    public DeprecatedTCPClient(Config config, BootstrapFactory bootstrapFactory) {
         this.config = config;
         this.bootstrapFactory = bootstrapFactory;
     }

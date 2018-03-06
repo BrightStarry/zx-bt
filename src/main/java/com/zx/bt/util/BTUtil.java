@@ -75,7 +75,7 @@ public class BTUtil {
      */
     private static String generateMessageID(AtomicInteger generator) {
         int result;
-        //当大于阈值时,重置为0
+        //当大于阈值时,重置
         if ((result = generator.getAndIncrement()) > maxMessageID) {
             generator.lazySet(1);
         }
@@ -109,7 +109,8 @@ public class BTUtil {
          */
         String y = getParamString(map, "y", "y属性不存在.map:" + map);
         Optional<YEnum> yEnumOptional = EnumUtil.getByCode(y, YEnum.class);
-        yEnumOptional.orElseThrow(() -> new BTException("y属性值不正确.map:" + map));
+        if(!yEnumOptional.isPresent())
+            throw new BTException("y属性值不正确.map:" + map);
         messageInfo.setStatus(yEnumOptional.get());
 
         /**
@@ -126,7 +127,8 @@ public class BTUtil {
             String q = getParamString(map, "q", "q属性不存在.map:" + map);
 
             Optional<MethodEnum> qEnumOptional = EnumUtil.getByCode(q, MethodEnum.class);
-            qEnumOptional.orElseThrow(() -> new BTException("q属性值不正确.map:" + map));
+            if(!qEnumOptional.isPresent())
+                throw new BTException("q属性值不正确.map:" + map);
             messageInfo.setMethod(qEnumOptional.get());
 
         } else  if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.RECEIVE))  {

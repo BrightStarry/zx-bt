@@ -7,7 +7,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
+import javax.validation.Valid;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -23,18 +25,24 @@ import java.util.List;
 @ConfigurationProperties(prefix = "zx-bt")
 @Data
 @Slf4j
+@Validated
 public class Config {
     /**
      * 主要配置
      */
+    @Valid
     private Main main = new Main();
 
     /**
      * 性能相关
      */
+    @Valid
     private Performance performance = new Performance();
 
     //常量配置--------
+
+    //磁力前缀
+    private static final String magnetLinkPre = "magnet:?xt=urn:btih:";
 
     //每个节点信息默认占用的字节长度. 为20位nodeId,4位ip,2位port
     public static final Integer NODE_BYTES_LEN = 26;
@@ -182,6 +190,11 @@ public class Config {
 
         /**get_peers任务,最多同时进行的任务数*/
         private Integer getPeersTaskConcurrentNum = 100;
+
+        /**
+         * fetchMetadataByPeerTask,等待获取infoHash队列最大长度
+         */
+        private Integer fetchMetadataByPeerTaskQueueNum = 200;
 
         /**
          * 普通节点超时时间
