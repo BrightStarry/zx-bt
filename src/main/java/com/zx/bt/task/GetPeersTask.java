@@ -157,13 +157,6 @@ public class GetPeersTask implements Pauseable {
 		return System.currentTimeMillis() + getPeersTaskExpireSecond * 1000;
 	}
 
-	public static void main(String[] args) {
-		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
-		for (int i = 0; i < 10; i++) {
-			threadPool.schedule(()->{
-				System.out.println("111");
-			},1000,TimeUnit.MILLISECONDS);
-		}
-	}
+
 
 }

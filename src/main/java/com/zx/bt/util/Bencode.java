@@ -292,15 +292,6 @@ public class Bencode {
         private int index;
     }
 
-    public static void main(String[] args) {
-        Bencode bencode = new Bencode();
-        Ping.Response response = new Ping.Response("mnopqrstuvwxyz123456", "aa");
-        Map<String, Object> map = BeanUtil.beanToMap(response);
-        byte[] encode = bencode.encode(map);
 
-
-        String xxx = bencode.decode(bencode.encode("xxx"), String.class);
-        System.out.println(xxx);
-    }
 
 }

@@ -60,10 +60,5 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 		return MethodEnum.FIND_NODE.equals(processObject.getMessageInfo().getMethod()) && YEnum.RECEIVE.equals(processObject.getMessageInfo().getStatus());
 	}
 
-	public static void main(String[] args) {
-		Node xx = new Node(new byte[]{1}, "xx", 1);
-		List<Node> nodes = Arrays.asList(xx, new Node(BTUtil.generateNodeId(), "aa", 22), xx, new Node(BTUtil.generateNodeId(), "aa", 22), xx);
-		List<Node> collect = nodes.stream().distinct().collect(Collectors.toList());
-		System.out.println(collect);
-	}
+
 }

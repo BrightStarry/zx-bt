@@ -265,11 +265,6 @@ public class CodeUtil {
         return portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
     }
 
-    public static void main(String[] args) {
-        String ip = "106.14.7.29";
-        byte[] bytes = ip2Bytes(ip);
-        String s = bytes2Ip(bytes);
-    }
 
 
 

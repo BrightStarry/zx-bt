@@ -58,23 +58,4 @@ public class BeanUtil {
     }
 
 
-    public static void main(String[] args) {
-//        String nodeIds = BTUtil.generateNodeIdString();
-//        byte[] bytes = new byte[26];
-//        for (int i = 0; i < 20; i++) {
-//            bytes[i] = 111;
-//        }
-//        bytes[20] = 106;
-//        bytes[21] = 14;
-//        bytes[22] = 7;
-//        bytes[23] = 29;
-//
-//        byte[] port = CodeUtil.int2TwoBytes(44451);
-//        bytes[24] = port[0];
-//        bytes[25] = port[1];
-//
-//        Node node = new Node(bytes);
-//        System.out.println(node);
-    }
-
 }
