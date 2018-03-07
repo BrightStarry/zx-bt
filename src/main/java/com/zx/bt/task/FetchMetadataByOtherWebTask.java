@@ -21,6 +21,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -53,6 +54,7 @@ public class FetchMetadataByOtherWebTask {
      */
     private final String zhongzisouUrl = "https://www.zhongzidi.com/info-";
     private final String btwhatUrl = "http://www.btwhat.info/wiki/%s.html";
+    private final String cilibaUrl = "https://www.ciliba.org/detail/%s.html";
 
     /**
      * 其他功能类
@@ -221,13 +223,14 @@ public class FetchMetadataByOtherWebTask {
     private String decodeURIComponent(String rawStr) {
         String searchStr = "decodeURIComponent(";
         String substr = rawStr.substring(rawStr.indexOf(searchStr) + searchStr.length());
-        String substr2 = substr.substring(0, substr.indexOf(")"));
+        String substr2 = substr.substring(0, substr.indexOf("));"));
         String[] subStr2Arr = substr2.split("\"\\+\"");
         subStr2Arr[0] = subStr2Arr[0].substring(1);
         subStr2Arr[subStr2Arr.length - 1] = StringUtils.substringBeforeLast(subStr2Arr[subStr2Arr.length - 1], "\"");
         String nameUrlEncode = String.join("", subStr2Arr);
         return URLDecoder.decode(nameUrlEncode, CharsetUtil.UTF_8.name());
     }
+
 
     /**
      * 长度字符串 转 字节长度
@@ -259,6 +262,23 @@ public class FetchMetadataByOtherWebTask {
     }
 
 
+    /**
+     * 磁力吧
+     * https://www.ciliba.org
+     */
+    @SneakyThrows
+    private Metadata fetchMetadataByCiliba(String infoHashHexStr) {
+        //整个页面信息
+        String htmlStr = httpClientUtil.doGetForBasicBrowser(StringFormatter.format(cilibaUrl, infoHashHexStr).getValue());
+        //获取解析用的document
+        Document document = HtmlResolver.getDocument(htmlStr);
+        return null;
+    }
+
+    public static void main(String[] args) {
+        FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask = new FetchMetadataByOtherWebTask(new HttpClientUtil(), new Config(), null, null, null, null, null);
+        fetchMetadataByOtherWebTask.fetchMetadataByCiliba("e9f075ab34ce0cd32ec33167327ffcfd17955575");
+    }
 
 
 }

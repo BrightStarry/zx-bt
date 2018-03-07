@@ -57,7 +57,7 @@ public interface AnnouncePeer {
             Map<String, Object> aMap = BTUtil.getParamMap(map, "a", "ANNOUNCE_PEER,找不到a参数.map:" + map);
             info_hash = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "info_hash", "ANNOUNCE_PEER,找不到info_hash参数.map:" + map)
                     .getBytes(CharsetUtil.ISO_8859_1));
-            if (aMap.get("implied_port") == null || ((int) aMap.get("implied_port") )== 0) {
+            if (aMap.get("implied_port") == null || ((long) aMap.get("implied_port") )== 0) {
                 Object portObj = aMap.get("port");
                 if(portObj == null)
                     throw new BTException("ANNOUNCE_PEER,找不到port参数.map:" + map);

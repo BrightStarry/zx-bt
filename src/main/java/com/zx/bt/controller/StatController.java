@@ -1,6 +1,8 @@
 package com.zx.bt.controller;
 
 import com.zx.bt.config.Config;
+import com.zx.bt.repository.MetadataRepository;
+import com.zx.bt.service.MetadataService;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.FetchMetadataByOtherWebTask;
@@ -31,9 +33,12 @@ public class StatController {
 	private final Config config;
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 	private final FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask;
+	private final MetadataService metadataService;
 
 	public StatController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
-						  CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config, FetchMetadataByPeerTask fetchMetadataByPeerTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask) {
+						  CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config,
+						  FetchMetadataByPeerTask fetchMetadataByPeerTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask,
+						   MetadataService metadataService) {
 		this.routingTables = routingTables;
 		this.findNodeTask = findNodeTask;
 		this.getPeersCache = getPeersCache;
@@ -42,12 +47,14 @@ public class StatController {
 		this.ports = config.getMain().getPorts();
 		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
 		this.fetchMetadataByOtherWebTask = fetchMetadataByOtherWebTask;
+		this.metadataService = metadataService;
 	}
 
 
 	@RequestMapping("/stat")
 	public Map<String, Object> stat() {
 		Map<String, Object> result = new LinkedHashMap<>();
+		result.put(config.getMain().getCountMetadataMinute() + "分钟内入库数",metadataService.countByMinute(config.getMain().getCountMetadataMinute()));
 		result.put("findNde队列", findNodeTask.size());
 		result.put("getPeers缓存",  getPeersCache.size());
 		result.put("getPeers队列",  getPeersTask.size());

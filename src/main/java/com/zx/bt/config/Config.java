@@ -81,6 +81,10 @@ public class Config {
 		 */
 		private List<String> nodeIds = new ArrayList<>();
 
+        /**
+         * 统计几分钟内入库数量
+         */
+        private Integer countMetadataMinute = 5;
 
 
         /**
