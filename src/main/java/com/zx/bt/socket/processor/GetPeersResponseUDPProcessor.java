@@ -4,12 +4,12 @@ import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.dto.Peer;
 import com.zx.bt.entity.InfoHash;
 import com.zx.bt.entity.Node;
-import com.zx.bt.enums.InfoHashTypeEnum;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.repository.InfoHashRepository;
 import com.zx.bt.repository.NodeRepository;
+import com.zx.bt.service.InfoHashService;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.FindNodeTask;
@@ -44,16 +44,18 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private final NodeRepository nodeRepository;
 	private final FindNodeTask findNodeTask;
 	private final Sender sender;
+	private final InfoHashService infoHashService;
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
 										CommonCache<CommonCache.GetPeersSendInfo> getPeersCache,
-										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask, Sender sender) {
+										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask, Sender sender, InfoHashService infoHashService) {
 		this.routingTables = routingTables;
 		this.getPeersCache = getPeersCache;
 		this.infoHashRepository = infoHashRepository;
 		this.nodeRepository = nodeRepository;
 		this.findNodeTask = findNodeTask;
 		this.sender = sender;
+		this.infoHashService = infoHashService;
 	}
 
 	@Override
@@ -100,10 +102,10 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			}
 			//未发送过请求的节点id
 			List<byte[]> unSentNodeIdList = unSentNodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
-			//未发送过请求节点的地址
-			List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 			//将其加入已发送队列
 			getPeersSendInfo.put(unSentNodeIdList);
+			//未发送过请求节点的地址
+			List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
 			//批量发送请求
 			this.sender.getPeersBatch(unSentAddressList, nodeIds.get(index),
 					new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
@@ -128,19 +130,11 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			peerList.forEach(peer -> peersInfoBuilder.append(peer.getIp()).append(":").append(peer.getPort()).append(";"));
 
 			log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), peersInfoBuilder.toString());
-			//从数据库中查找infoHash
-			InfoHash infoHash = infoHashRepository.findFirstByInfoHashAndType(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode());
 			//清除该任务缓存
 			getPeersCache.remove(messageInfo.getMessageId());
-			//如果不为空
-			if (infoHash == null) {
-				//如果为空,则新建
-				infoHash = new InfoHash(getPeersSendInfo.getInfoHash(), InfoHashTypeEnum.ANNOUNCE_PEER.getCode(), peersInfoBuilder.toString());
-			} else if(StringUtils.isEmpty(infoHash.getPeerAddress()) || infoHash.getPeerAddress().split(";").length <= 16){
-				//如果当前存储的peer个数<=16或为空. 则将追加新的peers
-				infoHash.setPeerAddress(infoHash.getPeerAddress() + peersInfoBuilder.toString());
-			}
-			infoHashRepository.save(infoHash);
+			//入库
+			infoHashService.saveInfoHash(getPeersSendInfo.getInfoHash(),peersInfoBuilder.toString());
+
 			//节点入库
 			nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));

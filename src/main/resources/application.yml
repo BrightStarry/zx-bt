@@ -18,9 +18,16 @@ zx-bt:
     # find_node任务,线程数
     find-node-task-thread-num: 3
     # find_node任务, 发送间隔. 毫秒
-    find-node-task-interval-ms: 0
+    find-node-task-interval-ms: 10
     # UDP服务器主任务线程数,单个端口的数量
     udp-server-main-thread-num: 10
+
+    # fetchMetadataByPeerTask,最大线程数
+    fetch-metadata-by-peer-task-tread-num: 10
+    # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
+    fetch-metadata-by-other-web-task-queue-num: 10240000
+    # fetchMetadataByOtherWebTask,线程数
+    fetch-metadata-by-other-web-task-thread-num: 20
 
     # get_peers任务,最多同时进行的任务数
     get-peers-task-concurrent-num: 300
@@ -29,11 +36,16 @@ zx-bt:
     # get_peers任务过期时间
     get-peers-task-expire-second: 250
     # get_peers请求, 最小发送间隔
-    get-peers-request-send-interval-ms: 0
+    get-peers-request-send-interval-ms: 10
     # get_peers任务, 任务满载后,暂停开启新任务时间
     get-peers-task-pause-second: 10
     # get_peers任务, 开启新任务最大间隔
     get-peers-task-create-interval-ms: 1000
+
+    # 连接peer任务TCP线程数
+    tcp-client-thread-num: 4
+    # 连接peer任务TCP连接超时时间(ms)
+    tcp-connect-timeout-ms: 5000
 
     # 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
     routing-table-prefix-len: 7
@@ -52,8 +64,8 @@ zx-bt:
       - 44451
       - 44452
       - 44453
-      - 44454
-      - 44455
+#      - 44454
+#      - 44455
     ip: 106.14.7.29
     init-addresses:
       - 213.136.79.7:6892

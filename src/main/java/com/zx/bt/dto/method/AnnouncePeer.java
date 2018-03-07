@@ -61,7 +61,7 @@ public interface AnnouncePeer {
                 Object portObj = aMap.get("port");
                 if(portObj == null)
                     throw new BTException("ANNOUNCE_PEER,找不到port参数.map:" + map);
-                port = (Integer) portObj;
+                port = ((Long) portObj).intValue();
             }else
                 port = defaultPort;
             id = CodeUtil.bytes2HexStr(BTUtil.getParamString(aMap, "id", "ANNOUNCE_PEER,找不到id参数.map:" + map).getBytes(CharsetUtil.ISO_8859_1));

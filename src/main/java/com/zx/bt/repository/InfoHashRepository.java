@@ -14,8 +14,10 @@ import java.util.List;
 @Repository
 public interface InfoHashRepository extends JpaRepository<InfoHash, Long> {
 
-    InfoHash findFirstByInfoHashAndType(String infoHash,int type);
+    InfoHash findFirstByInfoHash(String infoHash);
 
-    Integer countByInfoHashAndType(String infoHash, int type);
+    Integer countByInfoHash(String infoHash);
+
+    void deleteByInfoHash(String infoHash);
 
 }

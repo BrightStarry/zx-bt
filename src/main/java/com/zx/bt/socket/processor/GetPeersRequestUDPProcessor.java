@@ -6,6 +6,7 @@ import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
 import com.zx.bt.store.RoutingTable;
+import com.zx.bt.task.FetchMetadataByOtherWebTask;
 import com.zx.bt.task.GetPeersTask;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.CodeUtil;
@@ -29,13 +30,13 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 	private static final String LOG = "[GET_PEERS]";
 
 	private final List<RoutingTable> routingTables;
-	private final GetPeersTask getPeersTask;
 	private final Sender sender;
+	private final FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask;
 
-	public GetPeersRequestUDPProcessor(List<RoutingTable> routingTables, GetPeersTask getPeersTask, Sender sender) {
+	public GetPeersRequestUDPProcessor(List<RoutingTable> routingTables, Sender sender, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask) {
 		this.routingTables = routingTables;
-		this.getPeersTask = getPeersTask;
 		this.sender = sender;
+		this.fetchMetadataByOtherWebTask = fetchMetadataByOtherWebTask;
 	}
 
 	@Override
@@ -57,7 +58,7 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 		//加入路由表
 		routingTables.get(index).put(new Node(id, sender, NodeRankEnum.GET_PEERS.getCode()));
 		//开始查找任务
-		getPeersTask.put(CodeUtil.bytes2HexStr(infoHash));
+		fetchMetadataByOtherWebTask.put(CodeUtil.bytes2HexStr(infoHash));
 		return true;
 	}
 

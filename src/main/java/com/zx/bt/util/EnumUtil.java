@@ -29,13 +29,13 @@ public class EnumUtil {
     /**
      * 根据Code返回枚举
      */
-    public static <T extends CodeEnum<X>,X> T getByCodeNullable(X code, Class<T> enumClass) {
+    public static <T extends CodeEnum<String>> Optional<T> getByCodeString(String code, Class<T> enumClass) {
         for (T each : enumClass.getEnumConstants()) {
-            if (each.getCode().equals(code)) {
-                return each;
+            if (each.getCode().equalsIgnoreCase(code)) {
+                return Optional.of(each);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
 

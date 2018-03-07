@@ -14,6 +14,7 @@ public enum MetadataTypeEnum implements CodeEnum<Integer> {
 
     PEER(0, "从peer处获取"),
     ZHONGZISOU(1, "从www.zhongzidi.com获取"),
+    BTWHAT(2, "从http://www.btwhat.info获取"),
     ;
     private Integer code;
     private String message;

@@ -35,24 +35,16 @@ public class InfoHash {
     private String infoHash;
 
     /**
-     * 类型
-     * see {@link com.zx.bt.enums.InfoHashTypeEnum}
-     */
-    private Integer type;
-
-    /**
      * 如果是announce_peer类型(type == 1),则保存其peer的ip:ports
      */
     private String peerAddress = "";
 
-    public InfoHash(String infoHash, Integer type, String peerAddress) {
+    public InfoHash(String infoHash,  String peerAddress) {
         this.infoHash = infoHash;
-        this.type = type;
         this.peerAddress = peerAddress;
     }
 
-    public InfoHash(String infoHash, Integer type) {
+    public InfoHash(String infoHash) {
         this.infoHash = infoHash;
-        this.type = type;
     }
 }

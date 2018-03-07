@@ -1,33 +1,30 @@
 package com.zx.bt.task;
 
-import com.sun.javafx.binding.StringFormatter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.config.Config;
 import com.zx.bt.entity.InfoHash;
 import com.zx.bt.entity.Metadata;
 import com.zx.bt.factory.BootstrapFactory;
+import com.zx.bt.repository.InfoHashRepository;
+import com.zx.bt.service.MetadataService;
+import com.zx.bt.util.BTUtil;
 import com.zx.bt.util.Bencode;
 import com.zx.bt.util.CodeUtil;
-import com.zx.bt.util.HttpClientUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.util.CharsetUtil;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 /**
  * author:ZhengXing
@@ -42,36 +39,148 @@ public class FetchMetadataByPeerTask {
 	private final Config config;
 	private final BootstrapFactory bootstrapFactory;
 	private final Bencode bencode;
+	private final InfoHashRepository infoHashRepository;
+	private final ObjectMapper objectMapper;
+	private final MetadataService metadataService;
 
-	public FetchMetadataByPeerTask(Config config, BootstrapFactory bootstrapFactory, Bencode bencode) {
+	public FetchMetadataByPeerTask(Config config, BootstrapFactory bootstrapFactory, Bencode bencode, InfoHashRepository infoHashRepository, ObjectMapper objectMapper, MetadataService metadataService) {
 		this.config = config;
 		this.bootstrapFactory = bootstrapFactory;
 		this.bencode = bencode;
-		this.queue = new LinkedBlockingQueue<>(config.getPerformance().getFetchMetadataByPeerTaskQueueNum());
+		this.infoHashRepository = infoHashRepository;
+		this.objectMapper = objectMapper;
+		this.metadataService = metadataService;
+		this.queue = new DelayQueue<>();
 	}
 
 	//等待连接peers的infoHash队列
-	private BlockingQueue<InfoHash> queue;
+	private final DelayQueue<DelayInfoHash> queue;
 
 	/**
-	 * 从库中查询出若干有peers的infoHash
+	 * 入队
 	 */
-	private List<InfoHash> listInfoHash(int num) {
-		return null;
+	public void put(String infoHash, long startTime) {
+		queue.offer(new DelayInfoHash(infoHash, startTime));
 	}
 
+	/**
+	 * 是否存在
+	 */
+	public boolean contain(String infoHashHexStr) {
+		return queue.parallelStream().filter(item -> item.infoHash.equals(infoHashHexStr)).count() > 0;
+	}
 
 	/**
-	 * 获取metadata任务
+	 * 队列长度
 	 */
-	@AllArgsConstructor
-	private class FetchMetadataTask implements Callable<Metadata>{
-		private InfoHash infoHash;
-		@Override
-		public Metadata call() throws Exception {
+	public int size() {
+		return queue.size();
+	}
 
-			return null;
+	/**
+	 * 异步任务
+	 */
+	public void start() {
+		for (int i = 0; i < config.getPerformance().getFetchMetadataByPeerTaskTreadNum(); i++) {
+			new Thread(() -> {
+				while (true) {
+					try {
+						run();
+					} catch (Exception e) {
+						log.error("{}异常.e:{}", e.getMessage(), e);
+					}
+				}
+			}).start();
 		}
+	}
+
+	/**
+	 * 单个任务
+	 */
+	@SneakyThrows
+	private void run() {
+		DelayInfoHash delayInfoHash = queue.take();
+		log.info("{}开始新任务.infoHash:{}", LOG, delayInfoHash.getInfoHash());
+		Metadata metadata = fetchMetadata(delayInfoHash.getInfoHash());
+		if (metadata != null) {
+			metadataService.saveMetadata(metadata);
+			log.info("{}成功.infoHash:{}", LOG, delayInfoHash.getInfoHash());
+		}
+		//无论成功失败与否,都删除infoHash表中该记录
+		infoHashRepository.deleteByInfoHash(delayInfoHash.getInfoHash());
+	}
+
+	/**
+	 * 存入延时队列的数据
+	 */
+	@Data
+	@AllArgsConstructor
+	private class DelayInfoHash implements Delayed {
+		private String infoHash;
+		private long startTime;
+
+		@Override
+		public long getDelay(TimeUnit unit) {
+			return unit.convert(startTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+		}
+
+		@Override
+		public int compareTo(Delayed o) {
+			return Long.compare(this.getDelay(TimeUnit.MILLISECONDS), o.getDelay(TimeUnit.MILLISECONDS));
+		}
+	}
+
+	/**
+	 * 获取metadata
+	 */
+	@SneakyThrows
+	private Metadata fetchMetadata(String infoHashHexStr) {
+		CountDownLatch latch = new CountDownLatch(1);
+		//从数据库中查询,是否有记录
+		InfoHash infoHash = infoHashRepository.findFirstByInfoHash(infoHashHexStr);
+		if (infoHash == null)
+			return null;
+		//peer地址
+		String[] addressArr = infoHash.getPeerAddress().split(";");
+
+		List<Result> results = new LinkedList<>();
+		//向所有peer执行发送任务
+		for (String address : addressArr) {
+			String[] ipPort = address.split(":");
+			final Result result = new Result(latch);
+			results.add(result);
+			bootstrapFactory.build().handler(new CustomChannelInitializer(infoHashHexStr, result))
+					.connect(new InetSocketAddress(ipPort[0], Integer.parseInt(ipPort[1])))
+					.addListener(new ConnectListener(infoHashHexStr, BTUtil.generateNodeId()));
+		}
+		//暂停10s 或 被唤醒
+		latch.await(10, TimeUnit.SECONDS);
+		//尝试解析
+		Metadata metadata = null;
+		for (Result result : results) {
+			if (result.getResult() != null) {
+				metadata = bytes2Metadata(result.getResult(), infoHashHexStr);
+				break;
+			}
+		}
+		return metadata;
+	}
+
+	/**
+	 * byte[] 转 {@link Metadata}
+	 */
+	@SuppressWarnings("unchecked")
+	public Metadata bytes2Metadata(byte[] bytes, String infoHashHexStr) {
+		try {
+			String metadataStr = new String(bytes, CharsetUtil.UTF_8);
+			String metadataBencodeStr = metadataStr.substring(0, metadataStr.indexOf("6:pieces")) + "e";
+			Bencode bencode = new Bencode(CharsetUtil.UTF_8);//注意,此处都优先使用utf-8编码
+			Map<String, Object> resultMap = bencode.decode(metadataBencodeStr.getBytes(CharsetUtil.UTF_8), Map.class);
+			return Metadata.map2Metadata(resultMap, objectMapper, infoHashHexStr);
+		} catch (Exception e) {
+			log.error("[bytes2Metadata]失败.e:",e.getMessage(),e);
+		}
+		return null;
 	}
 
 
@@ -82,7 +191,8 @@ public class FetchMetadataByPeerTask {
 	@NoArgsConstructor
 	private class FetchMetadataHandler extends SimpleChannelInboundHandler<ByteBuf> {
 		private String infoHashHexStr;
-		private byte[] metadataBytes;
+		private Result result;
+
 		@Override
 		protected void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
 			byte[] bytes = new byte[msg.readableBytes()];
@@ -116,11 +226,13 @@ public class FetchMetadataByPeerTask {
 		private void fetchMetadataBytes(String messageStr) {
 			String resultStr = messageStr.substring(messageStr.indexOf("ee") + 2, messageStr.length());
 			byte[] resultStrBytes = resultStr.getBytes(CharsetUtil.ISO_8859_1);
-			if (metadataBytes != null) {
-				metadataBytes = ArrayUtils.addAll(metadataBytes, resultStrBytes);
-			}else{
-				metadataBytes = resultStrBytes;
+			if (result.getResult() != null) {
+				result.setResult(ArrayUtils.addAll(result.getResult(), resultStrBytes));
+			} else {
+				result.setResult(resultStrBytes);
 			}
+			//唤醒latch
+			result.getLatch().countDown();
 		}
 
 		/**
@@ -157,6 +269,7 @@ public class FetchMetadataByPeerTask {
 
 		/**
 		 * 发送扩展消息
+		 *
 		 * @param ctx
 		 */
 		private void SendExtendMessage(ChannelHandlerContext ctx) {
@@ -177,11 +290,12 @@ public class FetchMetadataByPeerTask {
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-			log.error("{}{}异常:{}", LOG,infoHashHexStr,cause.getMessage());
+			log.error("{}{}异常:{}", LOG, infoHashHexStr, cause.getMessage());
 		}
 
-		public FetchMetadataHandler(String infoHashHexStr) {
+		public FetchMetadataHandler(String infoHashHexStr, Result result) {
 			this.infoHashHexStr = infoHashHexStr;
+			this.result = result;
 		}
 	}
 
@@ -189,7 +303,7 @@ public class FetchMetadataByPeerTask {
 	 * 连接监听器
 	 */
 	@AllArgsConstructor
-	private class ConnectListener implements ChannelFutureListener{
+	private class ConnectListener implements ChannelFutureListener {
 		private String infoHashHexStr;
 		//自己的peerId,直接定义为和nodeId相同即可
 		private byte[] selfPeerId;
@@ -201,7 +315,7 @@ public class FetchMetadataByPeerTask {
 				SendHandshakeMessage(future);
 				return;
 			}
-			//如果失败 TODO
+			//如果失败 ,不做任何操作
 		}
 
 		/**
@@ -222,14 +336,25 @@ public class FetchMetadataByPeerTask {
 	 */
 	@AllArgsConstructor
 	private class CustomChannelInitializer extends ChannelInitializer {
-		private final InetSocketAddress address;
 		private String infoHashHexStr;
-		//自己的peerId,直接定义为和nodeId相同即可
-		private byte[] selfPeerId;
+		private final Result result;
+
 		@Override
 		protected void initChannel(Channel ch) throws Exception {
-			ch.pipeline().addLast(new FetchMetadataHandler(infoHashHexStr)).connect(address)
-					.addListener(new ConnectListener(infoHashHexStr, selfPeerId));
+			ch.pipeline().addLast(new FetchMetadataHandler(infoHashHexStr, result));
+		}
+	}
+
+	/**
+	 * 返回对象
+	 */
+	@Data
+	private class Result {
+		private byte[] result;
+		private final CountDownLatch latch;
+
+		public Result(CountDownLatch latch) {
+			this.latch = latch;
 		}
 	}
 

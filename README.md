@@ -14,8 +14,6 @@
 > nohup java -jar /xxx/xxx/xxx.jar >/dev/null 2>&1 &
 
 #### bug
-- 需要确保nodeId不与其他人重复,否则可能无法得到其他节点的响应(应该是因为,其他节点进行回复时会事先查询他们自己已有的路由表,如果有存在的节点,就.....)
-- 自己手贱,在netty的handle的异常捕获方法中,当发生异常就关闭该udp连接,导致各种bug...
 - !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
 否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
 - 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新
@@ -86,18 +84,3 @@
 - 每一个处理器判断该消息是否由自己处理. 是,执行处理,返回结果; 否,交由下一处理器处理;
 - 处理器的处理顺序可通过Spring的@Order修改.
 - 处理器抽象类中定义了模版方法.包括异常捕获,处理判断等.
-
-
-d
-    13:file-duration
-        l
-            i5048e
-        e
-    10:file-media
-        l
-            i0e
-        e
-    6:length    i3107643435e
-    4:name  56:Ð¡Ð»Ð°Ð¼Ð±ÐµÑ_ ÐÐ°Ð±Ð¸ÑÐ¸Ð½ÑÑ ÑÐ½Ð° (1080p HD).mkv
-    12:piece length i4194304e
-e

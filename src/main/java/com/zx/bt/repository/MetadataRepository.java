@@ -12,4 +12,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MetadataRepository extends JpaRepository<Metadata, Long> {
 
+	/**
+	 * 查询某infoHash是否存在
+	 */
+	int countByInfoHash(String infoHash);
 }

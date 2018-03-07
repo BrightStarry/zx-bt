@@ -162,10 +162,10 @@ public class Config {
          */
         private Integer findNodeTaskThreadNum = 20;
 
-        /**TCP处理任务线程数*/
-        private Integer tcpClientThreadNum = 2;
+        /**连接peer任务TCP线程数*/
+        private Integer tcpClientThreadNum = 4;
 
-        /**TCP连接超时时间(ms)*/
+        /**连接peer任务TCP连接超时时间(ms)*/
         private Integer tcpConnectTimeoutMs = 5000;
 
         /**
@@ -192,17 +192,19 @@ public class Config {
         private Integer getPeersTaskConcurrentNum = 100;
 
         /**
-         * fetchMetadataByPeerTask,等待获取infoHash队列最大长度
+         * fetchMetadataByPeerTask,最大线程数
          */
-        private Integer fetchMetadataByPeerTaskQueueNum = 200;
+        private Integer fetchMetadataByPeerTaskTreadNum = 10;
 
         /**
          * fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
          */
-        private Integer fetchMetadataByOtherWebTaskQueueNum = 1024000;
+        private Integer fetchMetadataByOtherWebTaskQueueNum = 10240000;
 
         /**
          *  fetchMetadataByOtherWebTask,线程数
+         *  该任务多为http连接, 可设置多点的线程,
+         *  但也要考虑过多会不会被网站封掉(在未使用代理的情况下.)
          */
         private Integer fetchMetadataByOtherWebTaskThreadNum = 10;
 

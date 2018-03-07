@@ -121,7 +121,7 @@ public class UDPServer {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            log.info("{}通道激活", LOG);
+//            log.info("{}通道激活", LOG);
             //给发送器工具类的channel赋值
             this.sender.setChannel(ctx.channel(),this.index);
         }
