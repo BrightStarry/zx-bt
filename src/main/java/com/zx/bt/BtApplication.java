@@ -1,5 +1,6 @@
 package com.zx.bt;
 
+import com.zx.bt.config.Config;
 import com.zx.bt.socket.UDPServer;
 import com.zx.bt.task.*;
 import org.springframework.boot.CommandLineRunner;
@@ -20,14 +21,16 @@ public class BtApplication implements CommandLineRunner{
 	private final GetPeersTask getPeersTask;
 	private final FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask;
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
+	private final Config config;
 
-	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask) {
+	public BtApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask, Config config) {
 		this.udpServer = udpServer;
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
 		this.getPeersTask = getPeersTask;
 		this.fetchMetadataByOtherWebTask = fetchMetadataByOtherWebTask;
 		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
+		this.config = config;
 	}
 
 	public static void main(String[] args) {
@@ -44,6 +47,7 @@ public class BtApplication implements CommandLineRunner{
 	@Order(Integer.MIN_VALUE)
 	@Override
 	public void run(String... strings) throws Exception {
+		if(!config.getMain().getStart()) return;
 		//异步启动udp服务端
 		udpServer.start();
 		//同步执行初始化任务

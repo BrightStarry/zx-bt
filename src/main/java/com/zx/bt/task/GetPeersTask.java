@@ -65,13 +65,9 @@ public class GetPeersTask implements Pauseable {
 
 	/**
 	 * 入队
+	 * 此处的入口仅为otherWeb任务, 已经去重过. 此处不做去重处理
 	 */
 	public void put(String infoHashHexStr) {
-		//去重
-		if (infoHashRepository.countByInfoHash(infoHashHexStr) > 0 ||
-				queue.parallelStream().filter(item -> item.equals(infoHashHexStr)).count() > 0 ||
-				getPeersCache.contain(v -> v.getInfoHash().equals(infoHashHexStr)))
-			return;
 		queue.offer(infoHashHexStr);
 	}
 

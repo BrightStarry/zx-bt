@@ -1,5 +1,6 @@
 package com.zx.bt.util;
 
+import com.google.common.hash.BloomFilter;
 import com.zx.bt.config.Config;
 import com.zx.bt.dto.MessageInfo;
 import com.zx.bt.dto.method.CommonRequest;

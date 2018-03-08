@@ -36,11 +36,9 @@ CREATE TABLE IF NOT EXISTS metadata (
   COMMENT 'id',
   info_hash  CHAR(40)     NOT NULL
   COMMENT 'info_hash',
-  info_string VARCHAR(10240) DEFAULT ''
+  info_string VARCHAR(20000) DEFAULT ''
   COMMENT '文件信息,json, infos字段',
-  raw_data    VARCHAR(10240) DEFAULT ''
-  COMMENT '原始的Map类型,json',
-  name       VARCHAR(512) DEFAULT ''
+  name       VARCHAR(1024) DEFAULT ''
   COMMENT '名字',
   length     BIGINT UNSIGNED NOT NULL
   COMMENT '总长度(所有文件相加长度)',

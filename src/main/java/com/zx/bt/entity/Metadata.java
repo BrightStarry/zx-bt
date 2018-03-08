@@ -49,12 +49,6 @@ public class Metadata {
     private String infoString;
 
     /**
-     * 原始的Map类型的 json string
-     *
-     */
-    private String rawData;
-
-    /**
      * 名字
      */
     private String name;
@@ -145,8 +139,7 @@ public class Metadata {
             metadata.setLength(length);
         }
         //infos /  原始map转json / infos转json
-        return metadata.setInfos(infos).setRawData(objectMapper.writeValueAsString(rawMap))
-                .setInfoString(objectMapper.writeValueAsString(infos))
+        return metadata.setInfos(infos).setInfoString(objectMapper.writeValueAsString(infos))
                 .setType(MetadataTypeEnum.PEER.getCode());
     }
 

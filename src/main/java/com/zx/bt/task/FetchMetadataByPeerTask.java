@@ -13,6 +13,7 @@ import com.zx.bt.util.CodeUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.CharsetUtil;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -165,7 +166,7 @@ public class FetchMetadataByPeerTask {
 					.addListener(new ConnectListener(infoHashHexStr, BTUtil.generateNodeId()));
 		}
 		//暂停10s 或 被唤醒
-		latch.await(10, TimeUnit.SECONDS);
+		latch.await(config.getPerformance().getFetchMetadataByPeerTaskReadTimeoutSecond(), TimeUnit.SECONDS);
 		//尝试解析
 		Metadata metadata = null;
 		for (Result result : results) {
@@ -227,14 +228,14 @@ public class FetchMetadataByPeerTask {
 			//如果是分片信息
 			if (messageStr.contains("msg_type")) {
 //				log.info("收到分片消息:{}", messageStr);
-				fetchMetadataBytes(messageStr);
+				fetchMetadataBytes(messageStr,ctx);
 			}
 		}
 
 		/***
 		 * 获取metadataBytes
 		 */
-		private void fetchMetadataBytes(String messageStr) {
+		private void fetchMetadataBytes(String messageStr,ChannelHandlerContext ctx) {
 			String resultStr = messageStr.substring(messageStr.indexOf("ee") + 2, messageStr.length());
 			byte[] resultStrBytes = resultStr.getBytes(CharsetUtil.ISO_8859_1);
 			if (result.getResult() != null) {
@@ -244,6 +245,8 @@ public class FetchMetadataByPeerTask {
 			}
 			//唤醒latch
 			result.getLatch().countDown();
+			//此时直接关闭
+			ctx.close();
 		}
 
 		/**
@@ -302,6 +305,8 @@ public class FetchMetadataByPeerTask {
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 			log.error("{}{}异常:{}", LOG, infoHashHexStr, cause.getMessage());
+			//关闭
+			ctx.close();
 		}
 
 		public FetchMetadataHandler(String infoHashHexStr, Result result) {
@@ -327,6 +332,7 @@ public class FetchMetadataByPeerTask {
 				return;
 			}
 			//如果失败 ,不做任何操作
+			future.channel().close();
 		}
 
 		/**
@@ -352,7 +358,10 @@ public class FetchMetadataByPeerTask {
 
 		@Override
 		protected void initChannel(Channel ch) throws Exception {
-			ch.pipeline().addLast(new FetchMetadataHandler(infoHashHexStr, result));
+			ch.pipeline()
+					.addLast(new ReadTimeoutHandler(config.getPerformance().getFetchMetadataByPeerTaskReadTimeoutSecond()))
+					.addLast(new FetchMetadataHandler(infoHashHexStr, result));
+
 		}
 	}
 

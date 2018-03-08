@@ -8,7 +8,7 @@ import com.zx.bt.enums.LengthUnitEnum;
 import com.zx.bt.enums.MetadataTypeEnum;
 import com.zx.bt.exception.BTException;
 import com.zx.bt.service.MetadataService;
-import com.zx.bt.store.CommonCache;
+import com.zx.bt.store.InfoHashFilter;
 import com.zx.bt.util.EnumUtil;
 import com.zx.bt.util.HtmlResolver;
 import com.zx.bt.util.HttpClientUtil;
@@ -61,21 +61,20 @@ public class FetchMetadataByOtherWebTask {
     private final HttpClientUtil httpClientUtil;
     private final Config config;
     private final ObjectMapper objectMapper;
-    private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
     private final GetPeersTask getPeersTask;
     private final MetadataService metadataService;
-    private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
+    private final InfoHashFilter infoHashFilter;
 
     public FetchMetadataByOtherWebTask(HttpClientUtil httpClientUtil, Config config, ObjectMapper objectMapper,
-                                       CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, MetadataService metadataService, FetchMetadataByPeerTask fetchMetadataByPeerTask) {
+                                       GetPeersTask getPeersTask, MetadataService metadataService,
+                                       InfoHashFilter infoHashFilter) {
         this.httpClientUtil = httpClientUtil;
         this.config = config;
         this.queue = new LinkedBlockingQueue<>(config.getPerformance().getFetchMetadataByOtherWebTaskQueueNum());
         this.objectMapper = objectMapper;
-        this.getPeersCache = getPeersCache;
         this.getPeersTask = getPeersTask;
         this.metadataService = metadataService;
-        this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
+        this.infoHashFilter = infoHashFilter;
         this.functions = Arrays.asList(this::fetchMetadataByZhongZiSou,this::fetchMetadataByBtwhat);
     }
 
@@ -83,13 +82,12 @@ public class FetchMetadataByOtherWebTask {
      * 入队
      */
     public void put(String infoHashHexStr) {
-        //去重
-        if (contain(infoHashHexStr)
-                || fetchMetadataByPeerTask.contain(infoHashHexStr)
-                || getPeersTask.contain(infoHashHexStr)
-                || getPeersCache.contain(v -> v.getInfoHash().equals(infoHashHexStr))) {
+        //如果处理过该infoHash,则不做任何操作
+        if (infoHashFilter.contain(infoHashHexStr)) {
             return;
         }
+        //否则将其加入布隆过滤器和队列
+        infoHashFilter.put(infoHashHexStr);
         queue.offer(infoHashHexStr);
     }
 

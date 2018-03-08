@@ -138,7 +138,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 				infoHashService.saveInfoHash(getPeersSendInfo.getInfoHash(),peersInfoBuilder.toString());
 
 				//节点入库
-				nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
+//				nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 				routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
 				//并向该节点发送findNode请求
 				findNodeTask.put(sender);

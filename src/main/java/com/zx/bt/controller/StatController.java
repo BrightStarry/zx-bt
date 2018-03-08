@@ -1,9 +1,9 @@
 package com.zx.bt.controller;
 
 import com.zx.bt.config.Config;
-import com.zx.bt.repository.MetadataRepository;
 import com.zx.bt.service.MetadataService;
 import com.zx.bt.store.CommonCache;
+import com.zx.bt.store.InfoHashFilter;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.task.FetchMetadataByOtherWebTask;
 import com.zx.bt.task.FetchMetadataByPeerTask;
@@ -34,11 +34,12 @@ public class StatController {
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 	private final FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask;
 	private final MetadataService metadataService;
+	private final InfoHashFilter infoHashFilter;
 
 	public StatController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
 						  CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config,
 						  FetchMetadataByPeerTask fetchMetadataByPeerTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask,
-						   MetadataService metadataService) {
+						  MetadataService metadataService, InfoHashFilter infoHashFilter) {
 		this.routingTables = routingTables;
 		this.findNodeTask = findNodeTask;
 		this.getPeersCache = getPeersCache;
@@ -48,6 +49,7 @@ public class StatController {
 		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
 		this.fetchMetadataByOtherWebTask = fetchMetadataByOtherWebTask;
 		this.metadataService = metadataService;
+		this.infoHashFilter = infoHashFilter;
 	}
 
 
@@ -60,6 +62,7 @@ public class StatController {
 		result.put("getPeers队列",  getPeersTask.size());
 		result.put("fetchMetadataByPeerTask队列",  fetchMetadataByPeerTask.size());
 		result.put("fetchMetadataByOtherWebTask队列",  fetchMetadataByOtherWebTask.size());
+		result.put("InfoHashFilter长度",  infoHashFilter.size());
 		HashMap<String, Object> port = new HashMap<>();
 		for (int i = 0; i < routingTables.size(); i++) {
 			port.put(String.valueOf(ports.get(i)), routingTables.get(i).size());

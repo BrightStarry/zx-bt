@@ -92,6 +92,11 @@ public class Config {
          */
         private Integer countMetadataMinute = 5;
 
+        /**
+         * 是否开启主任务
+         */
+        private Boolean start = true;
+
 
         /**
 		 * UDP服务器端端口号
@@ -112,11 +117,6 @@ public class Config {
          */
         private Integer similarNodeIdNum = 1;
 
-        /**
-         * 要查询的目标节点
-         * see {@link FindNodeTask#updateTargetNodeId()}
-         */
-        private volatile String targetNodeId = BTUtil.generateNodeIdString();
 
         /**
          * 获取初始化地址
@@ -176,7 +176,7 @@ public class Config {
         private Integer tcpClientThreadNum = 4;
 
         /**连接peer任务TCP连接超时时间(ms)*/
-        private Integer tcpConnectTimeoutMs = 5000;
+        private Integer tcpConnectTimeoutMs = 3000;
 
         /**
          * 路由表分段锁 数量
@@ -207,6 +207,11 @@ public class Config {
         private Integer fetchMetadataByPeerTaskTreadNum = 10;
 
         /**
+         * fetchMetadataByPeerTask,连接成功后等待peer超时时间
+         */
+        private Integer fetchMetadataByPeerTaskReadTimeoutSecond = 10;
+
+        /**
          * fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
          */
         private Integer fetchMetadataByOtherWebTaskQueueNum = 10240000;
@@ -217,6 +222,18 @@ public class Config {
          *  但也要考虑过多会不会被网站封掉(在未使用代理的情况下.)
          */
         private Integer fetchMetadataByOtherWebTaskThreadNum = 10;
+
+        /**
+         * infoHash布隆过滤器 预期最大数量
+         */
+        private Long infoHashFilterMaxNum = (long) 999999;
+
+        /**
+         * infoHash布隆过滤器, 可接受误报比例
+         * x > 0 && x < 1.0
+         */
+        private Double infoHashFilterFpp = 0.01;
+
 
         /**
          * 普通节点超时时间

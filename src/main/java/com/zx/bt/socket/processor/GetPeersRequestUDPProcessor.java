@@ -58,6 +58,8 @@ public class GetPeersRequestUDPProcessor extends UDPProcessor{
 					config.getMain().getToken(), nodes, index);
 			//加入路由表
 			routingTables.get(index).put(new Node(id, sender, NodeRankEnum.GET_PEERS.getCode()));
+
+
 			//开始查找任务
 			fetchMetadataByOtherWebTask.put(CodeUtil.bytes2HexStr(infoHash));
 			return true;

@@ -1,5 +1,6 @@
 package com.zx.bt.config;
 
+import com.google.common.hash.BloomFilter;
 import com.zx.bt.enums.CacheMethodEnum;
 import com.zx.bt.socket.Sender;
 import com.zx.bt.socket.UDPServer;
@@ -8,6 +9,7 @@ import com.zx.bt.socket.processor.UDPProcessorManager;
 import com.zx.bt.store.CommonCache;
 import com.zx.bt.store.RoutingTable;
 import com.zx.bt.util.Bencode;
+import com.zx.bt.util.CodeUtil;
 import io.netty.util.CharsetUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +33,7 @@ public class BeanConfig {
     public void initConfigNodeIds(Config config) {
         config.getMain().initNodeIds();
     }
+
     /**
      * Bencode编解码工具类
      */
@@ -91,4 +94,6 @@ public class BeanConfig {
         }
         return result;
     }
+
+
 }

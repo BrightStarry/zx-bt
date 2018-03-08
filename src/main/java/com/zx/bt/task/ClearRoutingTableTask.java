@@ -40,7 +40,7 @@ public class ClearRoutingTableTask {
 	/**
 	 * 每x分钟清理一次路由表
 	 */
-	@Scheduled(cron = "0 0/10 * * * ? ")
+//	@Scheduled(cron = "0 0/10 * * * ? ")
 	public void clearRoutingTable() {
 		for (int i = 0; i < nodeIds.size(); i++) {
 			RoutingTable routingTable = routingTables.get(i);

@@ -117,15 +117,6 @@ public class FindNodeTask implements Pauseable {
         }
     }
 
-    /**
-     * 更新线程
-     * 每x分钟,更新一次要find_Node的目标节点
-     */
-    @Scheduled(cron = "0 0/3 * * * ? ")
-    public void updateTargetNodeId() {
-        config.getMain().setTargetNodeId(BTUtil.generateNodeIdString());
-        log.info("已更新TargetNodeId");
-    }
 
 
     /**

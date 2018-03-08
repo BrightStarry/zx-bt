@@ -3,9 +3,11 @@ package com.zx.bt.repository;
 import com.zx.bt.entity.Metadata;
 import com.zx.bt.entity.Node;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -23,5 +25,11 @@ public interface MetadataRepository extends JpaRepository<Metadata, Long> {
 	 * 最近x分钟内入库数量
 	 */
 	int countByCreateTimeGreaterThanEqual(Date date);
+
+	/**
+	 * 分页查询infoHash字段
+	 */
+	@Query(nativeQuery = true,value = "SELECT info_hash FROM metadata ORDER BY id LIMIT ?1,?2")
+	List<String> findInfoHash(long start, int size);
 
 }
