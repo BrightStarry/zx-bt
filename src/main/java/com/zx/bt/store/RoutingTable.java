@@ -257,15 +257,12 @@ public class RoutingTable {
                             return true;
                         }
                     }
-
-
                 } finally {
                     unlock(currentNode.lockId);
                 }
                 //此处不能直接新增新节点,因为当所有旧节点都被分配到同一子节点时,会导致仍需分裂节点,所以使用递归(也可循环)
                 if (isSplit)
                     put(node);
-
                 //否则抛弃该NodeId
                 return false;
             }
@@ -355,6 +352,8 @@ public class RoutingTable {
      */
     public List<Node> getForTop8(byte[] nodeId) {
         List<Node> nodes = new LinkedList<>();
+        if(nodeId == null || nodeId.length != 20)
+            return nodes;
         //nodeIds -> 160位二进制
         byte[] bits = CodeUtil.getBitAll(nodeId);
         TrieNode currentNode = root;

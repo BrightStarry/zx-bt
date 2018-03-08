@@ -1,5 +1,6 @@
 package com.zx.bt.util;
 
+import com.zx.bt.config.Config;
 import com.zx.bt.exception.BTException;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -50,19 +51,20 @@ public class HttpClientUtil {
     //请求配置
     private RequestConfig requestConfig;
 
-    //连接池连接最大数
-    private final Integer maxConnectionNum = 10;
-    //最大路由，
-    //这里route的概念可以理解为 运行环境机器 到 目标机器的一条线路。
-    // 举例来说，我们使用HttpClient的实现来分别请求 www.baidu.com 的资源和 www.bing.com 的资源那么他就会产生两个route。
-    //如果设置成200.那么就算上面的MAX_CONNECTION_NUM设置成9999，对同一个网站，也只会有200个可用连接
-    private final Integer maxPerRoute = 100;
-    //握手超时时间
-    private final Integer socketTimeout = 10000;
-    //连接请求超时时间
-    private final Integer connectionRequestTimeout = 10000;
-    //连接超时时间
-    private final Integer connectionTimeout = 10000;
+
+//    //连接池连接最大数
+//    private final Integer maxConnectionNum = 10;
+//    //最大路由，
+//    //这里route的概念可以理解为 运行环境机器 到 目标机器的一条线路。
+//    // 举例来说，我们使用HttpClient的实现来分别请求 www.baidu.com 的资源和 www.bing.com 的资源那么他就会产生两个route。
+//    //如果设置成200.那么就算上面的MAX_CONNECTION_NUM设置成9999，对同一个网站，也只会有200个可用连接
+//    private final Integer maxPerRoute = 100;
+//    //握手超时时间
+//    private final Integer socketTimeout = 10000;
+//    //获取连接请求超时时间
+//    private final Integer connectionRequestTimeout = 10000;
+//    //连接超时时间
+//    private final Integer connectionTimeout = 10000;
 
 
     /**
@@ -285,8 +287,9 @@ public class HttpClientUtil {
     /**
      * 私有化构造方法，构造时，创建对应的连接池实例
      * 使用连接池管理HttpClient可以提高性能
+     * @param config
      */
-    public HttpClientUtil() {
+    public HttpClientUtil(Config config) {
         try {
             /**
              * 初始化连接池
@@ -300,16 +303,16 @@ public class HttpClientUtil {
                     .register("http", new PlainConnectionSocketFactory())
                     .build();
             pool = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-            pool.setMaxTotal(maxConnectionNum);
-            pool.setDefaultMaxPerRoute(maxPerRoute);
+            pool.setMaxTotal(config.getHttp().getMaxConnectionNum());
+            pool.setDefaultMaxPerRoute(config.getHttp().getMaxPerRoute());
 
             /**
              * 初始化请求配置
              */
             requestConfig = RequestConfig.custom()
-                    .setSocketTimeout(socketTimeout)
-                    .setConnectionRequestTimeout(connectionRequestTimeout)
-                    .setConnectTimeout(connectionTimeout)
+                    .setSocketTimeout(config.getHttp().getSocketTimeout())
+                    .setConnectionRequestTimeout(config.getHttp().getConnectionRequestTimeout())
+                    .setConnectTimeout(config.getHttp().getConnectionTimeout())
                     .build();
         } catch (Exception e) {
             throw new BTException(LOG_PRE + "初始化异常" + e.getMessage());

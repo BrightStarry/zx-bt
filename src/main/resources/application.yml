@@ -6,6 +6,89 @@ spring:
     username: root
     password: Lzb112358*
     driver-class-name: com.mysql.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    # DataSource配置
+    druid:
+      # 初始容量
+      initial-size: 20
+      # 最大连接池个数
+      max-active: 100
+      # 最小空闲
+      min-idle: 10
+      # 获取连接最大等待时间
+      max-wait: 3000
+      # 是否缓存preparedStatement(PSCache),对游标提升巨大,建议oracle开启,mysql关闭
+      pool-prepared-statements: false
+      # 启用PSCache，必须配置大于0，当大于0时，poolPreparedStatements自动触发修改为true。在Druid中，不会存在Oracle下PSCache占用内存过多的问题，可以把这个数值配置大一些，比如说100
+      max-pool-prepared-statement-per-connection-size: 0
+      # 检测连接是否有效的sql，要求是一个查询语句，常用select 'x'。如果validationQuery为null，testOnBorrow、testOnReturn、testWhileIdle都不会起作用。
+      validation-query: select 'x'
+      # 检测连接是否有效的超时时间。秒,底层调用jdbc Statement对象的void setQueryTimeout(int seconds)方法
+      validation-query-timeout: 30
+      # 申请连接时执行validationQuery检测连接是否有效，做了这个配置会降低性能。
+      test-on-borrow: false
+      # 归还连接时执行validationQuery检测连接是否有效，做了这个配置会降低性能。
+      test-on-return: false
+      # 建议配置为true，不影响性能，并且保证安全性。申请连接的时候检测，如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效。
+      test-while-idle: true
+      # 驱逐策略间隔,如果连接空闲时间大于minEvictableIdleTimeMillis,则关闭
+      time-between-eviction-runs-millis: 60000
+      # 在池中的最小生存时间
+      min-evictable-idle-time-millis: 30000
+      # 在池中的最大生存时间
+      max-evictable-idle-time-millis: 600000
+      # 连接池中的minIdle数量以内的连接，空闲时间超过minEvictableIdleTimeMillis，则会执行keepAlive操作。
+      keep-alive: true
+      # 连接初始化时,执行的sql
+      connection-init-sqls:
+      # 开启的过滤器,常用的有  监控统计:stat  日志:log4j 防御sql注入:wall
+      filters: stat,wall,log4j
+      # 合并多个dataSource的监控记录
+      use-global-data-source-stat: true
+
+      # 监控配置
+      # 是否启用stat-filter默认值true
+      web-stat-filter.enabled: true
+      # 匹配的uri
+      web-stat-filter.url-pattern: /*
+      # 忽略的uri *.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*
+      web-stat-filter.exclusions: "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*"
+      # 是否启用session统计
+      web-stat-filter.session-stat-enable: true
+      web-stat-filter.session-stat-max-count: 1000
+      web-stat-filter.principal-session-name: zx
+      web-stat-filter.principal-cookie-name: zx
+      # 监控单个url调用的sql列表。
+      web-stat-filter.profile-enable: true
+      # StatViewServlet配置，说明请参考Druid Wiki，配置_StatViewServlet配置
+      #是否启用监控界面默认值true
+      stat-view-servlet.enabled: true
+      # web.xml的url-pattern,也就是访问/druid/*访问到该servlet
+      stat-view-servlet.url-pattern: /druid/*
+      #  允许清空统计数据
+      stat-view-servlet.reset-enable: true
+      # 用户名
+      stat-view-servlet.login-username: zx
+      # 密码
+      stat-view-servlet.login-password: 123456
+      # ip白名单
+      stat-view-servlet.allow:
+      # ip黑名单
+      stat-view-servlet.deny:
+      # 过滤器配置
+      filter:
+        stat:
+          # 聚合sql 开启慢sql查询
+          merge-sql: true
+          # 是否开启慢sql查询
+          log-slow-sql: true
+          # 超过多少时间为慢sql 开启慢sql查询
+          slow-sql-millis: 500
+          # 是否启用
+          enabled: true
+        # 安全配置,防止sql注入. 具体参数可查看文档,包括禁止各类增删查改的操作
+#        wall:
+#          config:
   jpa:
     database-platform: org.hibernate.dialect.MySQL5Dialect
     hibernate:
@@ -14,25 +97,34 @@ security:
   basic:
     enabled: false
 zx-bt:
+  http:
+    # 获取连接请求超时时间
+    connection-request-timeout: 2000
+    # 连接超时时间
+    connection-timeout: 3000
+    # 最大连接数
+    max-connection-num: 10
+    # 握手超时时间
+    socket-timeout: 3000
   performance:
     # find_node任务,线程数
-    find-node-task-thread-num: 3
+    find-node-task-thread-num: 2
     # find_node任务, 发送间隔. 毫秒
     find-node-task-interval-ms: 0
     # UDP服务器主任务线程数,单个端口的数量
-    udp-server-main-thread-num: 15
+    udp-server-main-thread-num: 10
 
     # fetchMetadataByPeerTask,最大线程数
     fetch-metadata-by-peer-task-tread-num: 3
     # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
-    fetch-metadata-by-other-web-task-queue-num: 102400
+    fetch-metadata-by-other-web-task-queue-num: 10240
     # fetchMetadataByOtherWebTask,线程数
-    fetch-metadata-by-other-web-task-thread-num: 30
+    fetch-metadata-by-other-web-task-thread-num: 5
 
     # get_peers任务,最多同时进行的任务数
     get-peers-task-concurrent-num: 100
     # get_peers任务, info_hash等待队列长度
-    get-peers-task-info-hash-queue-len: 102400
+    get-peers-task-info-hash-queue-len: 10240
     # get_peers任务过期时间
     get-peers-task-expire-second: 200
     # get_peers请求, 最小发送间隔
@@ -43,7 +135,7 @@ zx-bt:
     get-peers-task-create-interval-ms: 1000
 
     # 连接peer任务TCP线程数
-    tcp-client-thread-num: 4
+    tcp-client-thread-num: 8
     # 连接peer任务TCP连接超时时间(ms)
     tcp-connect-timeout-ms: 3000
 
@@ -64,9 +156,7 @@ zx-bt:
       - 44451
       - 44452
       - 44453
-      - 44454
-      - 44455
-    ip: 106.14.7.29
+    ip: 106.14.146.117
     init-addresses:
       - 213.136.79.7:6892
       - 173.212.205.4:6876
@@ -134,4 +224,10 @@ zx-bt:
       - 46.101.170.140:4445
       - 176.215.13.130:4445
       - 176.100.75.67:15302
-
+endpoints:
+  shutdown:
+    enabled: true
+    sensitive: false
+management:
+  security:
+    enabled: false

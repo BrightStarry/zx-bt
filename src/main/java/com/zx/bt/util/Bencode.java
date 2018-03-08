@@ -53,10 +53,10 @@ public class Bencode {
         stringTypeSeparator = ":".getBytes(charset)[0];
 
         //使用方法引用简写
-        functions[0] = this::decodeString;
-        functions[1] = this::decodeInt;
-        functions[2] = this::decodeList;
-        functions[3] = this::decodeDict;
+        functions[0] = this::decodeDict;
+        functions[1] = this::decodeString;
+        functions[2] = this::decodeInt;
+        functions[3] = this::decodeList;
     }
 
 //解码相关------------------------------------------------------------------------------------

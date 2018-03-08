@@ -2,21 +2,21 @@
 
 - 尝试一个磁力搜索系统，基于ELK进行存储搜索。
 - [BitTorrent官网](http://bittorrent.org)
-- [Bencode编解码Github项目](https://github.com/dampcake/bencode)-废弃(自行实现了)
-- [官网文档翻译-博客1](http://www.cnblogs.com/bymax/p/4973639.html)
-- [官网文档翻译-博客2](https://blog.sharpbai.com/2014/05/bittorrent-dht%E5%8D%8F%E8%AE%AE%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91/)
 
 #### 奇淫巧技
 - ISO_8859_1 编码可表示0x00 - 0xff 范围(单字节)的所有字符.而不会发生UTF-8/ASCII等编码中的无法识别字符.导致byte[]转为String后,再转回byte[]时
 发生变化.
 
-- linux后台运行nohup.不产生.out文件的命令(运行了没一会,1G+的文件我去)
+- jdk8给Collection新增的removeIf十分好用.例如
+> queue.removeIf(item -> item.getInfoHash().equals(infoHash));
+
+- linux后台运行nohup.不产生.out文件的命令(不加2>&1会额外输出一句ignoring input and redirecting stderr to stdout)
 > nohup java -jar /xxx/xxx/xxx.jar >/dev/null 2>&1 &
 
 #### bug
 - !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
 否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
-- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新
+- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
 - maven分模块时,如果在父模块写了 < modules >  标签,寻找子模块会有bug.其优先级会变成 相对路径 - 本地仓库 - 远程仓库
 - JDBC The last packet sent successfully to the server was 0 milliseconds ago. 异常. 原因是当mysql空闲连接超过一定数量后,  
 mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoReconnect=true&failOverReadOnly=false&maxReconnects=10即可.

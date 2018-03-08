@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.Date;
 
 /**
  * author:ZhengXing
@@ -38,6 +39,16 @@ public class InfoHash {
      * 如果是announce_peer类型(type == 1),则保存其peer的ip:ports
      */
     private String peerAddress = "";
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 修改时间
+     */
+    private Date updateTime;
 
     public InfoHash(String infoHash,  String peerAddress) {
         this.infoHash = infoHash;

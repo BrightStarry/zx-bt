@@ -21,7 +21,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -119,11 +118,12 @@ public class FetchMetadataByOtherWebTask {
                         String infoHashHexStr = queue.take();
                         Metadata metadata = run(infoHashHexStr);
                         //将种子信息入库
-                        if (!Objects.isNull(metadata))
+                        if (!Objects.isNull(metadata)) {
                             metadataService.saveMetadata(metadata);
-                        else
+                        } else {
                             //将任务加入get_peers队列
                             getPeersTask.put(infoHashHexStr);
+                        }
                     } catch (Exception e) {
                         log.error("{}异常:{}",LOG,e.getMessage(),e);
                     }
@@ -251,7 +251,7 @@ public class FetchMetadataByOtherWebTask {
                     break;
                 }
             }
-            length = lengthStr.substring(0, i);lengthUnit = lengthStr.substring(i);
+            length = lengthStr.substring(0, i);lengthUnit = lengthStr.substring(i).trim();
         }
         Optional<LengthUnitEnum> lengthUnitEnumOptional = EnumUtil.getByCodeString(lengthUnit, LengthUnitEnum.class);
         if (!lengthUnitEnumOptional.isPresent()) {
@@ -273,11 +273,6 @@ public class FetchMetadataByOtherWebTask {
         //获取解析用的document
         Document document = HtmlResolver.getDocument(htmlStr);
         return null;
-    }
-
-    public static void main(String[] args) {
-        FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask = new FetchMetadataByOtherWebTask(new HttpClientUtil(), new Config(), null, null, null, null, null);
-        fetchMetadataByOtherWebTask.fetchMetadataByCiliba("e9f075ab34ce0cd32ec33167327ffcfd17955575");
     }
 
 

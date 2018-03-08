@@ -71,6 +71,13 @@ public class FetchMetadataByPeerTask {
 	}
 
 	/**
+	 * 删除某个任务
+	 */
+	public void remove(String infoHash) {
+		queue.removeIf(item -> item.getInfoHash().equals(infoHash));
+	}
+
+	/**
 	 * 队列长度
 	 */
 	public int size() {
@@ -100,14 +107,18 @@ public class FetchMetadataByPeerTask {
 	@SneakyThrows
 	private void run() {
 		DelayInfoHash delayInfoHash = queue.take();
-		log.info("{}开始新任务.infoHash:{}", LOG, delayInfoHash.getInfoHash());
-		Metadata metadata = fetchMetadata(delayInfoHash.getInfoHash());
-		if (metadata != null) {
-			metadataService.saveMetadata(metadata);
-			log.info("{}成功.infoHash:{}", LOG, delayInfoHash.getInfoHash());
+		try {
+			log.info("{}开始新任务.infoHash:{}", LOG, delayInfoHash.getInfoHash());
+			Metadata metadata = fetchMetadata(delayInfoHash.getInfoHash());
+			if (metadata != null) {
+				metadataService.saveMetadata(metadata);
+				log.info("{}成功.infoHash:{}", LOG, delayInfoHash.getInfoHash());
+			}
+		} finally {
+			//无论成功失败与否,都删除infoHash表中该记录
+			infoHashRepository.deleteByInfoHash(delayInfoHash.getInfoHash());
 		}
-		//无论成功失败与否,都删除infoHash表中该记录
-		infoHashRepository.deleteByInfoHash(delayInfoHash.getInfoHash());
+
 	}
 
 	/**
@@ -160,7 +171,7 @@ public class FetchMetadataByPeerTask {
 		for (Result result : results) {
 			if (result.getResult() != null) {
 				metadata = bytes2Metadata(result.getResult(), infoHashHexStr);
-				break;
+				if(metadata != null) break;
 			}
 		}
 		return metadata;

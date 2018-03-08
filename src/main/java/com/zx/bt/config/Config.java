@@ -39,6 +39,12 @@ public class Config {
     @Valid
     private Performance performance = new Performance();
 
+    /**
+     * http
+     */
+    @Valid
+    private Http http = new Http();
+
     //常量配置--------
 
     //磁力前缀
@@ -235,6 +241,36 @@ public class Config {
 
     }
 
+    /**
+     * Http
+     */
+    @Data
+    public static class Http{
+        /**
+         * 最大连接数
+         */
+        private Integer maxConnectionNum = 30;
+
+        /**
+         * 最大路由
+         */
+        private Integer maxPerRoute = Integer.MAX_VALUE;
+
+        /**
+         * 握手超时时间
+         */
+        private Integer socketTimeout = 3000;
+
+        /**
+         * 获取连接请求超时时间
+         */
+        private Integer connectionRequestTimeout = 2000;
+
+        /**
+         * 连接超时时间
+         */
+        private Integer connectionTimeout = 3000;
+    }
 
 
 

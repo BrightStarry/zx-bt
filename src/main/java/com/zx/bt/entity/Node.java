@@ -53,6 +53,16 @@ public class Node {
     private Integer port;
 
     /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 修改时间
+     */
+    private Date updateTime;
+
+    /**
      * nodeIds 字节表示
      */
     @Transient

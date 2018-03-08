@@ -94,7 +94,8 @@ public class FindNodeTask implements Pauseable {
     /**
      * 每x分钟,取出rank值较大的节点发送findNode请求
      */
-    @Scheduled(cron = "0 0/10 * * * ? ")
+//    @Scheduled(cron = "0 0/10 * * * ? ")
+    @Deprecated
     public void autoPutToFindNodeQueue() {
         for (int j = 0; j < routingTables.size(); j++) {
             RoutingTable routingTable = routingTables.get(j);

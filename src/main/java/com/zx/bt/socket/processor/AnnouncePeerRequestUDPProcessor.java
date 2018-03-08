@@ -6,6 +6,7 @@ import com.zx.bt.entity.Node;
 import com.zx.bt.enums.MethodEnum;
 import com.zx.bt.enums.NodeRankEnum;
 import com.zx.bt.enums.YEnum;
+import com.zx.bt.exception.BTException;
 import com.zx.bt.repository.NodeRepository;
 import com.zx.bt.service.InfoHashService;
 import com.zx.bt.store.RoutingTable;
@@ -51,31 +52,31 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
 
 	@Override
 	boolean process1(ProcessObject processObject) {
-		InetSocketAddress sender = processObject.getSender();
-		Map<String, Object> rawMap = processObject.getRawMap();
-		MessageInfo messageInfo = processObject.getMessageInfo();
-		int index = processObject.getIndex();
+			InetSocketAddress sender = processObject.getSender();
+			Map<String, Object> rawMap = processObject.getRawMap();
+			MessageInfo messageInfo = processObject.getMessageInfo();
+			int index = processObject.getIndex();
 
-		AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(rawMap, sender.getPort());
+			AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(rawMap, sender.getPort());
 
-		log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}",
-				LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), rawMap);
+			log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}",
+					LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), rawMap);
 
-		//尝试将其加入 FetchMetadataByOtherWebTask,
-		fetchMetadataByOtherWebTask.put(requestContent.getInfo_hash());
-		//入库
-		infoHashService.saveInfoHash(requestContent.getInfo_hash(), BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
-		//尝试从get_peers等待任务队列删除该任务,正在进行的任务可以不删除..因为删除比较麻烦.要遍历value
-		getPeersTask.remove(requestContent.getInfo_hash());
-		//回复
-		this.sender.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index), index);
-		Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), sender, NodeRankEnum.ANNOUNCE_PEER.getCode());
-		//加入路由表
-		routingTables.get(index).put(node);
-		//入库
-		nodeRepository.save(node);
+			//尝试将其加入 FetchMetadataByOtherWebTask,
+			fetchMetadataByOtherWebTask.put(requestContent.getInfo_hash());
+			//入库
+			infoHashService.saveInfoHash(requestContent.getInfo_hash(), BTUtil.getIpBySender(sender) + ":" + requestContent.getPort() + ";");
+			//尝试从get_peers等待任务队列删除该任务,正在进行的任务可以不删除..因为删除比较麻烦.要遍历value
+			getPeersTask.remove(requestContent.getInfo_hash());
+			//回复
+			this.sender.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index), index);
+			Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), sender, NodeRankEnum.ANNOUNCE_PEER.getCode());
+			//加入路由表
+			routingTables.get(index).put(node);
+			//入库
+			nodeRepository.save(node);
+			return true;
 
-		return true;
 	}
 
 	@Override
