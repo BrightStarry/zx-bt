@@ -4,6 +4,7 @@ import com.zx.bt.config.Config;
 import com.zx.bt.store.InfoHashFilter;
 import com.zx.bt.util.BTUtil;
 import com.zx.bt.socket.Sender;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -14,6 +15,7 @@ import java.util.List;
  * datetime:2018-02-17 11:41
  * 初始化任务
  */
+@Slf4j
 @Component
 public class InitTask {
 
@@ -31,6 +33,7 @@ public class InitTask {
      * 加载初始队列,发送find_node请求
      */
     public void run() {
+        log.info("当前配置:",config);
         //初始化发送任务
         initSend();
         //初始化过滤器

@@ -122,7 +122,7 @@ zx-bt:
     # find_node任务, 发送间隔. 毫秒
     find-node-task-interval-ms: 0
     # UDP服务器主任务线程数,单个端口的数量
-    udp-server-main-thread-num: 10
+    udp-server-main-thread-num: 1
 
     # fetchMetadataByPeerTask,最大线程数
     fetch-metadata-by-peer-task-tread-num: 3
