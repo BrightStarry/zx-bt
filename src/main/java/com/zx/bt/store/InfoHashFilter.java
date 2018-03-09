@@ -28,7 +28,6 @@ public class InfoHashFilter {
         filter = BloomFilter.create((str, primitiveSink) -> primitiveSink.putBytes(CodeUtil.hexStr2Bytes(str)),
                 config.getPerformance().getInfoHashFilterMaxNum(), config.getPerformance().getInfoHashFilterFpp());
         this.metadataRepository = metadataRepository;
-        importExistInfoHash();
     }
 
     /**

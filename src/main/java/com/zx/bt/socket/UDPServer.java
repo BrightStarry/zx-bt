@@ -141,10 +141,10 @@ public class UDPServer {
             try {
                 map = bencode.decode(bytes, Map.class);
             } catch (BTException e) {
-                log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
+                log.debug("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage());
                 return;
             } catch (Exception e) {
-                log.error("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
+                log.debug("{}消息解码异常.发送者:{}.异常:{}", LOG, sender, e.getMessage(), e);
                 return;
             }
 

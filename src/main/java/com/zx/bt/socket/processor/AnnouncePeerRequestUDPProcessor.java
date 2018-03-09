@@ -54,14 +54,11 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
     @Override
     boolean process1(ProcessObject processObject) {
         InetSocketAddress sender = processObject.getSender();
-        Map<String, Object> rawMap = processObject.getRawMap();
-        MessageInfo messageInfo = processObject.getMessageInfo();
         int index = processObject.getIndex();
-
-        AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(rawMap, sender.getPort());
+        AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(processObject.getRawMap(), sender.getPort());
 
         log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}",
-                LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), rawMap);
+                LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), processObject.getRawMap());
 
 
         //入库
@@ -69,18 +66,13 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
         //尝试从get_peers等待任务队列删除该任务,正在进行的任务可以不删除..因为删除比较麻烦.要遍历value
         getPeersTask.remove(requestContent.getInfo_hash());
         //回复
-        this.sender.announcePeerReceive(messageInfo.getMessageId(), sender, nodeIds.get(index), index);
+        this.sender.announcePeerReceive(processObject.getMessageInfo().getMessageId(), sender, nodeIds.get(index), index);
         Node node = new Node(CodeUtil.hexStr2Bytes(requestContent.getId()), sender, NodeRankEnum.ANNOUNCE_PEER.getCode());
         //加入路由表
         routingTables.get(index).put(node);
         //入库
         nodeRepository.save(node);
         fetchMetadataByOtherWebTask.put(requestContent.getInfo_hash());
-
-
-
-
-
         return true;
 
     }

@@ -71,6 +71,7 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>5.0.0.Alpha2</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -130,6 +131,19 @@
             <artifactId>guava</artifactId>
             <version>24.0-jre</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>transport</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+
 
 
 

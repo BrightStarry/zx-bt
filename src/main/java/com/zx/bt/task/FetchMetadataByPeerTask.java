@@ -236,14 +236,14 @@ public class FetchMetadataByPeerTask {
 			//如果是分片信息
 			if (messageStr.contains("msg_type")) {
 //				log.info("收到分片消息:{}", messageStr);
-				fetchMetadataBytes(messageStr,ctx);
+				fetchMetadataBytes(messageStr);
 			}
 		}
 
 		/***
 		 * 获取metadataBytes
 		 */
-		private void fetchMetadataBytes(String messageStr,ChannelHandlerContext ctx) {
+		private void fetchMetadataBytes(String messageStr) {
 			String resultStr = messageStr.substring(messageStr.indexOf("ee") + 2, messageStr.length());
 			byte[] resultStrBytes = resultStr.getBytes(CharsetUtil.ISO_8859_1);
 			if (result.getResult() != null) {
@@ -253,8 +253,6 @@ public class FetchMetadataByPeerTask {
 			}
 			//唤醒latch
 			result.getLatch().countDown();
-			//此时直接关闭
-			ctx.close();
 		}
 
 		/**

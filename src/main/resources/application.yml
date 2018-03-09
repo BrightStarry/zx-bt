@@ -120,7 +120,7 @@ zx-bt:
     # find_node任务,线程数
     find-node-task-thread-num: 1
     # find_node任务, 发送间隔. 毫秒
-    find-node-task-interval-ms: 10
+    find-node-task-interval-ms: 0
     # UDP服务器主任务线程数,单个端口的数量
     udp-server-main-thread-num: 5
 
@@ -132,7 +132,7 @@ zx-bt:
     # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
     fetch-metadata-by-other-web-task-queue-num: 102400
     # fetchMetadataByOtherWebTask,线程数
-    fetch-metadata-by-other-web-task-thread-num: 40
+    fetch-metadata-by-other-web-task-thread-num: 50
 
     # get_peers任务,最多同时进行的任务数
     get-peers-task-concurrent-num: 50
@@ -158,18 +158,22 @@ zx-bt:
     tcp-connect-timeout-ms: 3000
 
     # 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
-    routing-table-prefix-len: 9
+    routing-table-prefix-len: 10
     # 路由表分段锁 数量
     routing-table-lock-num: 10
 
   main:
     # 是否开启主任务
-    start: true
+    start: false
     ports:
       - 44444
       - 44445
       - 44446
       - 44447
+      - 44448
+      - 44449
+      - 44450
+      - 44451
     ip: 106.14.147.31
     init-addresses:
       # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾
