@@ -87,8 +87,10 @@ public class FetchMetadataByOtherWebTask {
             return;
         }
         //否则将其加入布隆过滤器和队列
-        infoHashFilter.put(infoHashHexStr);
-        queue.offer(infoHashHexStr);
+        //当队列已满.抛弃该任务, 也不加入过滤器
+        if (queue.offer(infoHashHexStr)) {
+            infoHashFilter.put(infoHashHexStr);
+        }
     }
 
     /**
@@ -202,9 +204,8 @@ public class FetchMetadataByOtherWebTask {
         long length = lengthStr2ByteLength(lengthStr, true);
         //文件列表div
         Element infosDiv = HtmlResolver.getElement(document, "#wall > div.fileDetail > div:nth-child(4) > div.panel-body > ol");
-        Elements children = infosDiv.children();
         List<Metadata.Info> infos = new LinkedList<>();
-        for (Element child : children) {
+        for (Element child : infosDiv.children()) {
             String infoName = decodeURIComponent(child.childNode(1).outerHtml());
             long infoLength = lengthStr2ByteLength(child.child(1).text(), true);
             infos.add(new Metadata.Info(infoName, infoLength));
@@ -225,8 +226,7 @@ public class FetchMetadataByOtherWebTask {
         String[] subStr2Arr = substr2.split("\"\\+\"");
         subStr2Arr[0] = subStr2Arr[0].substring(1);
         subStr2Arr[subStr2Arr.length - 1] = StringUtils.substringBeforeLast(subStr2Arr[subStr2Arr.length - 1], "\"");
-        String nameUrlEncode = String.join("", subStr2Arr);
-        return URLDecoder.decode(nameUrlEncode, CharsetUtil.UTF_8.name());
+        return URLDecoder.decode(String.join("", subStr2Arr), CharsetUtil.UTF_8.name());
     }
 
 

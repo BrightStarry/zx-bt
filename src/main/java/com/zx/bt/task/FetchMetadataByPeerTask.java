@@ -152,30 +152,38 @@ public class FetchMetadataByPeerTask {
 		InfoHash infoHash = infoHashRepository.findFirstByInfoHash(infoHashHexStr);
 		if (infoHash == null)
 			return null;
+
+		Metadata metadata = null;
 		//peer地址
 		String[] addressArr = infoHash.getPeerAddress().split(";");
 
-		List<Result> results = new LinkedList<>();
-		//向所有peer执行发送任务
-		for (String address : addressArr) {
-			String[] ipPort = address.split(":");
-			final Result result = new Result(latch);
-			results.add(result);
-			bootstrapFactory.build().handler(new CustomChannelInitializer(infoHashHexStr, result))
-					.connect(new InetSocketAddress(ipPort[0], Integer.parseInt(ipPort[1])))
-					.addListener(new ConnectListener(infoHashHexStr, BTUtil.generateNodeId()));
-		}
-		//暂停10s 或 被唤醒
-		latch.await(config.getPerformance().getFetchMetadataByPeerTaskReadTimeoutSecond(), TimeUnit.SECONDS);
-		//尝试解析
-		Metadata metadata = null;
-		for (Result result : results) {
-			if (result.getResult() != null) {
-				metadata = bytes2Metadata(result.getResult(), infoHashHexStr);
-				if(metadata != null) break;
+		//每次最多同时建立5个连接,如果peers数量超过5个,则分批获取
+		int maxNum = 5;
+		for (int i = 0; i < addressArr.length; i+=maxNum) {
+			List<Result> results = new LinkedList<>();
+			//向5个peer执行发送任务
+			for (int j = 0; j < 5; j++) {
+				if(addressArr.length <= i+j) break;
+				String[] ipPort = addressArr[i+j].split(":");
+				final Result result = new Result(latch);
+				results.add(result);
+				bootstrapFactory.build().handler(new CustomChannelInitializer(infoHashHexStr, result))
+						.connect(new InetSocketAddress(ipPort[0], Integer.parseInt(ipPort[1])))
+						.addListener(new ConnectListener(infoHashHexStr, BTUtil.generateNodeId()));
 			}
+			//暂停10s 或 被唤醒
+			latch.await(config.getPerformance().getFetchMetadataByPeerTaskReadTimeoutSecond(), TimeUnit.SECONDS);
+			//尝试解析
+
+			for (Result result : results) {
+				if (result.getResult() != null) {
+					metadata = bytes2Metadata(result.getResult(), infoHashHexStr);
+					if(metadata != null) break;
+				}
+			}
+			if(metadata != null) return metadata;
 		}
-		return metadata;
+		return null;
 	}
 
 	/**

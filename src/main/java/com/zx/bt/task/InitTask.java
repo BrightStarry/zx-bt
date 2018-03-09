@@ -33,7 +33,6 @@ public class InitTask {
      * 加载初始队列,发送find_node请求
      */
     public void run() {
-        log.info("当前配置:",config);
         //初始化发送任务
         initSend();
         //初始化过滤器

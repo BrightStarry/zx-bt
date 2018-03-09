@@ -133,7 +133,6 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 				log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), peersInfoBuilder.toString());
 				//清除该任务缓存 和 连接peer任务
 				getPeersCache.remove(messageInfo.getMessageId());
-				fetchMetadataByPeerTask.remove(getPeersSendInfo.getInfoHash());
 				//入库
 				infoHashService.saveInfoHash(getPeersSendInfo.getInfoHash(),peersInfoBuilder.toString());
 

@@ -68,7 +68,6 @@ public class StatController {
 			port.put(String.valueOf(ports.get(i)), routingTables.get(i).size());
 		}
 		result.put("端口信息",port);
-		result.put("当前配置", config);
 		return result;
 	}
 
