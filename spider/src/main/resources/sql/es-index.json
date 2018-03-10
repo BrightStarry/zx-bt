@@ -1,0 +1,44 @@
+{
+  "settings":{
+    "number_of_replicas": 0
+  },
+  "mappings":{
+    "metadata":{
+      "dynamic": false,
+      "properties":{
+        "id": {
+          "type": "long"
+        },
+        "name": {
+          "type": "text",
+          "index": true,
+          "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+        },
+        "length":{
+          "type": "long"
+        },
+        "infoHash":{
+          "type": "keyword"
+        },
+        "type":{
+          "type": "integer"
+        },
+        "hot":{
+          "type": "long"
+        },
+        "createTime":{
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "updateTime":{
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "infoString": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

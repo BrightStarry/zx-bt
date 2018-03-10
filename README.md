@@ -4,6 +4,8 @@
 - [BitTorrent官网](http://bittorrent.org)
 
 #### 奇淫巧技
+- IDEA在pom中,选择依赖的version中的版本值. 再 C + A + v.可自动抽离.
+
 - ISO_8859_1 编码可表示0x00 - 0xff 范围(单字节)的所有字符.而不会发生UTF-8/ASCII等编码中的无法识别字符.导致byte[]转为String后,再转回byte[]时
 发生变化.
 
@@ -134,3 +136,66 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
 #### 线程属性配置
 - 需要尽可能保证fetchMetadataOtherWebTask队列是稳定的,不为0,也不能很快就满.根据这个需求,设置findNodeTask线程数和fetchMetadataOtherWebTask线程数.
 
+
+
+### Elasticsearch
+
+#### 创建索引
+PUT http://106.14.7.29:9200/indexName
+JSON:
+```json
+    {
+      "settings":{
+        "number_of_replicas": 0
+      },
+      "mappings":{
+        "metadata":{
+          "dynamic": false,
+          "properties":{
+            "id": {
+              "type": "long"
+            },
+            "infoHash":{
+              "type": "keyword"
+            },
+            "infoString": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "text",
+              "index": true,
+              "analyzer": "ik_max_word",
+              "search_analyzer": "ik_max_word"
+            },
+            "length":{
+              "type": "long"
+            },
+            "type":{
+              "type": "integer"
+            },
+            "hot":{
+              "type": "long"
+            },
+            "createTime":{
+              "type": "date",
+              "format": "strict_date_optional_time||epoch_millis"
+            },
+            "updateTime":{
+              "type": "date",
+              "format": "strict_date_optional_time||epoch_millis"
+            }
+          }
+        }
+      }
+    }
+```
+
+#### 测试分词
+POST http://106.14.7.29:9200/indexName/_analyze?pretty=true
+JSON:
+```json
+    {
+    	"text": "fdfsdfsf",
+    	"analyzer":"ik_max_word"
+    }
+```
