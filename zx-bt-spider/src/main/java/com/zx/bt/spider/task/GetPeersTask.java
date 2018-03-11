@@ -1,6 +1,7 @@
 package com.zx.bt.spider.task;
 
 import com.zx.bt.spider.config.Config;
+import com.zx.bt.spider.dto.GetPeersSendInfo;
 import com.zx.bt.spider.entity.Node;
 import com.zx.bt.spider.function.Pauseable;
 import com.zx.bt.spider.repository.InfoHashRepository;
@@ -35,10 +36,9 @@ public class GetPeersTask implements Pauseable {
 
 
 	//(消息id,info_hash)缓存
-	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+	private final CommonCache<GetPeersSendInfo> getPeersCache;
 	private final List<RoutingTable> routingTables;
 	private final Config config;
-	private final InfoHashRepository infoHashRepository;
 	private final ReentrantLock lock;
 	private final Condition condition;
 	private final List<String> nodeIds;
@@ -46,13 +46,12 @@ public class GetPeersTask implements Pauseable {
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 	private final int getPeersTaskExpireSecond;
 
-	public GetPeersTask(CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, List<RoutingTable> routingTables,
-						Config config, InfoHashRepository infoHashRepository, Sender sender, FetchMetadataByPeerTask fetchMetadataByPeerTask) {
+	public GetPeersTask(CommonCache<GetPeersSendInfo> getPeersCache, List<RoutingTable> routingTables,
+						Config config, Sender sender, FetchMetadataByPeerTask fetchMetadataByPeerTask) {
 		this.getPeersCache = getPeersCache;
 		this.routingTables = routingTables;
 		this.config = config;
 		this.queue = new LinkedBlockingQueue<>(config.getPerformance().getGetPeersTaskInfoHashQueueLen());
-		this.infoHashRepository = infoHashRepository;
 		this.sender = sender;
 		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
 		this.lock = new ReentrantLock();
@@ -142,7 +141,7 @@ public class GetPeersTask implements Pauseable {
 			this.sender.getPeersBatch(addresses, nodeIds.get(i), new String(CodeUtil.hexStr2Bytes(infoHashHexStr), CharsetUtil.ISO_8859_1), messageId, i);
 		}
 		//存入缓存
-		getPeersCache.put(messageId, new CommonCache.GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
+		getPeersCache.put(messageId, new GetPeersSendInfo(infoHashHexStr).put(nodeIdList));
 		//存入任务队列
 		fetchMetadataByPeerTask.put(infoHashHexStr,getStartTime());
 	}

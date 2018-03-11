@@ -3,6 +3,7 @@ package com.zx.bt.spider.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.enums.CacheMethodEnum;
 import com.zx.bt.common.service.MetadataService;
+import com.zx.bt.spider.dto.GetPeersSendInfo;
 import com.zx.bt.spider.socket.Sender;
 import com.zx.bt.spider.socket.UDPServer;
 import com.zx.bt.spider.socket.processor.UDPProcessor;
@@ -54,7 +55,7 @@ public class BeanConfig {
 	 * get_peers请求消息缓存
 	 */
 	@Bean
-	public CommonCache<CommonCache.GetPeersSendInfo> getPeersCache(Config config) {
+	public CommonCache<GetPeersSendInfo> getPeersCache(Config config) {
 
 
 		return new CommonCache<>(

@@ -10,12 +10,20 @@ var param = {
 var index = {
     init: function() {
         /**
-         * 搜索框失去焦点
+         * 按下回车
          */
         $('#keyword').keydown(function (event) {
             if(event.keyCode !== 13)
                 return
             var keyword = $(this).val();
+            index.listByKeyword(keyword, param.defaultPageNo);
+        });
+
+        /**
+         * 点击搜索按钮
+         */
+        $('#keywordBtn').click(function () {
+            var keyword = $('#keyword').val();
             index.listByKeyword(keyword, param.defaultPageNo);
         });
     },

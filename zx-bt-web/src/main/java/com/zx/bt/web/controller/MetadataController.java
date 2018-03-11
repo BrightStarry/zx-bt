@@ -9,6 +9,7 @@ import com.zx.bt.common.util.EnumUtil;
 import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.common.vo.PageVO;
 import com.zx.bt.web.form.ListByKeywordForm;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 /**
@@ -24,9 +26,11 @@ import javax.validation.Valid;
  * datetime:2018-03-11 2:52
  * Metadata 控制器
  */
+@Slf4j
 @Controller
 @RequestMapping("/")
 public class MetadataController implements ControllerPlus {
+    private static final String LOG = "[MetadataController]";
 
     private final MetadataService metadataService;
 
@@ -40,22 +44,16 @@ public class MetadataController implements ControllerPlus {
      */
     @JsonView(MetadataVO.ListView.class)
     @GetMapping("/{keyword}/list/{pageNo}")
-    public String listByKeyword(@Valid ListByKeywordForm form, BindingResult bindingResult,Model model) {
+    public String listByKeyword(@Valid ListByKeywordForm form, BindingResult bindingResult, Model model, HttpServletRequest request) {
         isValid(bindingResult);
-        PageVO<MetadataVO> metadataPageVO = metadataService.listByKeyword(form.getKeyword(),
+        //清除两侧空格
+        String keyword = form.getKeyword().trim();
+        PageVO<MetadataVO> metadataPageVO = metadataService.listByKeyword(keyword,
                 EnumUtil.getByCode(form.getOrderType(), OrderTypeEnum.class).orElse(OrderTypeEnum.NONE),
                 form.getIsMustContain(), form.getPageNo(), form.getPageSize());
         model.addAttribute("metadataPageVO", metadataPageVO);
-
+        log.info("{}ip:{},搜素关键词:{}", LOG,getIp(request), keyword);
         return "list";
-    }
-
-    /**
-     * 详情页
-     */
-    @GetMapping("/detail")
-    public String list() {
-        return "detail";
     }
 
     /**

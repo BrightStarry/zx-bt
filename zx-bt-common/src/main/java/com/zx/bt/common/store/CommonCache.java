@@ -82,67 +82,24 @@ public class CommonCache<T> {
 	}
 
 	/**
+	 * 判断key是否存在
+	 */
+	public boolean containKey(String key){
+		return cache.get(key) != null;
+	}
+
+	/**
 	 * 判断值是否存在
 	 */
-	public boolean contain(T obj) {
-		return cache.asMap().values().parallelStream().filter(item -> item.equals(obj)).count() > 0;
+	public boolean containValue(T value) {
+		return cache.asMap().values().parallelStream().filter(item -> item.equals(value)).count() > 0;
 	}
 
 	/**
 	 * 判断某个属性是否存在, 自行传入方法
 	 */
-	public  boolean contain(Predicate<? super T> predicate) {
+	public  boolean containValue(Predicate<? super T> predicate) {
 		return cache.asMap().values().parallelStream().filter(predicate).count() > 0;
 	}
-
-
-	/**
-	 * get_peers发送信息
-	 * 该类被保存在该缓存中
-	 */
-	@AllArgsConstructor
-	@NoArgsConstructor
-	@Accessors(chain = true)
-	@Data
-	public static class GetPeersSendInfo {
-		private String infoHash;
-
-		/**
-		 * 已发送get_peers请求的nodeIds
-		 */
-		private List<byte[]> sentNodeIds = new LinkedList<>();
-
-		/**
-		 * 判断当前对象的sentNodeIds是否包含传入的nodeId
-		 */
-		public boolean contains(byte[] nodeId) {
-			return sentNodeIds.contains(nodeId);
-		}
-
-		/**
-		 * 将对象加入到sentNodeIds
-		 */
-		public GetPeersSendInfo put(List<byte[]> bytes) {
-			if (CollectionUtils.isEmpty(bytes))
-				return this;
-			bytes.forEach(this::put);
-			return this;
-		}
-
-		/**
-		 * 将对象加入到sentNodeIds
-		 */
-		public GetPeersSendInfo put(byte[] bytes) {
-			if(!sentNodeIds.contains(bytes))
-				sentNodeIds.add(bytes);
-			return this;
-		}
-
-		public GetPeersSendInfo(String infoHash) {
-			this.infoHash = infoHash;
-		}
-	}
-
-
 
 }

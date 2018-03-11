@@ -236,7 +236,7 @@ public class FetchMetadataByOtherWebTask {
      *
      * @param isHasSpace 数字和单位间是否有空格
      */
-    private long lengthStr2ByteLength(String lengthStr, boolean isHasSpace) {
+    private static long lengthStr2ByteLength(String lengthStr, boolean isHasSpace) {
         String length;String lengthUnit;
         if (isHasSpace) {
             String[] arr = lengthStr.split(" ");
@@ -256,8 +256,9 @@ public class FetchMetadataByOtherWebTask {
             log.error("{}[fetchMetadataByZhongZiSou]" + "长度单位不存在.当前单位:{}", LOG, lengthUnit);
             throw new BTException(LOG + "[fetchMetadataByZhongZiSou]" + "长度单位不存在.当前单位:" + lengthUnit);
         }
-        return Double.valueOf(length).longValue() * lengthUnitEnumOptional.get().getValue();
+        return (long)(Double.valueOf(length) * lengthUnitEnumOptional.get().getValue());
     }
+
 
 
     /**

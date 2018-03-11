@@ -4,11 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.entity.Metadata;
+import com.zx.bt.common.enums.ErrorEnum;
 import com.zx.bt.common.enums.LengthUnitEnum;
 import com.zx.bt.common.enums.OrderTypeEnum;
 import com.zx.bt.common.exception.BTException;
+import com.zx.bt.common.store.CommonCache;
 import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.common.vo.PageVO;
+import joptsimple.internal.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -33,6 +36,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -46,17 +50,22 @@ import java.util.*;
 @Component
 public class MetadataService {
 
-    private static final String LOG = "[ESMetadataRepository]";
+    private static final String LOG = "[MetadataService]";
 
     //es索引名
     private static final String ES_INDEX = "metadata";
     //es类型名
     private static final String ES_TYPE = "metadata";
     //要查询的字段
-    private static final String[] SELECT_FIELD_NAMES = new String[]{"_index", "_type", "infoHash", "name", "hot", "_id", "createTime"};
+    private static final String[] SELECT_FIELD_NAMES = new String[]{"infoHash", "name", "hot", "_id", "createTime"};
 
     private final TransportClient transportClient;
     private final ObjectMapper objectMapper;
+
+
+
+    @Autowired(required = false)
+    private CommonCache<String> hotCache;
 
     /**
      * infoHashFilter是否可用标识
@@ -82,6 +91,7 @@ public class MetadataService {
                 .setSource(objectMapper.writeValueAsBytes(metadata), XContentType.JSON)
                 .get();
         if (!result.status().equals(RestStatus.CREATED)) {
+            log.error("{}[insert]新增失败.状态码错误,当前状态码:{}",LOG,result.status());
             throw new BTException(LOG + "[insert]新增失败.状态码错误,当前状态码:" + result.status());
         }
     }
@@ -109,12 +119,20 @@ public class MetadataService {
      * 允许并发导致的误差
      */
     @SneakyThrows
-    public void incrementHot(String _id, int currentHot) {
-        UpdateResponse result = transportClient.prepareUpdate(ES_INDEX, ES_TYPE, _id)
+    public void incrementHot(String esId, long currentHot) {
+        if(hotCache == null)
+            return;
+        if(hotCache.containKey(esId))
+            return;
+        UpdateResponse result = transportClient.prepareUpdate(ES_INDEX, ES_TYPE, esId)
                 .setDoc(XContentFactory.jsonBuilder().startObject().field("hot", ++currentHot).endObject())
                 .get();
-        if (!result.status().equals(RestStatus.OK))
-            throw new BTException(LOG + "[incrementHot]递增热度失败,状态码错误,当前状态码:" + result.status());
+        if (!result.status().equals(RestStatus.OK)){
+            log.error("{}[incrementHot]递增热度失败,状态码错误,当前状态码:{}",LOG,result.status());
+            throw new BTException(ErrorEnum.UNKNOWN_ERROR);
+        }
+        //存入以esId为key,值为空串的缓存
+        hotCache.put(esId, Strings.EMPTY);
     }
 
 
@@ -126,6 +144,8 @@ public class MetadataService {
         String field = "infoHash";
         SearchResponse response = transportClient.prepareSearch(ES_INDEX)
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                //增加这句话可以只返回单个字段
+                .addDocValueField(field)
                 //每次返回条数
                 .setSize(size)
                 // 这个游标维持多长时间
@@ -187,9 +207,6 @@ public class MetadataService {
     @SneakyThrows
     public PageVO<MetadataVO> listByKeyword(String keyword, OrderTypeEnum orderTypeEnum, boolean isMustContain, int pageNo, int pageSize) {
         String name = "name";
-        //清除两侧空格
-        keyword = keyword.trim();
-        log.info("{}搜素关键词:{}", LOG, keyword);
         // 分词匹配查询
         MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery(name, keyword);
         //是否必须包含该关键字,增加.operator(Operator.AND),表示必须包含这个词, 不加,则是普通的根据keyword的分词查询
@@ -215,8 +232,11 @@ public class MetadataService {
 
         }
 
-        //设置要查询的字段
-//        searchRequestBuilder.storedFields(SELECT_FIELD_NAMES);
+//        //设置要查询的字段
+//        for (int i = 0; i < SELECT_FIELD_NAMES.length; i++) {
+//            searchRequestBuilder.addDocValueField(SELECT_FIELD_NAMES[i]);
+//        }
+
 
         //设置分页
         SearchResponse response = searchRequestBuilder
@@ -250,11 +270,12 @@ public class MetadataService {
         if(!response.isExists())
             return null;
         Metadata metadata = objectMapper.readValue(response.getSourceAsString(), Metadata.class);
-
         MetadataVO metadataVO = new MetadataVO(metadata, LengthUnitEnum.convert(metadata.getLength()),
                 objectMapper.readValue(metadata.getInfoString(), getCollectionType(List.class, MetadataVO.Info.class)));
         metadataVO.getMetadata().setInfoString(null).setId(null);
 
+        //给该资源增加热度 TODO 热度的增加可以弄一个缓存, 在缓存中的id不会再增加热度,直到缓存过期
+        incrementHot(esId, metadata.getHot());
         return metadataVO;
     }
 

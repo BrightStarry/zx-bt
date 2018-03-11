@@ -1,5 +1,6 @@
 package com.zx.bt.spider.socket.processor;
 
+import com.zx.bt.spider.dto.GetPeersSendInfo;
 import com.zx.bt.spider.dto.MessageInfo;
 import com.zx.bt.spider.dto.Peer;
 import com.zx.bt.spider.entity.Node;
@@ -39,25 +40,19 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[GET_PEERS_RECEIVE]";
 
 	private final List<RoutingTable> routingTables;
-	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
-	private final InfoHashRepository infoHashRepository;
-	private final NodeRepository nodeRepository;
+	private final CommonCache<GetPeersSendInfo> getPeersCache;
 	private final FindNodeTask findNodeTask;
 	private final Sender sender;
 	private final InfoHashService infoHashService;
-	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
-										CommonCache<CommonCache.GetPeersSendInfo> getPeersCache,
-										InfoHashRepository infoHashRepository, NodeRepository nodeRepository, FindNodeTask findNodeTask, Sender sender, InfoHashService infoHashService, FetchMetadataByPeerTask fetchMetadataByPeerTask) {
+										CommonCache<GetPeersSendInfo> getPeersCache,
+										 FindNodeTask findNodeTask, Sender sender, InfoHashService infoHashService) {
 		this.routingTables = routingTables;
 		this.getPeersCache = getPeersCache;
-		this.infoHashRepository = infoHashRepository;
-		this.nodeRepository = nodeRepository;
 		this.findNodeTask = findNodeTask;
 		this.sender = sender;
 		this.infoHashService = infoHashService;
-		this.fetchMetadataByPeerTask = fetchMetadataByPeerTask;
 	}
 
 	@Override
@@ -69,7 +64,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		RoutingTable routingTable = routingTables.get(index);
 
 		//查询缓存
-		CommonCache.GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
+		GetPeersSendInfo getPeersSendInfo = getPeersCache.get(messageInfo.getMessageId());
 		//查询rMap,此处rMap不可能不存在
 		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了

@@ -3,6 +3,7 @@ package com.zx.bt.spider.controller;
 import com.zx.bt.spider.config.Config;
 import com.zx.bt.common.service.MetadataService;
 import com.zx.bt.common.store.CommonCache;
+import com.zx.bt.spider.dto.GetPeersSendInfo;
 import com.zx.bt.spider.store.InfoHashFilter;
 import com.zx.bt.spider.store.RoutingTable;
 import com.zx.bt.spider.task.FetchMetadataByOtherWebTask;
@@ -25,7 +26,7 @@ public class StatController {
 
 	private final List<RoutingTable> routingTables;
 	private final FindNodeTask findNodeTask;
-	private final CommonCache<CommonCache.GetPeersSendInfo> getPeersCache;
+	private final CommonCache<GetPeersSendInfo> getPeersCache;
 	private final GetPeersTask getPeersTask;
 	private final  List<Integer> ports;
 	private final Config config;
@@ -35,7 +36,7 @@ public class StatController {
 	private final InfoHashFilter infoHashFilter;
 
 	public StatController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
-						  CommonCache<CommonCache.GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config,
+						  CommonCache<GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config,
 						  FetchMetadataByPeerTask fetchMetadataByPeerTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask,
 						  MetadataService metadataService, InfoHashFilter infoHashFilter) {
 		this.routingTables = routingTables;

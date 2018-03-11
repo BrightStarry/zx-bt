@@ -1,7 +1,9 @@
 package com.zx.bt.web.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zx.bt.common.enums.CacheMethodEnum;
 import com.zx.bt.common.service.MetadataService;
+import com.zx.bt.common.store.CommonCache;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
@@ -54,6 +56,22 @@ public class BeanConfig {
         return new MetadataService(transportClient,objectMapper);
     }
 
+    /**
+     * 热度缓存器
+     * 防止单个metadata热度上涨过快
+     * 存入的key为edId, 值为空串
+     */
+    @Bean
+    public CommonCache<String> hotCache(Config config) {
+        return new CommonCache<>(
+                CacheMethodEnum.AFTER_WRITE,
+                config.getService().getHotCacheExpireSecond(),
+                config.getService().getHotCacheSize());
+    }
+
+    /**
+     * 404异常处理路径
+     */
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer(){
         return container -> {

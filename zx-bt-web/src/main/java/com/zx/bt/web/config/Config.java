@@ -34,8 +34,30 @@ public class Config {
      */
     private Elasticsearch es = new Elasticsearch();
 
+    /**
+     * 业务相关
+     */
+    private Service service = new Service();
+
     //磁力前缀
     public static final String MAGNET_LINK_PRE = "magnet:?xt=urn:btih:";
+
+    /**
+     * 业务相关
+     */
+    @Data
+    public static class Service{
+        /**
+         * 同一种子,热度上涨1,至少需要x秒后
+         */
+        private Integer hotCacheExpireSecond = 20;
+
+        /**
+         * 热度缓存器, 总长度
+         * 可以不用太大,因为满了之后, 应该是优先驱逐早的种子,符合业务逻辑
+         */
+        private Integer hotCacheSize = 102400;
+    }
 
     /**
      * web 相关设置
