@@ -189,6 +189,7 @@ public class MetadataService {
         String name = "name";
         //清除两侧空格
         keyword = keyword.trim();
+        log.info("{}搜素关键词:{}", LOG, keyword);
         // 分词匹配查询
         MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery(name, keyword);
         //是否必须包含该关键字,增加.operator(Operator.AND),表示必须包含这个词, 不加,则是普通的根据keyword的分词查询
