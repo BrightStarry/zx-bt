@@ -1,0 +1,43 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head th:replace="~{fragments/header :: header ('福利球-发生异常')}">
+</head>
+<body>
+
+<div class="container">
+    <div class="col-lg-12  text-center title-top" >
+        <h1 class="display-4">福利球-磁力搜索</h1>
+        <p class="lead">一个DHT的BitTorrent磁力嗅探器,基于Elasticsearch存储并检索Torrent的Metadata信息</p>
+    </div>
+</div>
+
+<div class="container text-center content-top">
+    <div class="list-group">
+        <a href="#" class="list-group-item active">
+            <h4 class="list-group-item-heading">
+                发生异常
+            </h4>
+        </a>
+        <a href="#" class="list-group-item">
+            <h4 class="list-group-item-heading">
+                异常码
+            </h4>
+            <p class="list-group-item-text">
+                <span th:text="${code}"></span>
+            </p>
+        </a>
+        <a href="#" class="list-group-item">
+            <h4 class="list-group-item-heading">
+                异常消息
+            </h4>
+            <p class="list-group-item-text">
+                <span th:text="${message}"></span>
+            </p>
+        </a>
+        <a class="btn btn-lg btn-block btn-primary" href="/">返回首页</a>
+    </div>
+</div>
+</body>
+</html>

@@ -3,31 +3,14 @@
 - 尝试一个磁力搜索系统，基于ELK进行存储搜索。
 - [BitTorrent官网](http://bittorrent.org)
 
-#### 奇淫巧技
-- IDEA在pom中,选择依赖的version中的版本值. 再 C + A + v.可自动抽离.
 
-- ISO_8859_1 编码可表示0x00 - 0xff 范围(单字节)的所有字符.而不会发生UTF-8/ASCII等编码中的无法识别字符.导致byte[]转为String后,再转回byte[]时
-发生变化.
-
-- jdk8给Collection新增的removeIf十分好用.例如
-> queue.removeIf(item -> item.getInfoHash().equals(infoHash));
-
-- linux后台运行nohup.不产生.out文件的命令(不加2>&1会额外输出一句ignoring input and redirecting stderr to stdout)
-> nohup java -jar /xxx/xxx/xxx.jar >/dev/null 2>&1 &
-
-#### bug
-- !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
-否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
-- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
-- maven分模块时,如果在父模块写了 < modules >  标签,寻找子模块会有bug.其优先级会变成 相对路径 - 本地仓库 - 远程仓库
-- JDBC The last packet sent successfully to the server was 0 milliseconds ago. 异常. 原因是当mysql空闲连接超过一定数量后,  
-mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoReconnect=true&failOverReadOnly=false&maxReconnects=10即可.
-#### 注意点
-- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
-- node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
-- byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
-其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
-- java中的byte范围为-128 - 127,如果为负数,可通过 & 0xff转为int,其值为256 + 该负数, 例如(byte)-1 & 0xff = 255
+#### 重构
+- 将其重构为如下模块,以便将爬虫和网站分开部署
+    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目引入.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
+    - parent: pom项目,依赖版本定义.
+    - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
+    - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
+    - web: 磁力网站web项目. 
 
 
 
@@ -136,6 +119,88 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
 #### 线程属性配置
 - 需要尽可能保证fetchMetadataOtherWebTask队列是稳定的,不为0,也不能很快就满.根据这个需求,设置findNodeTask线程数和fetchMetadataOtherWebTask线程数.
 
+#### 奇淫巧技
+- IDEA在pom中,选择依赖的version中的版本值. 再 C + A + v.可自动抽离.
+
+- ISO_8859_1 编码可表示0x00 - 0xff 范围(单字节)的所有字符.而不会发生UTF-8/ASCII等编码中的无法识别字符.导致byte[]转为String后,再转回byte[]时
+发生变化.
+
+- jdk8给Collection新增的removeIf十分好用.例如
+> queue.removeIf(item -> item.getInfoHash().equals(infoHash));
+
+- linux后台运行nohup.不产生.out文件的命令(不加2>&1会额外输出一句ignoring input and redirecting stderr to stdout)
+> nohup java -jar /xxx/xxx/xxx.jar >/dev/null 2>&1 &
+
+- 在Application配置@ComponentScan("com.zx.bt")可以扫描到jar中的对应包下的bean(例如注解了@Compoent的)
+
+#### bug
+- !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
+否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
+- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
+- maven分模块时,如果在父模块写了相对路径的 < modules >  标签,寻找子模块会有bug.其优先级会变成 相对路径 - 本地仓库 - 远程仓库
+- JDBC The last packet sent successfully to the server was 0 milliseconds ago. 异常. 原因是当mysql空闲连接超过一定数量后,  
+mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoReconnect=true&failOverReadOnly=false&maxReconnects=10即可.
+
+- Thymeleaf模版的功能需要3.0+版本才能实现.如果项目直接继承自SpringBoot,可通过直接定义 <properties>修改版本号.
+但如果继承了自己的父项目,则无法这样修改. 可另建一个项目(zx-bt-top),继承spring-boot,然后在自己的父项目中,依赖管理该项目.
+```xml
+<!--新建的用于继承SpringBoot的项目-->
+<groupId>com.zx.bt</groupId>
+<artifactId>zx-bt-top</artifactId>
+<version>1.0</version>
+<packaging>pom</packaging>
+<name>zx-bt-top</name>
+<description>该项目仅用于继承Spring Boot依赖,而不是自己管理其依赖, 以达到通过增加&lt;properties&gt;标签直接修改Spring Boot定义的依赖的版本号</description>
+<parent>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-parent</artifactId>
+	<version>1.5.10.RELEASE</version>
+	<relativePath/>
+</parent>
+
+<!--自己的父项目-->
+ <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>com.zx.bt</groupId>
+                <artifactId>zx-bt-top</artifactId>
+                <version>${zx-bt.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+</dependencyManagement>
+```
+然后需要在新建的用于继承SpringBoot的项目,增加<properties>,以修改版本.
+#### 注意点
+- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
+- node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
+- byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
+其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
+- java中的byte范围为-128 - 127,如果为负数,可通过 & 0xff转为int,其值为256 + 该负数, 例如(byte)-1 & 0xff = 255
+- SpringBoot项目依赖自己的父项目时,打包可能不包含依赖. 需要添加如下:
+```xml
+<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zx.bt.web.WebApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<finalName>zx-bt-web</finalName>
+	</build>
+```
 
 
 ### Elasticsearch

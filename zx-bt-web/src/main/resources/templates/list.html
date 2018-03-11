@@ -1,0 +1,71 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head th:replace="~{fragments/header :: header ('福利球-列表')}">
+</head>
+<body>
+<div class="container">
+    <div class="list-group">
+        <div th:if="${#lists.isEmpty(metadataPageVO.list)}" class="alert alert-success">抱歉,暂无此相关资源.</div>
+
+
+        <a th:each="metadataVO : ${metadataPageVO.list}" th:object="${metadataVO.metadata}"  th:href="'/detail/' + *{_id}" target="_blank">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title" th:text="*{name}"></h3>
+                </div>
+                <div class="panel-body">
+                    <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
+                        长度: <span th:text="${metadataVO.length}"></span>
+                    </div>
+                    <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
+                        <span class="glyphicon glyphicon-fire">热度</span>: <span th:text="*{hot}"></span>
+                    </div>
+                    <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
+                        创建时间: <span th:text="*{#dates.format(createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+    </div>
+</div>
+
+<div class="container text-center">
+    <ul class="pagination pagination-lg">
+        <li th:class="${metadataPageVO.pageNo == 1 || metadataPageVO.pageNo <=5}   ? 'hidden'">
+            <a th:href="'/' + ${metadataPageVO.keyword} + '/list/1'" aria-label="Previous">
+                <span aria-hidden="true">«</span>
+            </a>
+        </li>
+
+        <li  th:each="i : ${#numbers.sequence(metadataPageVO.pageNo <= 5 ? 1 : metadataPageVO.pageNo - 4 ,
+        metadataPageVO.totalPage <= 10 ? metadataPageVO.totalPage
+        : (metadataPageVO.pageNo + 4 <=  metadataPageVO.totalPage) ? metadataPageVO.pageNo + 4
+        : metadataPageVO.totalPage)}"
+
+             th:class="${metadataPageVO.pageNo == i} ? 'active'">
+            <a th:href="'/' + ${metadataPageVO.keyword} + '/list/' + ${i}" th:text="${i}"></a>
+        </li>
+
+
+
+        <li th:class="${metadataPageVO.pageNo == metadataPageVO.totalPage || metadataPageVO.pageNo >= metadataPageVO.totalPage - 4} ? 'hidden'">
+            <a th:href="'/' + ${metadataPageVO.keyword} + '/list/' + ${metadataPageVO.totalPage}" aria-label="Next">
+                <span aria-hidden="true">»</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+
+
+<script src="../static/js/jquery-3.2.1.min.js" th:src="@{/js/jquery-3.2.1.min.js}"></script>
+<script src="../static/js/customer/index.js" th:src="@{/js/customer/index.js}"></script>
+<script src="../static/js/bootstrap.min.js" th:src="@{/js/bootstrap.min.js}"></script>
+</body>
+
+
+</html>

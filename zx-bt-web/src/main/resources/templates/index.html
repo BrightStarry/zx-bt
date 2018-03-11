@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head th:replace="~{fragments/header :: header ('福利球-首页')}">
+</head>
+<body>
+
+
+<div  class="container title-top" >
+    <div class="col-lg-12  text-center">
+        <h1 class="display-4">福利球-磁力搜索</h1>
+        <p class="lead">一个基于DHT结构和BitTorrent协议的磁力嗅探器,并基于Elasticsearch存储检索Torrent的Metadata信息</p>
+        <p>免责声明:本网站不下载存储任何Torrent文件,只使用爬虫,根据InfoHash获取存储Torrent的Metadata信息.</p>
+    </div>
+
+    <div class="container">
+        <div class="form-group col-lg-12 content-top" >
+            <div class="row ">
+                <input type="text" id="keyword" class="form-control" placeholder="输入你要查找的关键词" required autofocus>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="../static/js/jquery-3.2.1.min.js" th:src="@{/js/jquery-3.2.1.min.js}"></script>
+<script src="../static/js/customer/index.js" th:src="@{/js/customer/index.js}"></script>
+<script src="../static/js/bootstrap.min.js" th:src="@{/js/bootstrap.min.js}"></script>
+</body>
+</html>

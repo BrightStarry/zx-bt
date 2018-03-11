@@ -14,9 +14,10 @@
 
 
 
+
+
     <properties>
         <es.set.netty.runtime.available.processors>false</es.set.netty.runtime.available.processors>
-        <spring-boot.version>1.5.10.RELEASE</spring-boot.version>
         <maven.test.skip>true</maven.test.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -34,17 +35,26 @@
         <jsoup.version>1.11.2</jsoup.version>
         <guava.version>24.0-jre</guava.version>
         <elasticsearch.version>6.0.0</elasticsearch.version>
+        <nekohtml.version>1.9.22</nekohtml.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!--<dependency>-->
+                <!--<groupId>org.springframework.boot</groupId>-->
+                <!--<artifactId>spring-boot-dependencies</artifactId>-->
+                <!--<version>${spring-boot.version}</version>-->
+                <!--<type>pom</type>-->
+                <!--<scope>import</scope>-->
+            <!--</dependency>-->
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
+                <groupId>com.zx.bt</groupId>
+                <artifactId>zx-bt-top</artifactId>
+                <version>${zx-bt.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
 
             <dependency>
                 <groupId>com.zx.bt</groupId>
@@ -128,20 +138,15 @@
                 <artifactId>elasticsearch</artifactId>
                 <version>${elasticsearch.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>net.sourceforge.nekohtml</groupId>
+                <artifactId>nekohtml</artifactId>
+                <version>${nekohtml.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
-
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-        </plugins>
-        <finalName>zx-bt</finalName>
-    </build>
 
 
 </project>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.zx.bt</groupId>
+	<artifactId>zx-bt-top</artifactId>
+	<version>1.0</version>
+	<packaging>pom</packaging>
+
+	<name>zx-bt-top</name>
+	<description>该项目仅用于继承Spring Boot依赖,而不是自己管理其依赖, 以达到通过增加&lt;properties&gt;标签直接修改Spring Boot定义的依赖的版本号</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.5.10.RELEASE</version>
+		<relativePath/>
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+
+		<thymeleaf.version>3.0.2.RELEASE</thymeleaf.version>
+		<thymeleaf-layout-dialect.version>2.2.0</thymeleaf-layout-dialect.version>
+	</properties>
+
+
+</project>
