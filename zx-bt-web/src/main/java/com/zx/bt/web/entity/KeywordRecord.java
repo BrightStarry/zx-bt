@@ -7,6 +7,8 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.DynamicUpdate;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
 /**
  * author:ZhengXing
@@ -19,11 +21,18 @@ import javax.persistence.Entity;
 @NoArgsConstructor
 @Accessors(chain = true)
 @DynamicUpdate
-public class KeywordReocrd {
+public class KeywordRecord {
 
+    @Id
+    @GeneratedValue
     private Long id;
 
     private String keyword;
 
     private String ip;
+
+    public KeywordRecord(String keyword, String ip) {
+        this.keyword = keyword;
+        this.ip = ip;
+    }
 }

@@ -11,7 +11,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum OrderTypeEnum implements CodeEnum<Integer> {
-    NONE(0, "不进行任何排序", ""),
+    NONE(0, "默认", ""),
     EXPLAIN(1, "相关性", ""),
     HOT(2, "热度","hot"),
     LENGTH(3, "长度","length"),

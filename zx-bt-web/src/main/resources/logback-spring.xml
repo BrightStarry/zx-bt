@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Configuration>
-
+    <!--文件输出位置配置-->
+    <property name="log_dir" value="/log/zx-bt-web"/>
     <!--将日志输出到滚动台配置-->
     <appender name="consoleLog" class="ch.qos.logback.core.ConsoleAppender" >
         <layout class="ch.qos.logback.classic.PatternLayout" >
@@ -28,7 +29,7 @@
         <!--滚动策略-->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!--路径,在文件名中加入了时间-->
-            <fileNamePattern>/log/zx-bt-web/info.%d.log</fileNamePattern>
+            <fileNamePattern>${log_dir}/info.%d.log</fileNamePattern>
         </rollingPolicy>
     </appender>
 
@@ -46,7 +47,7 @@
         <!--滚动策略-->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!--路径,在文件名中加入了时间-->
-            <fileNamePattern>/log/zx-bt-web/error.%d.log</fileNamePattern>
+            <fileNamePattern>${log_dir}/error.%d.log</fileNamePattern>
         </rollingPolicy>
     </appender>
 

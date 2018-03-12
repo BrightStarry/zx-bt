@@ -1,6 +1,7 @@
 html {
     font-size: 14px;
 }
+
 @media (min-width: 768px) {
     html {
         font-size: 16px;
@@ -19,14 +20,44 @@ html {
     min-width: 220px;
 }
 
-.border-top { border-top: 1px solid #e5e5e5; }
-.border-bottom { border-bottom: 1px solid #e5e5e5; }
+.border-top {
+    border-top: 1px solid #e5e5e5;
+}
 
-.box-shadow { box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05); }
+.border-bottom {
+    border-bottom: 1px solid #e5e5e5;
+}
 
-.title-top{margin-top: 10%}
+.box-shadow {
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
 
-.content-top{margin-top: 5%}
 
-.less-top{margin-top: 3%}
+/*一些上边距设置*/
+.title-top {
+    margin-top: 10%
+}
 
+.content-top {
+    margin-top: 5%
+}
+
+.less-top {
+    margin-top: 1%
+}
+
+/*让英文也自动换行*/
+.line-break {
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+/**将下拉框变窄 */
+.thin-line-8{
+    line-height: 8px;
+}
+
+/**字体变窄 */
+.font-thin-line-8{
+    font-size: 8px;
+}

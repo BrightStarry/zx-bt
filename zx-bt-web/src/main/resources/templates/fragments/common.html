@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+<!--通用js脚本-->
+<span th:fragment="js">
+<script src="../../static/js/jquery-3.2.1.min.js" th:src="@{/js/jquery-3.2.1.min.js}"></script>
+<script src="../../static/js/customer/common.js" th:src="@{/js/customer/common.js}"></script>
+<script src="../../static/js/bootstrap.min.js" th:src="@{/js/bootstrap.min.js}"></script>
+<script src="../../static/js/bootstrap-switch.min.js" th:src="@{/js/bootstrap-switch.min.js}"></script>
+</span>
+
+<!--搜索框-->
+<div th:fragment="searchInput" class="form-group  col-lg-12">
+    <div class="row">
+        <input type="text" id="keyword" th:value="${metadataPageVO != null ? metadataPageVO.keyword : ''}" class="form-control" placeholder="输入你要查找的关键词,按下回车" required autofocus>
+    </div>
+
+    <div class="text-center less-top">
+        <button type="button" id="keywordBtn" class="btn btn-default">搜索</button>
+    </div>
+</div>
+</body>
+</html>

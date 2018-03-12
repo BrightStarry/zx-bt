@@ -2,27 +2,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org"
 >
-<head th:replace="~{fragments/header :: header ('福利球-详情')}">
+<head th:replace="~{fragments/header :: header ('福利球-磁力搜索-详情-' + ${metadataVO.metadata.name})}">
 </head>
 <body>
 <div class="container">
-    <div class="jumbotron">
-        <p th:text="${metadataVO.metadata.name}"></p>
-        <textarea class="form-control" th:text="${'magnet:?xt=urn:btih:' + metadataVO.metadata.infoHash}"
-                  rows="3"></textarea>
-        <div class="content-top">
-            <div class="col-lg-4  col-sm-4 col-md-4 col-xs-4">
-                长度: <span th:text="${metadataVO.length}"></span>
-            </div>
-            <div class="col-lg-4  col-sm-4 col-md-4 col-xs-4">
-                <span class="glyphicon glyphicon-fire">热度</span>: <span th:text="${metadataVO.metadata.hot}"></span>
-            </div>
-            <div class="col-lg-4  col-sm-4 col-md-4 col-xs-4">
-                创建时间: <span th:text="${#dates.format(metadataVO.metadata.createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
-            </div>
-        </div>
+    <div th:replace="~{fragments/common :: searchInput}"></div>
+</div>
+<div class="container jumbotron">
+    <p class="text-justify line-break" th:text="${metadataVO.metadata.name}"></p>
+
+    <textarea id="magnetText" class="form-control" th:text="${'magnet:?xt=urn:btih:' + metadataVO.metadata.infoHash}"
+              rows="3"></textarea>
+
+    <div class="container less-top">
+        <button  class="btn btn-primary" id="copyBtn" data-loading-text="复制成功" type="button">点击复制</button>
     </div>
 
+    <div class="less-top">
+        <div class="col-lg-4 col-md-4 col-sm-12  col-xs-12">
+            长度: <span th:text="${metadataVO.length}"></span>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12  col-xs-12">
+            <span class="glyphicon glyphicon-fire">热度</span>: <span th:text="${metadataVO.metadata.hot}"></span>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12  col-xs-12">
+            创建时间: <span th:text="${#dates.format(metadataVO.metadata.createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
+        </div>
+    </div>
+</div>
+<div class="container">
     <div class="panel panel-default">
         <div class="panel-heading">
             <h3 class="panel-title">文件列表</h3>
@@ -32,16 +40,15 @@
             <th>文件名</th>
             <th>文件大小</th>
             <tr th:each="info : ${metadataVO.infos}">
-                <td th:text="${info.name}"></td>
-                <td th:text="${info.length} + ' byte'"></td>
+                <td class="text-justify line-break" th:text="${info.name}"></td>
+                <td th:text="${info.lengthStr}"></td>
             </tr>
         </table>
     </div>
 </div>
 
 
-<script src="../static/js/jquery-3.2.1.min.js" th:src="@{/js/jquery-3.2.1.min.js}"></script>
-<script src="../static/js/bootstrap.min.js" th:src="@{/js/bootstrap.min.js}"></script>
-<script src="../static/js/customer/index.js" th:src="@{/js/customer/index.js}"></script>
+<span th:include="~{fragments/common :: js}"></span>
+<script src="../static/js/customer/detail.js" th:src="@{/js/customer/detail.js}"></script>
 </body>
 </html>

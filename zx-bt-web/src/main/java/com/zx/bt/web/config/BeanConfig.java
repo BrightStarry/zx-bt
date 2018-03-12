@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.enums.CacheMethodEnum;
 import com.zx.bt.common.service.MetadataService;
 import com.zx.bt.common.store.CommonCache;
+import com.zx.bt.web.websocket.Connection;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
@@ -13,6 +14,7 @@ import org.springframework.boot.web.servlet.ErrorPage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -70,6 +72,17 @@ public class BeanConfig {
     }
 
     /**
+     * websocket的{@link com.zx.bt.web.websocket.Connection} 对象存储
+     */
+    @Bean
+    public CommonCache<Connection> webSocketConnectionCache(Config config) {
+        return new CommonCache<>(
+                CacheMethodEnum.NONE,
+                config.getService().getWebSocketConnectExpireSecond(),
+                config.getService().getWebSocketMaxConnectNum());
+    }
+
+    /**
      * 404异常处理路径
      */
     @Bean
@@ -79,4 +92,12 @@ public class BeanConfig {
         };
     }
 
+
+    /**
+     * 用于在嵌入式的Tomcat中使用WebSocket
+     */
+    @Bean
+    public ServerEndpointExporter serverEndpointExporter(){
+        return new ServerEndpointExporter();
+    }
 }

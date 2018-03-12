@@ -1,5 +1,5 @@
 server:
-  port: 80
+  port: 8081
 endpoints:
   shutdown:
     enabled: true

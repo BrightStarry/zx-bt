@@ -1,5 +1,7 @@
 package com.zx.bt.common.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.zx.bt.common.entity.Metadata;
 import lombok.AllArgsConstructor;
@@ -53,9 +55,18 @@ public class MetadataVO {
         this.length = length;
     }
 
+    /**
+     * 将Metaadata属性中,不需要属性清空
+     */
+    public MetadataVO clearNotMustProperty() {
+        this.getMetadata().setInfoString(null).setId(null).setUpdateTime(null);
+        return this;
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Info {
         /**
          * 名字
@@ -67,6 +78,16 @@ public class MetadataVO {
          * 长度
          */
         private Long length;
+
+        /**
+         * 转换后长度
+         */
+        private String lengthStr;
+
+        public Info(String name, Long length) {
+            this.name = name;
+            this.length = length;
+        }
     }
 
 }

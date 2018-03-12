@@ -173,6 +173,11 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 </dependencyManagement>
 ```
 然后需要在新建的用于继承SpringBoot的项目,增加<properties>,以修改版本.
+
+- !!! 有一个很坑的东西,那就是SpringMVC的URL传参,无法传逗号.其他常用符号都可以,但是如果值中间有逗号.就会被截断.
+
+
+
 #### 注意点
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
 - node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
@@ -265,3 +270,13 @@ JSON:
     	"analyzer":"ik_max_word"
     }
 ```
+
+
+#### 前端插件记录
+- bootstrap-switch: bootstrap的开关样式.并包含了模态框
+- bootstrap-select: 选择框插件
+
+
+#### websocket
+- 准备增加弹幕聊天功能
+- [Spring Web Socket 文档](https://docs.spring.io/spring/docs/4.3.15.BUILD-SNAPSHOT/spring-framework-reference/htmlsingle/#websocket)

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.Range;
 import org.springframework.validation.BindingResult;
@@ -29,6 +30,7 @@ public class ListByKeywordForm extends PageForm {
      * 搜索关键词
      */
     @NotBlank(message = "搜索词不能为空")
+    @Length(min = 1,max = 128,message = "搜索词长度不正确(1-128)")
     private String keyword;
 
     /**

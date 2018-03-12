@@ -38,7 +38,13 @@ public interface ControllerPlus {
     default void isValid(BindingResult bindingResult) {
         //如果校验不通过,记录日志，并抛出异常
         if (bindingResult.hasErrors()) {
-            throw new BTException(ErrorEnum.FORM_ERROR.getCode(), bindingResult.getFieldError().getDefaultMessage());
+            //此处有一个问题, 例如 age参数需要是int,结果传了个String过来,就会转换失败.其getDefaultMessage返回的也就是那个转换失败.不太友好
+            String message = bindingResult.getFieldError().getDefaultMessage();
+            //此处用很笨的,判断长度来判断是否是系统抛出的异常
+            if (message.length() > 30) {
+                message = ErrorEnum.FORM_ERROR.getMessage();
+            }
+            throw new BTException(ErrorEnum.FORM_ERROR.getCode(), message);
         }
     }
 

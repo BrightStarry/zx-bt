@@ -47,7 +47,6 @@ import java.util.*;
  * elasticSearch 的 index: metadata type:metadata
  */
 @Slf4j
-@Component
 public class MetadataService {
 
     private static final String LOG = "[MetadataService]";
@@ -249,14 +248,14 @@ public class MetadataService {
         long totalElement = hits.totalHits;
         //总页数
         int totalPage = (int) (totalElement + pageSize - 1) / pageSize;
-        //防止其为0
+        //防止总页数为0
         totalPage = totalPage == 0 ? 1 : totalPage;
         //返回的list
         List<MetadataVO> metadatas = new LinkedList<>();
         Metadata metadata;
         for (SearchHit item : hits) {
-            metadata = objectMapper.readValue(item.getSourceAsString(), Metadata.class).set_id(item.getId()).setInfoString(null).setId(null);
-            metadatas.add(new MetadataVO(metadata,LengthUnitEnum.convert(metadata.getLength())));
+            metadata = objectMapper.readValue(item.getSourceAsString(), Metadata.class).set_id(item.getId());
+            metadatas.add(new MetadataVO(metadata,LengthUnitEnum.convert(metadata.getLength())).clearNotMustProperty());
         }
         return new PageVO<>(pageNo, pageSize, totalElement, totalPage, metadatas, keyword);
     }
@@ -269,14 +268,18 @@ public class MetadataService {
         GetResponse response = transportClient.prepareGet(ES_INDEX, ES_TYPE, esId).get();
         if(!response.isExists())
             return null;
+        //解析返回结果
         Metadata metadata = objectMapper.readValue(response.getSourceAsString(), Metadata.class);
         MetadataVO metadataVO = new MetadataVO(metadata, LengthUnitEnum.convert(metadata.getLength()),
                 objectMapper.readValue(metadata.getInfoString(), getCollectionType(List.class, MetadataVO.Info.class)));
-        metadataVO.getMetadata().setInfoString(null).setId(null);
-
-        //给该资源增加热度 TODO 热度的增加可以弄一个缓存, 在缓存中的id不会再增加热度,直到缓存过期
+        List<MetadataVO.Info> infos = metadataVO.getInfos();
+        //转换文件属性
+        for (int i = 0; i < infos.size(); i++) {
+            infos.get(i).setLengthStr(LengthUnitEnum.convert(infos.get(i).getLength()));
+        }
+        //给该资源增加热度
         incrementHot(esId, metadata.getHot());
-        return metadataVO;
+        return metadataVO.clearNotMustProperty();
     }
 
     /**
