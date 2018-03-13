@@ -135,7 +135,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		final StringBuilder peersInfoBuilder = new StringBuilder();
 		peerList.forEach(peer -> peersInfoBuilder.append(peer.getIp()).append(":").append(peer.getPort()).append(";"));
 
-		log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), peersInfoBuilder.toString());
+//		log.info("{}发送者:{},info_hash:{},消息id:{},返回peers:{}", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId(), peersInfoBuilder.toString());
 		//清除该任务缓存 和 连接peer任务
 		getPeersCache.remove(messageInfo.getMessageId());
 		//入库

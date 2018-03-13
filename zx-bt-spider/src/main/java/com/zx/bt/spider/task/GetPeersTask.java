@@ -126,7 +126,7 @@ public class GetPeersTask implements Pauseable {
 	private void run(String infoHashHexStr) {
 		//消息id
 		String messageId = BTUtil.generateMessageIDOfGetPeers();
-		log.info("{}开始新任务.消息Id:{},infoHash:{}", LOG, messageId, infoHashHexStr);
+//		log.info("{}开始新任务.消息Id:{},infoHash:{}", LOG, messageId, infoHashHexStr);
 
 		//当前已发送节点id
 		List<byte[]> nodeIdList = new ArrayList<>();

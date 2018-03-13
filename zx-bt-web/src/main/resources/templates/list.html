@@ -63,7 +63,7 @@
         : (metadataPageVO.pageNo + 4 <=  metadataPageVO.totalPage) ? metadataPageVO.pageNo + 4
         : metadataPageVO.totalPage)}"
 
-            th:class="${metadataPageVO.pageNo == i} ? 'active disabled'">
+            th:class="${metadataPageVO.pageNo == i} ? 'active'">
             <a href="javascript:void(0);" onclick="common.listByKeyword(this.text)" th:text="${i}"></a>
         </li>
 

@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class WebSocketMessageRequestDTO<T> {
+public class WebSocketRequestDTO<T> {
 
 	private static final int ONE_MINUTE_MILLS = 1000 * 60;
 

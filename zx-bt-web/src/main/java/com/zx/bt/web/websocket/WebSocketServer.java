@@ -1,19 +1,13 @@
 package com.zx.bt.web.websocket;
 
-import com.google.common.hash.BloomFilter;
 import com.zx.bt.common.exception.BTException;
 import com.zx.bt.common.store.CommonCache;
-import com.zx.bt.common.util.CodeUtil;
 import com.zx.bt.common.util.EnumUtil;
 import com.zx.bt.web.websocket.dto.HandshakeResponseDTO;
-import com.zx.bt.web.websocket.dto.WebSocketMessageRequestDTO;
-import com.zx.bt.web.websocket.dto.WebSocketMessageResponseDTO;
+import com.zx.bt.web.websocket.dto.WebSocketRequestDTO;
+import com.zx.bt.web.websocket.dto.WebSocketResponseDTO;
 import com.zx.bt.web.websocket.enums.WebSocketMessageCodeEnum;
 import com.zx.bt.web.websocket.enums.WebSocketMessageTypeEnum;
-import io.netty.util.CharsetUtil;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,7 +16,6 @@ import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.Optional;
 
 /**
  * author:ZhengXing
@@ -72,17 +65,17 @@ public class WebSocketServer {
 	 * 收到消息
 	 */
 	@OnMessage
-	public void onMessage(Session session, WebSocketMessageRequestDTO<?> webSocketMessageRequestDTO) {
+	public void onMessage(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) {
 		try {
 			//校验时间戳,如果失败,抛出异常
-			verifyRequestTimestamp(session, webSocketMessageRequestDTO);
+			verifyRequestTimestamp(session, webSocketRequestDTO);
 
-			switch (EnumUtil.getByCode(webSocketMessageRequestDTO.getType(), WebSocketMessageTypeEnum.class)
-					.orElseThrow(() -> new BTException("消息类型不存在:当前类型:" + webSocketMessageRequestDTO.getType()))) {
+			switch (EnumUtil.getByCode(webSocketRequestDTO.getType(), WebSocketMessageTypeEnum.class)
+					.orElseThrow(() -> new BTException("消息类型不存在:当前类型:" + webSocketRequestDTO.getType()))) {
 				//握手请求
 				case HANDSHAKE:
 					//发送握手响应(sessionId)
-					sendMessageOne(session,new WebSocketMessageResponseDTO<>(
+					sendMessageOne(session,new WebSocketResponseDTO<>(
 							session.getId(),WebSocketMessageTypeEnum.HANDSHAKE.getCode(),
 							new HandshakeResponseDTO(session.getId())));
 					break;
@@ -93,22 +86,22 @@ public class WebSocketServer {
 			}
 		} catch (BTException e) {
 			//发送异常响应
-			sendMessageOne(session, new WebSocketMessageResponseDTO<>(session.getId(),
-					webSocketMessageRequestDTO.getType(), WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR));
+			sendMessageOne(session, new WebSocketResponseDTO<>(session.getId(),
+					webSocketRequestDTO.getType(), WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR));
 		} catch (Exception e) {
 			log.error("{}[onMessage]发生未知异常:{}",e.getMessage(),e);
 			//发送异常响应
-			sendMessageOne(session, new WebSocketMessageResponseDTO<>(session.getId(),
-					webSocketMessageRequestDTO.getType(), WebSocketMessageCodeEnum.UNKNOWN_ERROR));
+			sendMessageOne(session, new WebSocketResponseDTO<>(session.getId(),
+					webSocketRequestDTO.getType(), WebSocketMessageCodeEnum.UNKNOWN_ERROR));
 		}
 	}
 
 	/**
 	 * 校验请求token,当失败时,发送异常响应
 	 */
-	public void verifyRequestToken(Session session, WebSocketMessageRequestDTO<?> webSocketMessageRequestDTO) throws BTException{
+	public void verifyRequestToken(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) throws BTException{
 		//token校验失败
-		if(!webSocketMessageRequestDTO.verifyToken(session.getId())){
+		if(!webSocketRequestDTO.verifyToken(session.getId())){
 			log.info("{}[verifyRequestToken]校验token失败");
 			throw new BTException(WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR);
 		}
@@ -117,9 +110,9 @@ public class WebSocketServer {
 	/**
 	 * 校验请求时间戳,当失败时,发送异常响应
 	 */
-	public void verifyRequestTimestamp(Session session, WebSocketMessageRequestDTO<?> webSocketMessageRequestDTO) throws BTException{
+	public void verifyRequestTimestamp(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) throws BTException{
 		//token校验失败
-		if(!webSocketMessageRequestDTO.verifyTimestamp()){
+		if(!webSocketRequestDTO.verifyTimestamp()){
 			log.info("{}[verifyRequestTimestamp]校验timestamp失败");
 			throw new BTException(WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR);
 		}
@@ -131,9 +124,9 @@ public class WebSocketServer {
 	/**
 	 * 向某个客户端发送数据
 	 */
-	public  void sendMessageOne(Session session, WebSocketMessageResponseDTO<?> webSocketMessageResponseDTO) {
+	public  void sendMessageOne(Session session, WebSocketResponseDTO<?> webSocketResponseDTO) {
 		try {
-			session.getAsyncRemote().sendObject(webSocketMessageResponseDTO);
+			session.getAsyncRemote().sendObject(webSocketResponseDTO);
 		} catch (Exception e) {
 			log.error("{}[sendMessageOne]向用户发送数据失败:{}",e.getMessage(),e);
 		}
@@ -142,10 +135,10 @@ public class WebSocketServer {
 	/**
 	 * 向所有用户广播数据
 	 */
-	public void sendMessageAll(WebSocketMessageResponseDTO<?> webSocketMessageResponseDTO) {
+	public void sendMessageAll(WebSocketResponseDTO<?> webSocketResponseDTO) {
 		webSocketConnectionCache.getValues().parallelStream().forEach(item ->{
 			try {
-				sendMessageOne(item.getWebSocketSession(),webSocketMessageResponseDTO);
+				sendMessageOne(item.getWebSocketSession(), webSocketResponseDTO);
 			} catch (Exception e) {
 				log.error("{}[sendMessageAll]向某用户发送数据失败:{}",e.getMessage(),e);
 			}

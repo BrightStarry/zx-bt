@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-public class WebSocketMessageResponseDTO<T> {
+public class WebSocketResponseDTO<T> {
 
 	/**
 	 * 消息类型
@@ -58,21 +58,21 @@ public class WebSocketMessageResponseDTO<T> {
 	}
 
 
-	public WebSocketMessageResponseDTO(String webSocketSessionId,Integer type, Long timestamp, T data) {
+	public WebSocketResponseDTO(String webSocketSessionId, Integer type, Long timestamp, T data) {
 		this.type = type;
 		this.timestamp = timestamp;
 		this.data = data;
 		generateHash(webSocketSessionId);
 	}
 
-	public WebSocketMessageResponseDTO(String webSocketSessionId,Integer type, T data) {
+	public WebSocketResponseDTO(String webSocketSessionId, Integer type, T data) {
 		this.type = type;
 		this.timestamp = System.currentTimeMillis();
 		this.data = data;
 		generateHash(webSocketSessionId);
 	}
 
-	public WebSocketMessageResponseDTO(String webSocketSessionId,Integer type,WebSocketMessageCodeEnum webSocketMessageCodeEnum) {
+	public WebSocketResponseDTO(String webSocketSessionId, Integer type, WebSocketMessageCodeEnum webSocketMessageCodeEnum) {
 		this.type = type;
 		this.code = webSocketMessageCodeEnum.getCode();
 		this.message = webSocketMessageCodeEnum.getMessage();

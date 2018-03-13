@@ -116,7 +116,8 @@ zx-bt:
     socket-timeout: 2000
   es:
     cluster-name: zx
-    ip: 106.14.7.29
+#    ip: 106.14.7.29
+    ip: 172.19.87.203
     port: 9300
   performance:
     # find_node任务,线程数
@@ -167,6 +168,8 @@ zx-bt:
   main:
     # 是否开启主任务
     start: true
+    # 布隆过滤器,重置间隔时间,小时
+    infoHashFilterResetHours: 24
     ports:
       - 44444
       - 44445
@@ -185,6 +188,10 @@ zx-bt:
       - 44458
       - 44459
       - 44460
+      - 44461
+      - 44462
+      - 44463
+      - 44464
     ip: 106.14.147.31
     init-addresses:
       # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾

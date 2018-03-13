@@ -14,7 +14,8 @@ var barrage = {
         /**
          * 发送握手请求
          */
-        webSocket.send()
+        var handshakeRequest = '{"type":0,"timestamp":' + new Date().getTime() + ',"data":null,"token":""}';
+        webSocket.send(handshakeRequest);
 
         /**
          * 接收到消息
