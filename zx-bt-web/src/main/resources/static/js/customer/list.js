@@ -1,3 +1,6 @@
+/**
+ * 列表页js
+ */
 var list = {
     /**
      * 初始化方法
@@ -17,7 +20,7 @@ var list = {
          */
         $('.selectpicker').selectpicker({
             style: 'btn-primary  thin-line-8 font-thin-line-8',
-            size: 5
+            size: 5//选项个数(超过该size会出现滚动条)
         });
 
 

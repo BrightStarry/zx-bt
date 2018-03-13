@@ -1,7 +1,10 @@
 package com.zx.bt.web.websocket;
 
+import org.springframework.stereotype.Component;
+
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
+import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.websocket.HandshakeResponse;
@@ -16,6 +19,8 @@ import javax.websocket.server.ServerEndpointConfig;
  * ${@link ServerEndpointConfig.Configurator}用于在握手中获取httpSession
  * ${@link ServletRequestListener}用于强制请求携带HttpSession,如果不实现,在握手中获取HttpSession会为空
  */
+@Component//加入bean是为了让@WebListener生效
+@WebListener
 public class FetchHttpSessionConfig extends ServerEndpointConfig.Configurator implements ServletRequestListener{
 
 	/**

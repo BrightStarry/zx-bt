@@ -10,6 +10,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * author:ZhengXing
@@ -74,15 +76,23 @@ public class InfoHashFilter {
     /**
      * 启用/禁用
      */
-    public void setAvailable(boolean available) {
+    private void setAvailable(boolean available) {
         this.available = available;
         metadataService.setInfoHashFilterAvailable(available);
     }
 
     /**
+     * 启动该过滤器
+     */
+    public void run() {
+        importExistInfoHash();
+        resetTimer();
+    }
+
+    /**
      * 导入所有入库种子信息到过滤器
      */
-    public void importExistInfoHash() {
+    private void importExistInfoHash() {
         try {
             log.info("{}正在初始化过滤器...",LOG);
             //禁用
@@ -122,5 +132,16 @@ public class InfoHashFilter {
         }
     }
 
+    /**
+     * 启动定时器,定时重置该过滤器,防止其长度过长
+     */
+    private void resetTimer() {
+        //重新执行导入方法即可
+        Executors.newScheduledThreadPool(1)
+                .scheduleAtFixedRate(this::importExistInfoHash,
+                        config.getMain().getInfoHashFilterResetHours(),
+                config.getMain().getInfoHashFilterResetHours(),
+                TimeUnit.HOURS);
+    }
 
 }

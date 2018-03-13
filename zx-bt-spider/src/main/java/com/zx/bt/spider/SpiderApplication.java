@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class SpiderApplication implements CommandLineRunner{
 
-	private final UDPServer udpServer;
 	private final InitTask initTask;
 	private final FindNodeTask findNodeTask;
 	private final GetPeersTask getPeersTask;
@@ -24,8 +23,7 @@ public class SpiderApplication implements CommandLineRunner{
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 	private final Config config;
 
-	public SpiderApplication(UDPServer udpServer, InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask, Config config) {
-		this.udpServer = udpServer;
+	public SpiderApplication( InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask, Config config) {
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
 		this.getPeersTask = getPeersTask;
@@ -54,8 +52,6 @@ public class SpiderApplication implements CommandLineRunner{
 	@Override
 	public void run(String... strings) throws Exception {
 		if(!config.getMain().getStart()) return;
-		//异步启动udp服务端
-		udpServer.start();
 		//同步执行初始化任务
 		initTask.run();
 		//异步启动find_node任务

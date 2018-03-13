@@ -80,6 +80,8 @@ public class FetchMetadataByOtherWebTask {
 
     /**
      * 入队
+     * 下面的操作如果没有当队列满了,不加入过滤器的需求, 可以直接使用infoHashFilter.put()方法,
+     * 并通过返回值判断. 为true,put成功,不重复; 为false,put失败,重复
      */
     public void put(String infoHashHexStr) {
         //如果处理过该infoHash,则不做任何操作
@@ -136,7 +138,7 @@ public class FetchMetadataByOtherWebTask {
      * 取出一个infoHash依次请求
      */
     private Metadata run(String infoHashHexStr) {
-        log.info("{}开始新任务.infoHash:{}", LOG, infoHashHexStr);
+//        log.info("{}开始新任务.infoHash:{}", LOG, infoHashHexStr);
         Metadata metadata = null;
         for (Function<String, Metadata> function : functions) {
             try {

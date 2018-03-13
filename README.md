@@ -176,6 +176,8 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 
 - !!! 有一个很坑的东西,那就是SpringMVC的URL传参,无法传逗号.其他常用符号都可以,但是如果值中间有逗号.就会被截断.
 
+- Spring使用@ServerEndpoint注解实现WebSocket服务器,被注解的类必须包含空的构造函数,否则会提示init异常.
+
 
 
 #### 注意点

@@ -42,11 +42,6 @@ public class BTUtil {
     private static RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder()
             .withinRange('0', 'z').build();
 
-
-
-
-
-
     /**
      * 从channel中获取到当前通道的id
      */
@@ -109,9 +104,7 @@ public class BTUtil {
          */
         String y = getParamString(map, "y", "y属性不存在.map:" + map);
         Optional<YEnum> yEnumOptional = EnumUtil.getByCode(y, YEnum.class);
-        if(!yEnumOptional.isPresent())
-            throw new BTException("y属性值不正确.map:" + map);
-        messageInfo.setStatus(yEnumOptional.get());
+        messageInfo.setStatus(yEnumOptional.orElseThrow(()->new BTException("y属性值不正确.map:" + map)));
 
         /**
          * 消息id
@@ -127,9 +120,7 @@ public class BTUtil {
             String q = getParamString(map, "q", "q属性不存在.map:" + map);
 
             Optional<MethodEnum> qEnumOptional = EnumUtil.getByCode(q, MethodEnum.class);
-            if(!qEnumOptional.isPresent())
-                throw new BTException("q属性值不正确.map:" + map);
-            messageInfo.setMethod(qEnumOptional.get());
+            messageInfo.setMethod(qEnumOptional.orElseThrow(()->new BTException("q属性值不正确.map:" + map)));
 
         } else  if (EnumUtil.equals(messageInfo.getStatus().getCode(), YEnum.RECEIVE))  {
             Map<String, Object> rMap = BTUtil.getParamMap(map, "r", "r属性不存在.map:" + map);

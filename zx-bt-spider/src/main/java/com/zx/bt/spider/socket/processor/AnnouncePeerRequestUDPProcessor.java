@@ -54,8 +54,7 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
         int index = processObject.getIndex();
         AnnouncePeer.RequestContent requestContent = new AnnouncePeer.RequestContent(processObject.getRawMap(), sender.getPort());
 
-        log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}",
-                LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), processObject.getRawMap());
+//        log.info("{}ANNOUNCE_PEER.发送者:{},ports:{},info_hash:{},map:{}", LOG, sender, requestContent.getPort(), requestContent.getInfo_hash(), processObject.getRawMap());
 
 
         //入库

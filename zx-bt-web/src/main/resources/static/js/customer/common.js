@@ -1,14 +1,17 @@
-var url = {
-    listByKeywordUrl: '/list/',//根据关键词分页查询
-};
-
+/**
+ * 通用js
+ */
 var param = {
   //默认起始页
   defaultPageNo:1
 };
 
 var common = {
-    /**
+    url: {
+        listByKeywordUrl: '/list/',//根据关键词分页查询
+    },
+
+/**
      * 初始化
      */
     init: function() {
@@ -16,13 +19,13 @@ var common = {
         $('#keyword').keydown(function (event) {
             if(event.keyCode !== 13)
                 return;
-            common.listByKeyword(1);
+            common.listByKeyword(param.defaultPageNo);
         });
 
         //点击搜素按钮
         $('#keywordBtn').click(function () {
 
-            common.listByKeyword(1);
+            common.listByKeyword(param.defaultPageNo);
         });
     },
 
@@ -48,7 +51,7 @@ var common = {
         if(!keyword.trim())
             return;
         // window.location.href = url.listByKeywordUrl + pageNo  + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword ;
-        window.open(url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword);
+        window.open(common.url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword);
     },
 
 };

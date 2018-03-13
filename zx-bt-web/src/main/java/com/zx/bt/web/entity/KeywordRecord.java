@@ -20,7 +20,6 @@ import javax.persistence.Id;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@DynamicUpdate
 public class KeywordRecord {
 
     @Id

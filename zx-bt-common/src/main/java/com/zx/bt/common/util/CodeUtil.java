@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
  * 编码工具类
  */
 public class CodeUtil {
+    //MD5字符长度
+    public static final int MD5_LENGTH_32 = 32;
 
     public static byte[] sha1(byte[] bytes) {
         return DigestUtils.sha1(bytes);
@@ -265,6 +267,20 @@ public class CodeUtil {
         return portBytes[1] & 0xFF | (portBytes[0] & 0xFF) << 8;
     }
 
+
+    /**
+     * 字符串转MD5，32位，小写
+     */
+    public static String stringToMd5(String str) {
+        return org.springframework.util.DigestUtils.md5DigestAsHex(str.getBytes());
+    }
+
+    /**
+     * 字符串转MD5，32位，大写
+     */
+    public static String stringToMd5ForUpperCase(String str) {
+        return stringToMd5(str).toUpperCase();
+    }
 
 
 

@@ -2,6 +2,7 @@ package com.zx.bt.spider.task;
 
 import com.zx.bt.spider.config.Config;
 import com.zx.bt.spider.socket.Sender;
+import com.zx.bt.spider.socket.UDPServer;
 import com.zx.bt.spider.store.InfoHashFilter;
 import com.zx.bt.spider.util.BTUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -22,19 +23,23 @@ public class InitTask {
     private final Config config;
     private final Sender sender;
     private final InfoHashFilter infoHashFilter;
+    private final UDPServer udpServer;
 
-    public InitTask(Config config, Sender sender, InfoHashFilter infoHashFilter) {
+    public InitTask(Config config, Sender sender, InfoHashFilter infoHashFilter, UDPServer udpServer) {
         this.config = config;
         this.sender = sender;
         this.infoHashFilter = infoHashFilter;
+        this.udpServer = udpServer;
     }
 
     /**
      * 加载初始队列,发送find_node请求
      */
     public void run() {
+        //异步启动udp服务端
+        udpServer.start();
         //初始化过滤器
-        infoHashFilter.importExistInfoHash();
+        infoHashFilter.run();
         //初始化发送任务
         initSend();
     }

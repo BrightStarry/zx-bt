@@ -99,6 +99,11 @@ public class Config {
         private Integer countMetadataMinute = 5;
 
         /**
+         * 布隆过滤器,重置间隔时间,小时
+         */
+        private Integer infoHashFilterResetHours = 24;
+
+        /**
          * 是否开启主任务
          */
         private Boolean start = true;

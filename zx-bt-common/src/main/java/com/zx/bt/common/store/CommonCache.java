@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,13 @@ public class CommonCache<T> {
 			cache.invalidate(key);
 		}
 		return result;
+	}
+
+	/**
+	 * 获取所有数据值
+	 */
+	public Collection<T> getValues() {
+		return cache.asMap().values();
 	}
 
 	/**

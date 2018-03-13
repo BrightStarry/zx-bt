@@ -107,13 +107,13 @@ security:
 zx-bt:
   http:
     # 获取连接请求超时时间
-    connection-request-timeout: 2000
+    connection-request-timeout: 1000
     # 连接超时时间
-    connection-timeout: 3000
+    connection-timeout: 2000
     # 最大连接数
-    max-connection-num: 10
+    max-connection-num: 100
     # 握手超时时间
-    socket-timeout: 3000
+    socket-timeout: 2000
   es:
     cluster-name: zx
     ip: 106.14.7.29
@@ -122,7 +122,7 @@ zx-bt:
     # find_node任务,线程数
     find-node-task-thread-num: 3
     # find_node任务, 发送间隔. 毫秒
-    find-node-task-interval-ms: 5
+    find-node-task-interval-ms: 1
     # UDP服务器主任务线程数,单个端口的数量
     udp-server-main-thread-num: 5
 
@@ -150,7 +150,7 @@ zx-bt:
     get-peers-task-create-interval-ms: 1000
 
     # infoHash布隆过滤器 预期最大数量
-    info-hash-filter-max-num: 99999999
+    info-hash-filter-max-num: 9999999
     #  infoHash布隆过滤器, 可接受误报比例
     info-hash-filter-fpp: 0.001
 
@@ -160,7 +160,7 @@ zx-bt:
     tcp-connect-timeout-ms: 2000
 
     # 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
-    routing-table-prefix-len: 10
+    routing-table-prefix-len: 9
     # 路由表分段锁 数量
     routing-table-lock-num: 10
 
@@ -176,6 +176,15 @@ zx-bt:
       - 44449
       - 44450
       - 44451
+      - 44452
+      - 44453
+      - 44454
+      - 44455
+      - 44456
+      - 44457
+      - 44458
+      - 44459
+      - 44460
     ip: 106.14.147.31
     init-addresses:
       # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾

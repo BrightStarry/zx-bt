@@ -95,6 +95,7 @@ public class BeanConfig {
 
     /**
      * 用于在嵌入式的Tomcat中使用WebSocket
+     * 独立容器不要添加
      */
     @Bean
     public ServerEndpointExporter serverEndpointExporter(){
