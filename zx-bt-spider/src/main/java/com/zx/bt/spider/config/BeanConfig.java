@@ -99,7 +99,7 @@ public class BeanConfig {
 		int size = config.getMain().getNodeIds().size();
 		List<UDPServer.UDPServerHandler> result = new ArrayList<>(size);
 		for (int i = 0; i < size; i++) {
-			result.add(new UDPServer.UDPServerHandler(i, bencode, config, udpProcessorManager, sender));
+			result.add(new UDPServer.UDPServerHandler(i, bencode, udpProcessorManager, sender));
 		}
 		return result;
 	}

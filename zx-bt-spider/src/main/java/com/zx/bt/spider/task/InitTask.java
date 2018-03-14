@@ -36,10 +36,10 @@ public class InitTask {
      * 加载初始队列,发送find_node请求
      */
     public void run() {
-        //异步启动udp服务端
-        udpServer.start();
         //初始化过滤器
         infoHashFilter.run();
+        //异步启动udp服务端
+        udpServer.start();
         //初始化发送任务
         initSend();
     }

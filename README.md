@@ -13,6 +13,13 @@
     - web: 磁力网站web项目. 
 
 
+#### 阻塞队列的实现
+无意中看了下ArrayBlockingQueue的源码. 主要在于维护一把锁和几个Condition. 例如put()时,如果元素满了,就使用一个condition让该当前线程等待.  
+而在删除方法中,在删除成功后,会使用同一个Condition唤醒某个线程(是signals而不是signalAll). 就酱.   
+
+此外需要注意的是,等待前获取的锁是调用ReentrantLock的lockInterruptibly()方法获取的可中断锁  
+(该锁,在已经中断的状态下,不能执行等待方法,需要处理InterruptedException; 普通锁如果在已经中断的状态下,仍可以进入等待状态);   
+
 
 ### 前提
 很久之前,在其他磁力网站搜索羞羞的东西的时候,我就想过一个问题:这些网站的数据从何而来,总不可能在和搜索引擎一样在广域网中胡乱搜索把.   
@@ -132,6 +139,8 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
 > nohup java -jar /xxx/xxx/xxx.jar >/dev/null 2>&1 &
 
 - 在Application配置@ComponentScan("com.zx.bt")可以扫描到jar中的对应包下的bean(例如注解了@Compoent的)
+
+- Lombok的@NonNull注解,之前我一直没怎么使用过.它相当于增加了一个if(xxx == null)的判断,并可抛出携带为空的变量的变量名的NPE.
 
 #### bug
 - !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)

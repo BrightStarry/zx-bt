@@ -45,7 +45,7 @@ public class FindNodeTask implements Pauseable {
         this.nodeIds = config.getMain().getNodeIds();
         this.routingTables = routingTables;
         this.sender = sender;
-        this.queue = new LinkedBlockingDeque<>(10240);
+        this.queue = new LinkedBlockingDeque<>(config.getPerformance().getFindNodeTaskMaxQueueLength());
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
     }
@@ -53,7 +53,7 @@ public class FindNodeTask implements Pauseable {
     /**
      * 发送队列
      */
-    private BlockingDeque<FindNode> queue;
+    private final BlockingDeque<FindNode> queue;
 
     /**
      * 入队首
@@ -74,15 +74,16 @@ public class FindNodeTask implements Pauseable {
     public void start() {
         //暂停时长
         int pauseTime = config.getPerformance().getFindNodeTaskIntervalMS();
+        int size = nodeIds.size();
+        TimeUnit milliseconds = TimeUnit.MILLISECONDS;
         for (int i = 0; i < config.getPerformance().getFindNodeTaskThreadNum(); i++) {
             new Thread(()->{
-                int size = nodeIds.size();
                 while (true) {
                     try {
                         //轮询使用每个端口向外发送请求
                         for (int j = 0; j < size; j++) {
                             run(j);
-                            pause(lock, condition, pauseTime, TimeUnit.MILLISECONDS);
+                            pause(lock, condition, pauseTime, milliseconds);
                         }
                     } catch (Exception e) {
                         log.error("[FindNodeTask]异常.error:{}",e.getMessage());

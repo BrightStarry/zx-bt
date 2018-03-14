@@ -109,11 +109,11 @@ zx-bt:
     # 获取连接请求超时时间
     connection-request-timeout: 1000
     # 连接超时时间
-    connection-timeout: 2000
+    connection-timeout: 3000
     # 最大连接数
-    max-connection-num: 100
+    max-connection-num: 150
     # 握手超时时间
-    socket-timeout: 2000
+    socket-timeout: 1000
   es:
     cluster-name: zx
 #    ip: 106.14.7.29
@@ -121,11 +121,13 @@ zx-bt:
     port: 9300
   performance:
     # find_node任务,线程数
-    find-node-task-thread-num: 3
+    find-node-task-thread-num: 10
     # find_node任务, 发送间隔. 毫秒
     find-node-task-interval-ms: 1
+    # find_node任务,最大队列长度
+    findNodeTaskMaxQueueLength: 102400
     # UDP服务器主任务线程数,单个端口的数量
-    udp-server-main-thread-num: 5
+    udp-server-main-thread-num: 8
 
     # fetchMetadataByPeerTask,最大线程数
     fetch-metadata-by-peer-task-tread-num: 2
@@ -134,7 +136,7 @@ zx-bt:
 
     # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
     fetch-metadata-by-other-web-task-queue-num: 102400
-    # fetchMetadataByOtherWebTask,线程数
+    # fetchMetadataByOtherWebTask,最大线程数
     fetch-metadata-by-other-web-task-thread-num: 50
 
     # get_peers任务,最多同时进行的任务数
@@ -153,10 +155,10 @@ zx-bt:
     # infoHash布隆过滤器 预期最大数量
     info-hash-filter-max-num: 9999999
     #  infoHash布隆过滤器, 可接受误报比例
-    info-hash-filter-fpp: 0.001
+    info-hash-filter-fpp: 0.0001
 
     # 连接peer任务TCP线程数
-    tcp-client-thread-num: 8
+    tcp-client-thread-num: 4
     # 连接peer任务TCP连接超时时间(ms)
     tcp-connect-timeout-ms: 2000
 
@@ -167,7 +169,9 @@ zx-bt:
 
   main:
     # 是否开启主任务
-    start: true
+    start: false
+    # 配置版本标识
+    configVersion: 1.0
     # 布隆过滤器,重置间隔时间,小时
     infoHashFilterResetHours: 24
     ports:
@@ -191,8 +195,7 @@ zx-bt:
       - 44461
       - 44462
       - 44463
-      - 44464
-    ip: 106.14.147.31
+    ip: 101.132.42.102
     init-addresses:
       # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾
       - router.utorrent.com:6881
@@ -274,6 +277,16 @@ zx-bt:
       - 125.62.63.86:50645
       - 223.210.50.238:20169
       - 101.246.184.135:13114
+      - 183.210.197.51:14754
+      - 211.161.245.64:44219
+      - 223.64.87.136:17409
+      - 122.135.81.237:15353
+      - 101.45.217.84:6881
+      - 121.4.95.179:52792
+      - 101.246.184.240:21393
+      - 101.240.97.213:16001
+      - 220.114.101.228:6881
+      - 188.235.156.245:4445
 
 
 

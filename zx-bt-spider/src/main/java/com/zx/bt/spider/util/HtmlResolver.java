@@ -22,7 +22,7 @@ public class HtmlResolver {
     /**
      * 抽取html中指定索引的某元素
      */
-    public static Element getElementByIndex(Document document, String selector, int index) {
+    public static Element getElementByIndex(Element document, String selector, int index) {
         return document.select(selector).get(index);
     }
 
@@ -36,7 +36,7 @@ public class HtmlResolver {
     /**
      *抽取html中单一的某个元素
      */
-    public static Element getElement(Document document, String selector){
+    public static Element getElement(Element document, String selector){
         return getElementByIndex(document, selector, 0);
     }
 
@@ -57,7 +57,7 @@ public class HtmlResolver {
     /**
      * 抽取html中某单一元素的单一属性
      */
-    public static String getElementAttr(Document document, String selector,String attrName){
+    public static String getElementAttr(Element document, String selector,String attrName){
         return getElement(document, selector).attr(attrName);
     }
 
@@ -71,14 +71,14 @@ public class HtmlResolver {
     /**
      * 抽取指定索引的某元素的某属性
      */
-    public static String getElementAttrByIndex(Document document, String selector, int index, String attrName) {
+    public static String getElementAttrByIndex(Element document, String selector, int index, String attrName) {
         return getElementByIndex(document, selector, index).attr(attrName);
     }
 
     /**
      * 抽取html中某单一元素的text
      */
-    public static String getElementText(Document document, String selector){
+    public static String getElementText(Element document, String selector){
         return getElement(document, selector).text();
     }
 

@@ -55,6 +55,7 @@ public class StatController {
 	@RequestMapping("/stat")
 	public Map<String, Object> stat() {
 		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("当前配置版本:", config.getMain().getConfigVersion());
 		result.put(config.getMain().getCountMetadataMinute() + "分钟内入库数",
 				metadataService.countByCreateTimeGE(DateUtils.addMinutes(new Date(), -config.getMain().getCountMetadataMinute())));
 		result.put("findNde队列", findNodeTask.size());

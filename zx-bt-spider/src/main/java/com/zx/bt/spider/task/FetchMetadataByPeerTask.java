@@ -134,7 +134,7 @@ public class FetchMetadataByPeerTask {
 	@AllArgsConstructor
 	private class DelayInfoHash implements Delayed {
 		private String infoHash;
-		private long startTime;
+		@NonNull private long startTime;
 
 		@Override
 		public long getDelay(TimeUnit unit) {

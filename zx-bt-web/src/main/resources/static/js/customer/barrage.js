@@ -1,6 +1,7 @@
 /**
  * 弹幕相关js
  */
+var webSocket;
 var barrage = {
     url: {
         webSocketUrl: 'ws://' + document.location.host + '/websocket',
@@ -9,14 +10,7 @@ var barrage = {
      * 连接到WebSocket
      */
     webSocketConnect:function(){
-        var webSocket  = new WebSocket(barrage.url.webSocketUrl);
-
-        /**
-         * 发送握手请求
-         */
-        var handshakeRequest = '{"type":0,"timestamp":' + new Date().getTime() + ',"data":null,"token":""}';
-        webSocket.send(handshakeRequest);
-
+        webSocket  = new WebSocket(barrage.url.webSocketUrl);
         /**
          * 接收到消息
          */
@@ -24,6 +18,14 @@ var barrage = {
             var webSocketMessage = JSON.parse(event.data);
             console.log(webSocketMessage);
         }
+
+        /**
+         * 发送握手请求
+         */
+        var handshakeRequest = '{"type":0,"timestamp":' + new Date().getTime() + ',"data":null,"token":""}';
+        webSocket.send(handshakeRequest);
+
+
     },
 };
 

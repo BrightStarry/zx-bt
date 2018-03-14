@@ -9,6 +9,7 @@ import com.zx.bt.spider.store.RoutingTable;
 import com.zx.bt.spider.util.BTUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.Map;
  * datetime:2018/3/1 0001 10:30
  * findNode 请求 处理器
  */
+@Order(4)
 @Slf4j
 @Component
 public class FindNodeRequestUDPProcessor extends UDPProcessor{

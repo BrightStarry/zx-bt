@@ -36,8 +36,9 @@ public abstract class UDPProcessor {
 	 * 不可重写
 	 */
 	final boolean process(ProcessObject processObject) {
+		//此处next为空时直接返回false
 		if(!isProcess(processObject))
-			return next.process(processObject);
+			return next != null && next.process(processObject);
 		try {
 			return process1(processObject);
 		}catch (BTException e) {

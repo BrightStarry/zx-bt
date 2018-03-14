@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum LengthUnitEnum implements CodeEnum<String> {
-
+    BYTES("bytes", "bytes", 1L, 0),
     BYTE("Byte", "Byte",1L,0),//因为需要解析的网站对字节表示不同
     B("B", "B",1L,0),
     KB("KB","KB",1024L,1),

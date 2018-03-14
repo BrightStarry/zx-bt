@@ -4,6 +4,7 @@ import com.zx.bt.spider.enums.MethodEnum;
 import com.zx.bt.spider.enums.YEnum;
 import com.zx.bt.spider.socket.Sender;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
  * datetime:2018/3/1 0001 10:30
  * ping 请求 处理器
  */
+@Order(6)
 @Slf4j
 @Component
 public class PingRequestUDPProcessor  extends UDPProcessor{

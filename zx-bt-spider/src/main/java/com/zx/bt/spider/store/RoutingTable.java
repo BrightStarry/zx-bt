@@ -199,8 +199,6 @@ public class RoutingTable {
         TrieNode nextNode;
         try {
             for (int i = 0; i < MAX_PREFIX_LEN; i++) {
-
-
                 //获取下一节点(根据nodeId字节数组的第i位)
                 nextNode = currentNode.next[bits[i]];
 
@@ -238,14 +236,17 @@ public class RoutingTable {
                         currentNode.split();
                         isSplit = true;
                     }else{
-                        //此处表示.整个路由表已经满了.如果旧节点rank值小于一定值, 或 rank较大但超过一定时间未活动, 替换
+                        //直接替换rank最小的那个节点
                         int minRankNodeIndex = currentNode.getMinRankNodeIndex();
-                        if (currentNode.nodes[minRankNodeIndex].getRank() <= NodeRankEnum.ANNOUNCE_PEER.getCode() ||
-                                TimeUnit.MINUTES.convert(System.currentTimeMillis() - currentNode.nodes[minRankNodeIndex].getLastActiveTime().getTime(),
-                                        TimeUnit.MILLISECONDS) > 60) {
-                            currentNode.nodes[minRankNodeIndex] = node;
-                            return true;
-                        }
+                        currentNode.nodes[minRankNodeIndex] = node;
+                        return true;
+//                        //此处表示.整个路由表已经满了.如果旧节点rank值小于一定值, 或 rank较大但超过一定时间未活动, 替换
+//                        if (currentNode.nodes[minRankNodeIndex].getRank() <= NodeRankEnum.ANNOUNCE_PEER.getCode() ||
+//                                TimeUnit.MINUTES.convert(System.currentTimeMillis() - currentNode.nodes[minRankNodeIndex].getLastActiveTime().getTime(),
+//                                        TimeUnit.MILLISECONDS) > 60) {
+//                            currentNode.nodes[minRankNodeIndex] = node;
+//                            return true;
+//                        }
                     }
                 } finally {
                     unlock(currentNode.lockId);

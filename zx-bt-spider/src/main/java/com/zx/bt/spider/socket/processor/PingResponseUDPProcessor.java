@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * ping 回复 处理器
  */
 @Slf4j
-@Component
+//@Component
 public class PingResponseUDPProcessor extends UDPProcessor{
 
 	@Override

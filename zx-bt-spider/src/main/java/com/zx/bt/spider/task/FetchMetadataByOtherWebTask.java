@@ -1,7 +1,6 @@
 package com.zx.bt.spider.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.javafx.binding.StringFormatter;
 import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.spider.config.Config;
 import com.zx.bt.common.entity.Metadata;
@@ -19,11 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 
@@ -50,16 +52,31 @@ public class FetchMetadataByOtherWebTask {
 
     /**
      * 各网站url规则
+     * infoHash默认为40位16进制小写字符串
      */
+    // url + infoHash
     private final String zhongzisouUrl = "https://www.zhongzidi.com/info-";
-    private final String btwhatUrl = "http://www.btwhat.info/wiki/%s.html";
-    private final String cilibaUrl = "https://www.ciliba.org/detail/%s.html";
+    // url + infoHash + .html
+    private final String btwhatUrl = "http://www.btwhat.info/wiki/";
+    // url + infoHash + .html
+    private final String cilibaUrl = "https://www.ciliba.org/detail/";
+    // url + 大写infoHash
+    private final String btceriseUrl = "http://www.btcerise.me/info/";
+    // url + infoHash + .html
+    private final String btrabbitUrl = "http://www.btrabbit.net/wiki/";
+
+
+    private final String commonSuf = ".html";
+
+    /**
+     * 线程池
+     */
+    private final ExecutorService threadPool;
 
     /**
      * 其他功能类
      */
     private final HttpClientUtil httpClientUtil;
-    private final Config config;
     private final ObjectMapper objectMapper;
     private final GetPeersTask getPeersTask;
     private final MetadataService metadataService;
@@ -69,13 +86,18 @@ public class FetchMetadataByOtherWebTask {
                                        GetPeersTask getPeersTask, MetadataService metadataService,
                                        InfoHashFilter infoHashFilter) {
         this.httpClientUtil = httpClientUtil;
-        this.config = config;
         this.queue = new LinkedBlockingQueue<>(config.getPerformance().getFetchMetadataByOtherWebTaskQueueNum());
         this.objectMapper = objectMapper;
         this.getPeersTask = getPeersTask;
         this.metadataService = metadataService;
         this.infoHashFilter = infoHashFilter;
-        this.functions = Arrays.asList(this::fetchMetadataByZhongZiSou,this::fetchMetadataByBtwhat);
+        this.functions = Arrays.asList(
+                this::fetchMetadataByBtcerise,
+                this::fetchMetadataByBtwhat,
+                this::fetchMetadataByCiliba,
+                this::fetchMetadataByBtrabbit,
+                this::fetchMetadataByZhongZiSou);
+        this.threadPool = Executors.newFixedThreadPool(config.getPerformance().getFetchMetadataByOtherWebTaskThreadNum());
     }
 
     /**
@@ -109,37 +131,66 @@ public class FetchMetadataByOtherWebTask {
         return queue.size();
     }
 
+    public static void main(String[] args) {
+        System.out.println(new Config());
+    }
+
     /**
      * 开启若干线程,执行run()
+     * 从原先的直接启动x个线程,靠阻塞队列实现暂停, 修改为使用线程池,只控制最大线程数
      */
     public void start() {
-        for (int i = 0; i < config.getPerformance().getFetchMetadataByOtherWebTaskThreadNum(); i++) {
-            new Thread(()->{
-                while (true) {
-                    try {
-                        String infoHashHexStr = queue.take();
-                        Metadata metadata = run(infoHashHexStr);
-                        //将种子信息入库
-                        if (!Objects.isNull(metadata)) {
-                            metadataService.insert(metadata);
-                        } else {
-                            //将任务加入get_peers队列
-                            getPeersTask.put(infoHashHexStr);
+        new Thread(()->{
+            while (true) {
+                try {
+                    String infoHashHexStr = queue.take();
+                    this.threadPool.execute(()->{
+                        try {
+                            Metadata metadata = run(infoHashHexStr);
+                            //将种子信息入库
+                            if (!Objects.isNull(metadata)) {
+								metadataService.insert(metadata);
+							} else {
+								//将任务加入get_peers队列
+								getPeersTask.put(infoHashHexStr);
+							}
+                        } catch (Exception e) {
+                            log.error("{}子任务异常:{}",LOG,e.getMessage(),e);
                         }
-                    } catch (Exception e) {
-                        log.error("{}异常:{}",LOG,e.getMessage(),e);
-                    }
+                    });
+                } catch (Exception e) {
+                    log.error("{}主任务异常:{}",LOG,e.getMessage(),e);
                 }
-            }).start();
-        }
+            }
+        }).start();
+
+//        for (int i = 0; i < config.getPerformance().getFetchMetadataByOtherWebTaskThreadNum(); i++) {
+//            new Thread(()->{
+//                while (true) {
+//                    try {
+//                        String infoHashHexStr = queue.take();
+//                        Metadata metadata = run(infoHashHexStr);
+//                        //将种子信息入库
+//                        if (!Objects.isNull(metadata)) {
+//                            metadataService.insert(metadata);
+//                        } else {
+//                            //将任务加入get_peers队列
+//                            getPeersTask.put(infoHashHexStr);
+//                        }
+//                    } catch (Exception e) {
+//                        log.error("{}异常:{}",LOG,e.getMessage(),e);
+//                    }
+//                }
+//            }).start();
+//        }
     }
 
     /**
      * 取出一个infoHash依次请求
      */
     private Metadata run(String infoHashHexStr) {
-//        log.info("{}开始新任务.infoHash:{}", LOG, infoHashHexStr);
-        Metadata metadata = null;
+        log.info("{}开始新任务.infoHash:{}", LOG, infoHashHexStr);
+        Metadata metadata= null;
         for (Function<String, Metadata> function : functions) {
             try {
                 metadata = function.apply(infoHashHexStr);
@@ -164,20 +215,24 @@ public class FetchMetadataByOtherWebTask {
         String htmlStr = httpClientUtil.doGetForBasicBrowser(zhongzisouUrl + infoHashHexStr);
         //获取解析用的document
         Document document = HtmlResolver.getDocument(htmlStr);
+
+        //主体
+        Element body = HtmlResolver.getElement(document, "#wrapp > div.jumbotron > div > div");
+
         //获取种子名字
-        String name = HtmlResolver.getElementText(document,
-                "#wrapp > div.jumbotron > div > div > div.panel.panel-primary > div.panel-heading > h3 > div");
+        String name = HtmlResolver.getElementText(body,
+                "div.panel.panel-primary > div.panel-heading > h3 > div");
         //种子长度
-        String lengthStr = HtmlResolver.getElementText(document,
-                "#wrapp > div.jumbotron > div > div > div:nth-child(4) > div.col-md-9 > div:nth-child(1) > div.panel-body > dl > dd:nth-child(6)");
+        String lengthStr = HtmlResolver.getElementText(body,
+                "div:nth-child(4) > div.col-md-9 > div:nth-child(1) > div.panel-body > dl > dd:nth-child(6)");
         //长度
         long length = lengthStr2ByteLength(lengthStr, true);
         //文件列表选择框
-        Element infosSelector = HtmlResolver.getElement(document,
-                "#wrapp > div.jumbotron > div > div > div:nth-child(4) > div.col-md-9 > div:nth-child(2) > div.panel-body > select");
+        Element infosDiv = HtmlResolver.getElement(body,
+                "div:nth-child(4) > div.col-md-9 > div:nth-child(2) > div.panel-body > select");
         List<MetadataVO.Info> infos = new LinkedList<>();
         //循环每个<option>
-        for (Element element : infosSelector.children()) {
+        for (Element element : infosDiv.children()) {
             String infoStr = element.html();
             String[] infoStrArr = infoStr.split("&nbsp;&nbsp;&nbsp;&nbsp;");
             infos.add(new MetadataVO.Info(infoStrArr[0], lengthStr2ByteLength(infoStrArr[1], false)));
@@ -188,13 +243,40 @@ public class FetchMetadataByOtherWebTask {
     }
 
     /**
+     * 磁力吧
+     * https://www.ciliba.org
+     * 2539eebf4f3db43eb1a680f3960926d20a253a2a
+     */
+    @SneakyThrows
+    private Metadata fetchMetadataByCiliba(String infoHashHexStr) {
+        // 整个页面信息
+        String htmlStr = httpClientUtil.doGetForBasicBrowser(cilibaUrl +  infoHashHexStr + commonSuf);
+        // 获取解析用的document
+        Document document = HtmlResolver.getDocument(htmlStr);
+        // 名字
+        String name = HtmlResolver.getElementText(document, "#wall > h1");
+        // 长度 它的格式是 "种子大小: 1.5 Gb"
+        String lengthStr = HtmlResolver.getElementText(document, "#wall > div.fileDetail > p:nth-child(3)").substring(5);
+        long length = lengthStr2ByteLength(lengthStr, true);
+        //文件列表选择框
+        Element infosDiv = HtmlResolver.getElement(document, "#wall > ol");
+        List<MetadataVO.Info> infos = new LinkedList<>();
+        for (Element element : infosDiv.children()) {
+            infos.add(new MetadataVO.Info(element.ownText(), lengthStr2ByteLength(element.child(0).text(), true)));
+        }
+        return new Metadata(infoHashHexStr, objectMapper.writeValueAsString(infos), name, length,
+                MetadataTypeEnum.CILIBA.getCode());
+    }
+
+
+    /**
      * btwhat网站
      * http://www.btwhat.info
      */
     @SneakyThrows
     private Metadata fetchMetadataByBtwhat(String infoHashHexStr) {
         //整个页面信息
-        String htmlStr = httpClientUtil.doGetForBasicBrowser(StringFormatter.format(btwhatUrl,infoHashHexStr).getValue());
+        String htmlStr = httpClientUtil.doGetForBasicBrowser(btwhatUrl + infoHashHexStr + commonSuf);
         //获取解析用的document
         Document document = HtmlResolver.getDocument(htmlStr);
         //名字 - 该网站需要 url解码
@@ -208,13 +290,71 @@ public class FetchMetadataByOtherWebTask {
         Element infosDiv = HtmlResolver.getElement(document, "#wall > div.fileDetail > div:nth-child(4) > div.panel-body > ol");
         List<MetadataVO.Info> infos = new LinkedList<>();
         for (Element child : infosDiv.children()) {
-            String infoName = decodeURIComponent(child.childNode(1).outerHtml());
-            long infoLength = lengthStr2ByteLength(child.child(1).text(), true);
-            infos.add(new MetadataVO.Info(infoName, infoLength));
+            infos.add(new MetadataVO.Info(decodeURIComponent(child.childNode(1).outerHtml()),
+                    lengthStr2ByteLength(child.child(1).text(), true)));
         }
         return new Metadata(infoHashHexStr, objectMapper.writeValueAsString(infos), name, length,
                 MetadataTypeEnum.BTWHAT.getCode());
     }
+
+    /**
+     * btcerise
+     * http://www.btcerise.me
+     */
+    @SneakyThrows
+    Metadata fetchMetadataByBtcerise(String infoHashHexStr) {
+        //整个页面信息
+        String htmlStr = httpClientUtil.doGetForBasicBrowser(btceriseUrl + infoHashHexStr.toUpperCase());
+        //获取解析用的document
+        Document document = HtmlResolver.getDocument(htmlStr);
+
+        //名字
+        String name = HtmlResolver.getElementText(document, "#content > div > h1");
+        //长度
+        String lengthStr = HtmlResolver.getElementText(document, "#content > div > ul > li:nth-child(3) > span").substring(3);
+        long length = lengthStr2ByteLength(lengthStr, false);
+        //文件列表div
+        Element infosDiv = HtmlResolver.getElement(document, "#filelist");
+        List<MetadataVO.Info> infos = new LinkedList<>();
+        Elements infosDivChildrens = infosDiv.children();
+        //此处不获取最后一个文件,因为它是该网站的广告(防止其他爬虫的(目测是防止那种直接操作浏览器内核的爬虫的))
+        for (int i = 0; i < infosDivChildrens.size() -1; i++) {
+            Element element = infosDivChildrens.get(i);
+            infos.add(new MetadataVO.Info(element.childNode(1).childNode(0).outerHtml(),  lengthStr2ByteLength(element.childNode(2).childNode(0).outerHtml(),false)));
+        }
+
+        return new Metadata(infoHashHexStr, objectMapper.writeValueAsString(infos), name, length,
+                MetadataTypeEnum.BTCERISE.getCode());
+    }
+
+    /**
+     * btrabbit
+     * http://www.btrabbit.net
+     */
+    @SneakyThrows
+    private Metadata fetchMetadataByBtrabbit(String infoHashHexStr) {
+        //整个页面信息
+        String htmlStr = httpClientUtil.doGetForBasicBrowser(btrabbitUrl + infoHashHexStr + commonSuf);
+        //获取解析用的document
+        Document document = HtmlResolver.getDocument(htmlStr);
+        //名字
+        String name = HtmlResolver.getElementText(document, "#wall > h2");
+        //长度
+        String lengthStr = HtmlResolver.getElementText(document, "#wall > div.fileDetail > div > table > tbody > tr:nth-child(2) > td:nth-child(5)");
+        long length = lengthStr2ByteLength(lengthStr, true);
+        //文件列表div
+        Element infosDiv = HtmlResolver.getElement(document, "#wall > div.fileDetail > div > div:nth-child(10) > div.panel-body > ol");
+        List<MetadataVO.Info> infos = new LinkedList<>();
+        for (Element element : infosDiv.children()) {
+            infos.add(new MetadataVO.Info(element.ownText(),lengthStr2ByteLength(element.child(0).text(),true)));
+        }
+
+        return new Metadata(infoHashHexStr, objectMapper.writeValueAsString(infos), name, length,
+                MetadataTypeEnum.BTRABBIT.getCode());
+    }
+
+
+
 
     /**
      * 如下字符 转  utf-8编码结果
@@ -242,7 +382,7 @@ public class FetchMetadataByOtherWebTask {
         String length;String lengthUnit;
         if (isHasSpace) {
             String[] arr = lengthStr.split(" ");
-            lengthUnit = arr[1];length = arr[0];
+            lengthUnit = arr[1].trim();length = arr[0].trim();
         } else {
             char[] chars = lengthStr.toCharArray();int i;
             for (i = chars.length - 1; i >= 0; i--) {
@@ -263,18 +403,6 @@ public class FetchMetadataByOtherWebTask {
 
 
 
-    /**
-     * 磁力吧
-     * https://www.ciliba.org
-     */
-    @SneakyThrows
-    private Metadata fetchMetadataByCiliba(String infoHashHexStr) {
-        //整个页面信息
-        String htmlStr = httpClientUtil.doGetForBasicBrowser(StringFormatter.format(cilibaUrl, infoHashHexStr).getValue());
-        //获取解析用的document
-        Document document = HtmlResolver.getDocument(htmlStr);
-        return null;
-    }
 
 
 }

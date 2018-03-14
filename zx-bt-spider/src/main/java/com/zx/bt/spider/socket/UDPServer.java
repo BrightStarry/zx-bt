@@ -136,16 +136,14 @@ public class UDPServer {
         private final int index;
 
         private final Bencode bencode;
-        private final Config config;
         private final UDPProcessorManager udpProcessorManager;
         private final Sender sender;
 
 
-        public UDPServerHandler(int index, Bencode bencode, Config config, UDPProcessorManager udpProcessorManager,
+        public UDPServerHandler(int index, Bencode bencode, UDPProcessorManager udpProcessorManager,
                                 Sender sender) {
             this.index = index;
             this.bencode = bencode;
-            this.config = config;
             this.udpProcessorManager = udpProcessorManager;
             this.sender = sender;
         }
@@ -167,9 +165,8 @@ public class UDPServer {
          */
         private byte[] getBytes(DatagramPacket packet) {
             //读取消息到byte[]
-            ByteBuf byteBuf = packet.content();
-            byte[] bytes = new byte[byteBuf.readableBytes()];
-            byteBuf.readBytes(bytes);
+            byte[] bytes = new byte[packet.content().readableBytes()];
+            packet.content().readBytes(bytes);
             return bytes;
         }
 

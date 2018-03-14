@@ -11,6 +11,7 @@ import com.zx.bt.spider.util.BTUtil;
 import com.zx.bt.common.util.CodeUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -22,6 +23,7 @@ import java.util.Map;
  * datetime:2018/3/1 0001 10:30
  * ANNOUNCE_PEER 请求 处理器
  */
+@Order(3)
 @Slf4j
 @Component
 public class GetPeersRequestUDPProcessor extends UDPProcessor{

@@ -43,7 +43,7 @@ import java.util.Map;
 @Slf4j
 @Component
 public class HttpClientUtil {
-    private static final String LOG_PRE = "[HttpClientUtil]";
+    private static final String LOG = "[HttpClientUtil]";
 
 
     //连接池对象
@@ -123,7 +123,12 @@ public class HttpClientUtil {
         try {
            response = execute(httpRequest);
             return responseToString(response);
-        } finally {
+        }
+        catch (BTException e){
+//            log.error("{}请求异常:{}",LOG,e.getMessage());
+            throw e;
+        }
+        finally {
             //关闭
             closeResponseAndIn(null,response);
         }
@@ -190,7 +195,7 @@ public class HttpClientUtil {
             //会产生key为class的元素
             map.remove("class");
         } catch (IllegalAccessException |InvocationTargetException |NoSuchMethodException e) {
-            throw new BTException(LOG_PRE + "objectToMap异常:" + e.getMessage());
+            throw new BTException(LOG + "objectToMap异常:" + e.getMessage());
         }
         return map;
     }
@@ -203,7 +208,7 @@ public class HttpClientUtil {
         try {
             response = getHttpClient().execute(request);
         } catch (Exception e) {
-            throw new BTException(LOG_PRE + "execute异常:" + e.getMessage());
+            throw new BTException(LOG + "execute异常:" + e.getMessage());
         }
         return response;
     }
@@ -218,7 +223,7 @@ public class HttpClientUtil {
             try {
                 return EntityUtils.toString(response.getEntity(), "UTF-8");
             } catch (IOException e) {
-                throw new BTException(LOG_PRE + "responseToString异常:" + e.getMessage());
+                throw new BTException(LOG + "responseToString异常:" + e.getMessage());
             }
         }
         //这句不可能执行到...，返回值不会为null
@@ -236,7 +241,7 @@ public class HttpClientUtil {
 
         //如果失败，记录日志，关闭response，抛出异常
         closeResponseAndIn(null, response);
-        throw new BTException(LOG_PRE + "失败");
+        throw new BTException(LOG + "失败,当前状态码:" + (response == null ? "null" : response.getStatusLine().getStatusCode()));
     }
 
 
@@ -300,7 +305,7 @@ public class HttpClientUtil {
                     .setConnectTimeout(config.getHttp().getConnectionTimeout())
                     .build();
         } catch (Exception e) {
-            throw new BTException(LOG_PRE + "初始化异常" + e.getMessage());
+            throw new BTException(LOG + "初始化异常" + e.getMessage());
         }
     }
 

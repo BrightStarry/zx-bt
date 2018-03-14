@@ -7,19 +7,17 @@ import com.zx.bt.spider.entity.Node;
 import com.zx.bt.spider.enums.MethodEnum;
 import com.zx.bt.spider.enums.NodeRankEnum;
 import com.zx.bt.spider.enums.YEnum;
-import com.zx.bt.spider.repository.InfoHashRepository;
-import com.zx.bt.spider.repository.NodeRepository;
 import com.zx.bt.spider.service.InfoHashService;
 import com.zx.bt.spider.socket.Sender;
 import com.zx.bt.common.store.CommonCache;
 import com.zx.bt.spider.store.RoutingTable;
-import com.zx.bt.spider.task.FetchMetadataByPeerTask;
 import com.zx.bt.spider.task.FindNodeTask;
 import com.zx.bt.spider.util.BTUtil;
 import com.zx.bt.common.util.CodeUtil;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
@@ -34,6 +32,7 @@ import java.util.stream.Collectors;
  * datetime:2018/3/1 0001 10:30
  * GET_PEERS 回复 处理器
  */
+@Order(5)
 @Slf4j
 @Component
 public class GetPeersResponseUDPProcessor extends UDPProcessor {
@@ -68,50 +67,23 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		//查询rMap,此处rMap不可能不存在
 		Map<String, Object> rMap = BTUtil.getParamMap(rawMap, "r", "");
 		//缓存过期，则不做任何处理了
-		if (getPeersSendInfo == null) {
-			//			log.info("{}发送者:{},消息id:{},该任务已经过期.", LOG, sender, messageInfo.getMessageId(), rMap);
-			return true;
-		}
-
+		if (getPeersSendInfo == null) return true;
 
 		byte[] id = BTUtil.getParamString(rMap, "id", "GET_PEERS-RECEIVE,找不到id参数.map:" + rMap).getBytes(CharsetUtil.ISO_8859_1);
 		//如果返回的是nodes
 		if (rMap.get("nodes") != null) {
-			List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
-			//如果nodes为空
-			if (CollectionUtils.isEmpty(nodeList)) {
-				//				log.info("{}发送者:{},info_hash:{},消息id:{},返回nodes为空.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
-				routingTable.delete(id);
-				return true;
-			}
-			//向新节点发送消息
-			nodeList.forEach(item -> this.sender.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(), index));
-			//将消息发送者加入路由表.
-			routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
-			//                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
-
-			//取出未发送过请求的节点
-			List<Node> unSentNodeList = nodeList.stream().filter(node -> !getPeersSendInfo.contains(node.getNodeIdBytes())).collect(Collectors.toList());
-			//为空退出
-			if (CollectionUtils.isEmpty(unSentNodeList)) {
-				log.info("{}发送者:{},info_hash:{},消息id:{},所有节点已经发送过请求.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
-				return true;
-			}
-			//未发送过请求的节点id
-			List<byte[]> unSentNodeIdList = unSentNodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
-			//将其加入已发送队列
-			getPeersSendInfo.put(unSentNodeIdList);
-			//未发送过请求节点的地址
-			List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
-			//批量发送请求
-			this.sender.getPeersBatch(unSentAddressList, nodeIds.get(index),
-					new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
-					messageInfo.getMessageId(), index);
-			return true;
+			return nodesHandler(messageInfo, sender, index, routingTable, getPeersSendInfo, rMap, id);
 		}
 
 		if (rMap.get("values") == null) return true;
 		//如果返回的是values peer
+		return valuesHandler(messageInfo, rawMap, sender, routingTable, getPeersSendInfo, rMap, id);
+	}
+
+	/**
+	 * 处理values返回
+	 */
+	private boolean valuesHandler(MessageInfo messageInfo, Map<String, Object> rawMap, InetSocketAddress sender, RoutingTable routingTable, GetPeersSendInfo getPeersSendInfo, Map<String, Object> rMap, byte[] id) {
 		List<String> rawPeerList;
 		try {
 			rawPeerList = BTUtil.getParamList(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + rawMap);
@@ -121,7 +93,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 			rawPeerList = Collections.singletonList(values);
 		}
 		if (CollectionUtils.isEmpty(rawPeerList)) {
-			routingTable.delete(id);
+//			routingTable.delete(id);
 			return true;
 		}
 
@@ -148,6 +120,50 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 		findNodeTask.put(sender);
 
 		//否则是格式错误,不做任何处理
+		return true;
+	}
+
+	/**
+	 * 处理nodes返回
+	 * @param messageInfo 发送过来的消息信息
+	 * @param sender 发送者
+	 * @param index 当前端口索引
+	 * @param routingTable 路由表
+	 * @param getPeersSendInfo 之前缓存的get_peers发送信息
+	 * @param rMap 消息的原始map
+	 * @param id 对方id
+	 */
+	private boolean nodesHandler(MessageInfo messageInfo, InetSocketAddress sender, int index, RoutingTable routingTable, GetPeersSendInfo getPeersSendInfo, Map<String, Object> rMap, byte[] id) {
+		List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
+		//如果nodes为空
+		if (CollectionUtils.isEmpty(nodeList)) {
+			routingTable.delete(id);
+			return true;
+		}
+		//向新节点发送消息
+		nodeList.forEach(item -> this.sender.findNode(item.toAddress(), nodeIds.get(index), BTUtil.generateNodeIdString(), index));
+		//将消息发送者加入路由表.
+		routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE.getCode()));
+		//                    log.info("{}GET_PEERS-RECEIVE,发送者:{},info_hash:{},消息id:{},返回nodes", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
+
+		//取出未发送过请求的节点
+
+		List<Node> unSentNodeList = nodeList.stream().filter(node -> !getPeersSendInfo.contains(node.getNodeIdBytes())).collect(Collectors.toList());
+		//为空退出
+		if (CollectionUtils.isEmpty(unSentNodeList)) {
+			log.info("{}发送者:{},info_hash:{},消息id:{},所有节点已经发送过请求.", LOG, sender, getPeersSendInfo.getInfoHash(), messageInfo.getMessageId());
+			return true;
+		}
+		//未发送过请求的节点id
+		List<byte[]> unSentNodeIdList = unSentNodeList.stream().map(Node::getNodeIdBytes).collect(Collectors.toList());
+		//将其加入已发送队列
+		getPeersSendInfo.put(unSentNodeIdList);
+		//未发送过请求节点的地址
+		List<InetSocketAddress> unSentAddressList = unSentNodeList.stream().map(Node::toAddress).collect(Collectors.toList());
+		//批量发送请求
+		this.sender.getPeersBatch(unSentAddressList, nodeIds.get(index),
+				new String(CodeUtil.hexStr2Bytes(getPeersSendInfo.getInfoHash()), CharsetUtil.ISO_8859_1),
+				messageInfo.getMessageId(), index);
 		return true;
 	}
 

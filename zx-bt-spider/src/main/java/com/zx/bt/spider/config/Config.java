@@ -88,7 +88,12 @@ public class Config {
          */
         private String ip;
 
-		/**
+        /**
+         * 当前配置版本,主要判断配置是否是最新的
+         */
+        private Double configVersion = 1.0;
+
+        /**
 		 * nodeIds
 		 */
 		private List<String> nodeIds = new ArrayList<>();
@@ -182,6 +187,11 @@ public class Config {
          * find_node任务,线程数
          */
         private Integer findNodeTaskThreadNum = 20;
+
+        /**
+         * find_node任务,最大队列长度
+         */
+        private Integer findNodeTaskMaxQueueLength = 102400;
 
         /**连接peer任务TCP线程数*/
         private Integer tcpClientThreadNum = 4;

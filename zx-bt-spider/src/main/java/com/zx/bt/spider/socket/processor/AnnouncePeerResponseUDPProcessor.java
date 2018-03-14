@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * ANNOUNCE_PEER 回复 处理器
  */
 @Slf4j
-@Component
+//@Component
 public class AnnouncePeerResponseUDPProcessor extends UDPProcessor{
 	private static final String LOG = "[ANNOUNCE_PEER_RECEIVE]";
 
