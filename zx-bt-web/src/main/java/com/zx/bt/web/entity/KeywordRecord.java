@@ -30,7 +30,9 @@ public class KeywordRecord {
 
     private String ip;
 
-    public KeywordRecord(String keyword, String ip) {
+    private String city;
+
+   public KeywordRecord(String keyword, String ip) {
         this.keyword = keyword;
         this.ip = ip;
     }

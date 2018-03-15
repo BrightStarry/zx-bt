@@ -29,12 +29,10 @@ var common = {
         });
     },
 
-
     /**
-     * 跳转到分页查询路径
+     * 生成分页查询路径
      */
-    listByKeyword: function (pageNo) {
-
+    generateListByKeywordPath: function (pageNo) {
         var keyword = $('#keyword').val();
 
         if($('#isMustContain').length > 0) {
@@ -49,10 +47,26 @@ var common = {
         }
 
         if(!keyword.trim())
-            return;
-        // window.location.href = url.listByKeywordUrl + pageNo  + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword ;
-        window.open(common.url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword);
+            return null;
+        return common.url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword;
     },
+
+
+    /**
+     * 跳转到分页查询路径
+     * 原网页跳转 或 打开新网页
+     */
+    listByKeyword: function (pageNo) {
+        var isBlank = $('#keywordBtn').attr('isBlank');
+        var path = common.generateListByKeywordPath(pageNo);
+        if(!path)
+            return;
+        if(isBlank === "true")
+            window.open(path);
+        else
+            window.location.href = path;
+    },
+
 
 };
 

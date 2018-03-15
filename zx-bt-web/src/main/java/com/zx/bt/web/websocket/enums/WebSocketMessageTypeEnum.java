@@ -15,7 +15,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum WebSocketMessageTypeEnum implements CodeEnum<Integer>{
 
-	HANDSHAKE(0,"握手,客户端需要在连接成功后发送握手请求,服务端再返回token,表示成功建立连接",HandshakeResponseDTO.class),
+	HANDSHAKE(0,"握手,客户端需要在连接成功后发送握手请求,服务端再返回token,表示成功建立连接",String.class),
 	BARRAGE(1,"弹幕",BarrageRequestDTO.class),
 	;
 	private Integer code;

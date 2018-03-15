@@ -4,6 +4,7 @@
 >
 <head th:replace="~{fragments/header :: header ('福利球-磁力搜索-首页')}">
 </head>
+<link href="../static/css/barrager.css" th:href="@{/css/barrager.css}" rel="stylesheet">
 <body>
 
 
@@ -15,12 +16,15 @@
     </div>
 
     <div class="container content-top">
-            <div th:replace="~{fragments/common :: searchInput}"></div>
+            <div th:replace="~{fragments/common :: searchInput(true)}"></div>
     </div>
 </div>
 
 
 <span th:include="~{fragments/common :: js}"></span>
+<script src="../static/js/jquery.barrager.min.js" th:src="@{/js/jquery.barrager.min.js}"></script>
 <script src="../static/js/customer/barrage.js" th:src="@{/js/customer/barrage.js}"></script>
+<script src="../static/js/md5.js" th:src="@{/js/md5.js}"></script>
 </body>
+<script th:replace="~{fragments/common :: baiduAutoPush}"></script>
 </html>

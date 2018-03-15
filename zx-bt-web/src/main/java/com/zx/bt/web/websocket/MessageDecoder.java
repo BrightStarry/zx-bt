@@ -7,6 +7,7 @@ import com.zx.bt.common.exception.BTException;
 import com.zx.bt.common.util.EnumUtil;
 import com.zx.bt.web.websocket.dto.WebSocketRequestDTO;
 import com.zx.bt.web.websocket.enums.WebSocketMessageTypeEnum;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,7 +39,6 @@ public class MessageDecoder implements Decoder.Text<WebSocketRequestDTO>{
 						.constructParametricType(WebSocketRequestDTO.class,
 								item.getRequestJavaType()))
 				.toArray(JavaType[]::new);
-
 	}
 
 	/**
@@ -51,6 +51,12 @@ public class MessageDecoder implements Decoder.Text<WebSocketRequestDTO>{
 			int type = jsonNode.get("type").asInt();
 			WebSocketRequestDTO<?> webSocketRequestDTO = null;
 			switch (EnumUtil.getByCode(type, WebSocketMessageTypeEnum.class).orElseThrow(()->new BTException("消息类型不存在,当前类型:" + type))) {
+				// 握手
+				case HANDSHAKE:
+					webSocketRequestDTO = objectMapper.readValue(s, messageTypes[type]);
+
+					break;
+				// 弹幕
 				case BARRAGE:
 					webSocketRequestDTO = objectMapper.readValue(s, messageTypes[type]);
 					break;
@@ -65,10 +71,11 @@ public class MessageDecoder implements Decoder.Text<WebSocketRequestDTO>{
 
 	/**
 	 * 解码前方法
+	 * 验证该解码其是否支持该消息解码, 如果支持需要返回true
 	 */
 	@Override
 	public boolean willDecode(String s) {
-		return false;
+		return true;
 	}
 
 	/**
@@ -76,7 +83,6 @@ public class MessageDecoder implements Decoder.Text<WebSocketRequestDTO>{
 	 */
 	@Override
 	public void init(EndpointConfig endpointConfig) {
-
 	}
 
 	/**

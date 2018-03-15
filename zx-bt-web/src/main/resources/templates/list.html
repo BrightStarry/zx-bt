@@ -10,7 +10,7 @@
 <div class="container">
 
     <div class="container text-center">
-        <div th:replace="~{fragments/common :: searchInput}"></div>
+        <div th:replace="~{fragments/common :: searchInput(false)}"></div>
 
         <input type="checkbox" id="isMustContain" hidden th:checked="${orderVO.isMustContain}">
         <select id="orderType" class="selectpicker">
@@ -80,6 +80,7 @@
 <span th:include="~{fragments/common :: js}"></span>
 <script src="../static/js/customer/list.js" th:src="@{/js/customer/list.js}"></script>
 <script src="../static/js/bootstrap-select.min.js" th:src="@{/js/bootstrap-select.min.js}"></script>
+<script th:replace="~{fragments/common :: baiduAutoPush}"></script>
 </body>
 </html>
 

@@ -65,7 +65,7 @@ public class WebSocketServer {
 	 * 收到消息
 	 */
 	@OnMessage
-	public void onMessage(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) {
+	public void onMessage(WebSocketRequestDTO webSocketRequestDTO,Session session) throws Exception  {
 		try {
 			//校验时间戳,如果失败,抛出异常
 			verifyRequestTimestamp(session, webSocketRequestDTO);

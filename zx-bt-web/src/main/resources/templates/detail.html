@@ -6,7 +6,7 @@
 </head>
 <body>
 <div class="container">
-    <div th:replace="~{fragments/common :: searchInput}"></div>
+    <div th:replace="~{fragments/common :: searchInput(false)}"></div>
 </div>
 <div class="container jumbotron">
     <p class="text-justify line-break" th:text="${metadataVO.metadata.name}"></p>
@@ -50,5 +50,6 @@
 
 <span th:include="~{fragments/common :: js}"></span>
 <script src="../static/js/customer/detail.js" th:src="@{/js/customer/detail.js}"></script>
+<script th:replace="~{fragments/common :: baiduAutoPush}"></script>
 </body>
 </html>

@@ -52,16 +52,23 @@ public class SpiderApplication implements CommandLineRunner{
 	@Override
 	public void run(String... strings) throws Exception {
 		if(!config.getMain().getStart()) return;
-		//同步执行初始化任务
-		initTask.run();
-		//异步启动find_node任务
-		findNodeTask.start();
+
+		/**
+		 * 先行开启各队列任务, 重启时,任务并发过大
+		 * 后启动会导致队列过长.虽然问题不大
+		 */
 		//异步启动get_peers任务
 		getPeersTask.start();
 		//异步启动fetchMetadataByOtherWeb任务
 		fetchMetadataByOtherWebTask.start();
 		//异步启动fetchMetadataByPeerTask任务
 		fetchMetadataByPeerTask.start();
+
+		//同步执行初始化任务
+		initTask.run();
+		//异步启动find_node任务
+		findNodeTask.start();
+
 
 	}
 }
