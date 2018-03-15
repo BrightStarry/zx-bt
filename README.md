@@ -8,7 +8,7 @@
 #### new
 - 网站当前已经部署:[福利球](https://www.fuliqiu.com)
 - web模块和Elasticsearch单节点部署在阿里云1核2G1M的ECS上;spider模块部署在阿里云1核2G6M的ECS上(cpu占用80%左右,带宽基本全部占用);MySQL也是用的阿里云的RDS;
-- 目前爬取速率稳定为300个有效Metadata记录/5分钟.
+- 目前爬取速率保持在300-1000个有效Metadata记录/5分钟.
 
 
 #### 重构
@@ -300,8 +300,92 @@ JSON:
 #### 前端插件记录
 - bootstrap-switch: bootstrap的开关样式.并包含了模态框
 - bootstrap-select: 选择框插件
+- jquery.barrager.js: 弹幕插件
 
 
 #### websocket
 - 准备增加弹幕聊天功能
 - [Spring Web Socket 文档](https://docs.spring.io/spring/docs/4.3.15.BUILD-SNAPSHOT/spring-framework-reference/htmlsingle/#websocket)
+
+
+####  Nginx + HTTPS + WebSocket
+- 在Nginx + HTTPS的基础上,想要连接wss,需要在nginx.conf中的http的server配置中,增加如下:
+```
+location /websocket {
+    proxy_pass http://proxy_fuliqiu;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+```
+其中,proxy_fuliqiu只的是先前配置的upstream的方向代理配置名字
+
+- 整个nginx.conf
+```
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #日志格式 main
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    sendfile        on;
+
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  fuliqiu.com;
+        #让80请求,重定向到https
+        return 301    https://$host$request_uri;
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+        #日志位置
+        access_log  /log/nginx/access.log  main;
+    }
+
+    upstream proxy_fuliqiu {
+        #如果你要测试，把这里换成你自己要代理后端的ip
+        server localhost:8081 weight=1;
+	server localhost:8082 backup;
+        #当负载两台以上用ip来hash解决session的问题，一台就别hash了。
+        #ip_hash;
+    }
+
+    # HTTPS server
+    server {
+        listen       443;
+        server_name  fuliqiu.com;
+        ssl on;
+        ssl_certificate      ssl/214415723560141.pem;
+        ssl_certificate_key  ssl/214415723560141.key;
+        ssl_session_timeout  5m;
+        ssl_ciphers AESGCM:ALL:!DH:!EXPORT:!RC4:+HIGH:!MEDIUM:!LOW:!aNULL:!eNULL;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_prefer_server_ciphers  on;
+        location / {
+            #这里proxy_test是上面的负载的名称，映射到代理服务器，可以是ip加端口,或url
+            proxy_pass       http://proxy_fuliqiu;
+            proxy_set_header Host      $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+        location /websocket {
+            proxy_pass http://proxy_fuliqiu;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+        #日志位置
+        access_log  /log/nginx/access.log  main;
+    }
+}
+```

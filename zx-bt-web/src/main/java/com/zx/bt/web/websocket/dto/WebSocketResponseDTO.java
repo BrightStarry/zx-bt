@@ -6,6 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.ArrayUtils;
+import org.assertj.core.util.Lists;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -55,6 +62,26 @@ public class WebSocketResponseDTO<T> {
 	 */
 	public void generateHash(String webSocketSessionId) {
 		this.hash = CodeUtil.stringToMd5(code + webSocketSessionId + timestamp);
+	}
+
+	public WebSocketResponseDTO(Integer type, Long timestamp, T data) {
+		this.type = type;
+		this.timestamp = timestamp;
+		this.data = data;
+	}
+
+	/**
+	 * 传入消息类型和timestamp和data,以及sessionIds
+	 * 批量生成该对象
+	 */
+	public  static <T> List<WebSocketResponseDTO<T>> batchCreate(Integer type, T data, Long timestamp, String... sessionIds) {
+		if(ArrayUtils.isEmpty(sessionIds))
+			return Collections.emptyList();
+		LinkedList<WebSocketResponseDTO<T>> result = new LinkedList<>();
+		for (int i = 0; i < sessionIds.length; i++) {
+			result.add(new WebSocketResponseDTO<>(sessionIds[i], type, timestamp, data));
+		}
+		return result;
 	}
 
 

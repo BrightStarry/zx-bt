@@ -67,6 +67,10 @@ public class CommonCache<T> {
 	}
 
 	/**
+	 * 获取所有key
+	 */
+
+	/**
 	 * 存入数据
 	 */
 	public void put(String key, T obj) {

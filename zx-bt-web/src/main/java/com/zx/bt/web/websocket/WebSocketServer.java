@@ -2,13 +2,13 @@ package com.zx.bt.web.websocket;
 
 import com.zx.bt.common.exception.BTException;
 import com.zx.bt.common.store.CommonCache;
+import com.zx.bt.common.util.CodeUtil;
 import com.zx.bt.common.util.EnumUtil;
-import com.zx.bt.web.websocket.dto.HandshakeResponseDTO;
-import com.zx.bt.web.websocket.dto.WebSocketRequestDTO;
-import com.zx.bt.web.websocket.dto.WebSocketResponseDTO;
+import com.zx.bt.web.websocket.dto.*;
 import com.zx.bt.web.websocket.enums.WebSocketMessageCodeEnum;
 import com.zx.bt.web.websocket.enums.WebSocketMessageTypeEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -81,7 +81,14 @@ public class WebSocketServer {
 					break;
 				//弹幕请求
 				case BARRAGE:
-
+					String barrageMessage = ((BarrageRequestDTO) webSocketRequestDTO.getData()).getBarrageMessage();
+					//如果为空肯定是用户越权发送的.不做处理
+					if(StringUtils.isBlank(barrageMessage))
+						return;
+					log.info("{}[onMessage]弹幕消息:{}",LOG,barrageMessage);
+					WebSocketResponseDTO<BarrageResponseDTO> barrage = new WebSocketResponseDTO<>(WebSocketMessageTypeEnum.BARRAGE.getCode(), System.currentTimeMillis(),
+							new BarrageResponseDTO(barrageMessage));
+					sendMessageAll(barrage);
 					break;
 			}
 		} catch (BTException e) {
@@ -126,19 +133,25 @@ public class WebSocketServer {
 	 */
 	public  void sendMessageOne(Session session, WebSocketResponseDTO<?> webSocketResponseDTO) {
 		try {
-			session.getAsyncRemote().sendObject(webSocketResponseDTO);
+			if (session.isOpen()) {
+				session.getAsyncRemote().sendObject(webSocketResponseDTO);
+			} else {
+				session.close();
+				webSocketConnectionCache.remove(session.getId());
+			}
 		} catch (Exception e) {
 			log.error("{}[sendMessageOne]向用户发送数据失败:{}",e.getMessage(),e);
 		}
 	}
 
 	/**
-	 * 向所有用户广播数据
+	 * 向所有用户发送弹幕
 	 */
 	public void sendMessageAll(WebSocketResponseDTO<?> webSocketResponseDTO) {
 		webSocketConnectionCache.getValues().parallelStream().forEach(item ->{
 			try {
-				sendMessageOne(item.getWebSocketSession(), webSocketResponseDTO);
+				sendMessageOne(item.getWebSocketSession(), webSocketResponseDTO.setHash(
+						CodeUtil.stringToMd5(webSocketResponseDTO.getCode()+item.getWebSocketSession().getId() + webSocketResponseDTO.getTimestamp())));
 			} catch (Exception e) {
 				log.error("{}[sendMessageAll]向某用户发送数据失败:{}",e.getMessage(),e);
 			}

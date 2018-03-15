@@ -13,7 +13,8 @@ CREATE TABLE keyword_record(
   COMMENT '修改时间',
   PRIMARY KEY (id),
   INDEX (keyword),
-  INDEX (ip)
+  INDEX (ip),
+  INDEX (city)
 ) AUTO_INCREMENT = 1000, COMMENT = '记录用户keyword搜索记录';
 
 /**

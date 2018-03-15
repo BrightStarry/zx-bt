@@ -11,7 +11,7 @@ var common = {
         listByKeywordUrl: '/list/',//根据关键词分页查询
     },
 
-/**
+    /**
      * 初始化
      */
     init: function() {

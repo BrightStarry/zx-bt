@@ -20,7 +20,14 @@
     </div>
 </div>
 
-
+<div class="col-lg-20 navbar-fixed-bottom">
+    <div class="input-group">
+        <input type="text" class="form-control" id="message" placeholder="请输入你要发送的弹幕,按下回车"> <span
+            class="input-group-btn" >
+				<button class="btn btn-default" type="button" id="sendBarrageBtn">发送</button>
+			</span>
+    </div>
+</div>
 <span th:include="~{fragments/common :: js}"></span>
 <script src="../static/js/jquery.barrager.min.js" th:src="@{/js/jquery.barrager.min.js}"></script>
 <script src="../static/js/customer/barrage.js" th:src="@{/js/customer/barrage.js}"></script>
