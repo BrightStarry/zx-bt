@@ -117,6 +117,8 @@ var barrage = {
         $('#sendBarrageBtn').click(function () {
             barrage.sendBarrage();
         });
+        // 发送欢迎语句
+        barrage.generateBarrage("欢迎来到福利球,你可以在底部发送所有用户可见的弹幕~~~",false);
     },
 
     /**
@@ -134,7 +136,7 @@ var barrage = {
             return;
         }
         if(webSocket.readyState !== 1) {
-            alert('连接到服务器失败');
+            alert('连接到服务器失败,请刷新重试');
             return;
         }
         var timestamp = new Date().getTime();
@@ -146,6 +148,6 @@ var barrage = {
 
 $(function () {
     barrage.init();
-    barrage.generateBarrage("欢迎来到福利球,你可以在底部发送所有用户可见的弹幕~~~",false);
+
 });
 

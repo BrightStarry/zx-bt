@@ -65,7 +65,7 @@ public class Config {
          * webSocket连接过期时间(存取后自动刷新)
          * 正常情况下,退出或异常会进行清除, 这个属性只是为了防止bug.确保缓存会被清理
          */
-        private Integer webSocketConnectExpireSecond = 60 * 30;
+        private Integer webSocketConnectExpireSecond = 60;
 
 
         /**

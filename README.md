@@ -209,6 +209,14 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 表示超过该长度仍然可以被存入.但被索引. 并且该字段要关闭分词.
 - 索引修改,可参考[该博客](http://blog.csdn.net/napoay/article/details/52012249). 修改成功后可通过head插件查看.
 
+- 一个愚蠢的bug, 该hql执行失败,提示没有id字段:
+> 	@Query(value = "SELECT city FROM keyword_record GROUP BY ip  ORDER BY id LIMIT 0,?1",nativeQuery = true)
+>   List<KeywordRecord> findDistinctIpTopX(int size);
+
+看了好久才发现~~~hibernate的返回对象的所有属性需要和返回结果一一匹配,改为如下即可:
+> List<String> findDistinctIpTopX(int size);
+
+
 #### 注意点
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
 - node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
@@ -238,6 +246,8 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 		<finalName>zx-bt-web</finalName>
 	</build>
 ```
+
+- 使用Nginx + WebSocket的话,由于Nginx的proxy_read_timeout(Default: 60s;)属性设置,webSocket会自动断开连接.
 
 
 ### Elasticsearch

@@ -164,6 +164,7 @@ public class FetchMetadataByOtherWebTask {
             }
         }).start();
 
+
 //        for (int i = 0; i < config.getPerformance().getFetchMetadataByOtherWebTaskThreadNum(); i++) {
 //            new Thread(()->{
 //                while (true) {

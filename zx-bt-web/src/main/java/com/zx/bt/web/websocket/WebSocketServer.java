@@ -72,6 +72,11 @@ public class WebSocketServer {
 
 			switch (EnumUtil.getByCode(webSocketRequestDTO.getType(), WebSocketMessageTypeEnum.class)
 					.orElseThrow(() -> new BTException("消息类型不存在:当前类型:" + webSocketRequestDTO.getType()))) {
+				//ping请求
+				case PING:
+					// 刷新该key的过期时间
+					webSocketConnectionCache.get(session.getId());
+					break;
 				//握手请求
 				case HANDSHAKE:
 					//发送握手响应(sessionId)
@@ -94,7 +99,7 @@ public class WebSocketServer {
 		} catch (BTException e) {
 			//发送异常响应
 			sendMessageOne(session, new WebSocketResponseDTO<>(session.getId(),
-					webSocketRequestDTO.getType(), WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR));
+					webSocketRequestDTO.getType(), e.getCode(),e.getMessage()));
 		} catch (Exception e) {
 			log.error("{}[onMessage]发生未知异常:{}",e.getMessage(),e);
 			//发送异常响应
@@ -153,7 +158,7 @@ public class WebSocketServer {
 	@OnClose
 	public void onClose(Session session) {
 		log.info("{}连接关闭", LOG);
-		webSocketConnectionCache.remove(session.getId());
+		closeSession(session);
 	}
 
 	/**
@@ -176,6 +181,7 @@ public class WebSocketServer {
 				log.error("{}关闭session异常:{}", e.getMessage());
 			}
 		}
+		webSocketConnectionCache.remove(session.getId());
 	}
 
 

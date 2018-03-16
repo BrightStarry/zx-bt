@@ -22,6 +22,9 @@ import org.springframework.stereotype.Component;
 public class PageForm {
 
 
+    /**
+     * 默认每页大小
+     */
     private static int defaultPageSize;
 
     @Autowired
@@ -29,9 +32,17 @@ public class PageForm {
         PageForm.defaultPageSize = config.getWeb().getPageSize();
     }
 
+
+    /**
+     * 当前页
+     * 从1开始
+     */
     @Range(min = 1,max = Integer.MAX_VALUE,message = "当前页码范围不正确(1-2147483647)")
     protected Integer pageNo = 1;
 
+    /**
+     * 每页大小
+     */
     @Range(min = 5,max = 50,message = "每页记录数范围不正确(5-50)")
     protected Integer pageSize = defaultPageSize;
 }

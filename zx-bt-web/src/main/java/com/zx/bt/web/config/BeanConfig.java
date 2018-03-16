@@ -9,6 +9,8 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
 import org.springframework.boot.web.servlet.ErrorPage;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +79,7 @@ public class BeanConfig {
     @Bean
     public CommonCache<Connection> webSocketConnectionCache(Config config) {
         return new CommonCache<>(
-                CacheMethodEnum.NONE,
+                CacheMethodEnum.AFTER_ACCESS,
                 config.getService().getWebSocketConnectExpireSecond(),
                 config.getService().getWebSocketMaxConnectNum());
     }
@@ -96,6 +98,7 @@ public class BeanConfig {
     /**
      * 用于在嵌入式的Tomcat中使用WebSocket
      * 独立容器不要添加
+     * 测试时也能注入该bean
      */
     @Bean
     public ServerEndpointExporter serverEndpointExporter(){

@@ -76,4 +76,10 @@ public class WebSocketResponseDTO<T> {
 		this.code = webSocketMessageCodeEnum.getCode();
 		this.message = webSocketMessageCodeEnum.getMessage();
 	}
+
+	public WebSocketResponseDTO(String webSocketSessionId, Integer type, String code,String message) {
+		this.type = type;
+		this.code = code;
+		this.message = message;
+	}
 }

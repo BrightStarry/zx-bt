@@ -16,8 +16,9 @@ import java.util.List;
 public interface KeywordRecordRepository extends JpaRepository<KeywordRecord, Long> {
 
 	/**
-	 * 去重的limit查询
+	 * 查询最新的x条ip不重复的记录的城市字段
+	 * 此处使用group by (ip) 去重
 	 */
-	@Query("select KeywordRecord from KeywordRecord group by ip  order by id desc ")
-	List<KeywordRecord> findDistinctIpTopX(int size);
+	@Query(value = "SELECT city FROM keyword_record GROUP BY ip  ORDER BY id DESC LIMIT 0,?1",nativeQuery = true)
+	List<String> findDistinctIpTopX(int size);
 }

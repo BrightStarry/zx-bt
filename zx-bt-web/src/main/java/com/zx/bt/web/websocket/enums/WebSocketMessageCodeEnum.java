@@ -13,8 +13,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum WebSocketMessageCodeEnum implements CodeEnum<String>{
 	SUCCESS("0000","成功"),
-	TOKEN_OR_TIMESTAMP_ERROR("0001","未知异常(token校验失败/timestamp校验失败)"),
-	UNKNOWN_ERROR("0002","未知异常"),
+	UNKNOWN_ERROR("0001","未知异常"),
+	TOKEN_OR_TIMESTAMP_ERROR("0002","未知异常(timestamp校验失败)"),
 	;
 	private String code;
 	private String message;
