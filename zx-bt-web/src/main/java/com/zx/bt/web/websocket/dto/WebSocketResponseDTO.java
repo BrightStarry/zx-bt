@@ -42,12 +42,6 @@ public class WebSocketResponseDTO<T> {
 	private String message = WebSocketMessageCodeEnum.SUCCESS.getMessage();
 
 	/**
-	 * hash 防篡改
-	 * 状态码 + websocket的session.id + 时间戳 作MD5 16进制32位小写
-	 */
-	private String hash;
-
-	/**
 	 * 时间戳
 	 */
 	private Long timestamp;
@@ -57,12 +51,6 @@ public class WebSocketResponseDTO<T> {
 	 */
 	private T  data;
 
-	/**
-	 * 生成hash码
-	 */
-	public void generateHash(String webSocketSessionId) {
-		this.hash = CodeUtil.stringToMd5(code + webSocketSessionId + timestamp);
-	}
 
 	public WebSocketResponseDTO(Integer type, Long timestamp, T data) {
 		this.type = type;
@@ -70,39 +58,22 @@ public class WebSocketResponseDTO<T> {
 		this.data = data;
 	}
 
-	/**
-	 * 传入消息类型和timestamp和data,以及sessionIds
-	 * 批量生成该对象
-	 */
-	public  static <T> List<WebSocketResponseDTO<T>> batchCreate(Integer type, T data, Long timestamp, String... sessionIds) {
-		if(ArrayUtils.isEmpty(sessionIds))
-			return Collections.emptyList();
-		LinkedList<WebSocketResponseDTO<T>> result = new LinkedList<>();
-		for (int i = 0; i < sessionIds.length; i++) {
-			result.add(new WebSocketResponseDTO<>(sessionIds[i], type, timestamp, data));
-		}
-		return result;
-	}
-
 
 	public WebSocketResponseDTO(String webSocketSessionId, Integer type, Long timestamp, T data) {
 		this.type = type;
 		this.timestamp = timestamp;
 		this.data = data;
-		generateHash(webSocketSessionId);
 	}
 
 	public WebSocketResponseDTO(String webSocketSessionId, Integer type, T data) {
 		this.type = type;
 		this.timestamp = System.currentTimeMillis();
 		this.data = data;
-		generateHash(webSocketSessionId);
 	}
 
 	public WebSocketResponseDTO(String webSocketSessionId, Integer type, WebSocketMessageCodeEnum webSocketMessageCodeEnum) {
 		this.type = type;
 		this.code = webSocketMessageCodeEnum.getCode();
 		this.message = webSocketMessageCodeEnum.getMessage();
-		generateHash(webSocketSessionId);
 	}
 }

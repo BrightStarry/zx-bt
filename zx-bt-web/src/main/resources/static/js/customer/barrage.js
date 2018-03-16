@@ -7,9 +7,11 @@ var barrage = {
     body: $('body'),
     url: {
         //websocket连接地址
-        webSocketUrl: 'wss://' + document.location.host + '/websocket',
+        webSocketUrl: 'ws://' + document.location.host + '/websocket',
         //弹幕默认头像路径
         defaultHeadImgPath: 'img/unknownUser.png',
+        //自己的弹幕头像路径
+        selfHeadImgPath: 'img/selfUser.png',
 
     },
     /**
@@ -22,14 +24,11 @@ var barrage = {
          */
         webSocket.onmessage = function (event) {
             var webSocketMessage = JSON.parse(event.data);
-            //如果是握手响应,因为此时还没有sessionId,需要从响应消息中获取
-            if(webSocketMessage.type === 0 && hex_md5(webSocketMessage.code + webSocketMessage.data.sessionId + webSocketMessage.timestamp) !== webSocketMessage.hash
-                || webSocketMessage.type !== 0 && hex_md5(webSocketMessage.code + sessionId + webSocketMessage.timestamp) !== webSocketMessage.hash) {
-                    console.log('收到消息但校验失败.')
-                    return;
+            // console.log(webSocketMessage);
+            if(webSocketMessage.code !== '0000') {
+                alert(webSocketMessage.message);
+                return;
             }
-
-            console.log(webSocketMessage);
             switch (webSocketMessage.type){
                 //握手响应(此处因为只在未关闭的首页支持弹幕,所以直接存入变量,否则,可以使用前端的啥子数据库来着)
                 case 0:
@@ -39,7 +38,8 @@ var barrage = {
                 //弹幕响应
                 case 1:
                     //生成弹幕
-                    barrage.generateBarrage(webSocketMessage.data.barrageMessage)
+                    barrage.generateBarrage(webSocketMessage.data.barrageMessage,
+                        webSocketMessage.data.sessionId === sessionId);
                     break;
             }
         };
@@ -80,11 +80,11 @@ var barrage = {
     /**
      * 在屏幕生成一条普通弹幕
      */
-    generateBarrage: function (message) {
+    generateBarrage: function (message,isSelf) {
         if(!message)
             return;
         var item={
-            img: barrage.url.defaultHeadImgPath, //图片
+            img: isSelf ? barrage.url.selfHeadImgPath : barrage.url.defaultHeadImgPath, //图片
             info: message, //文字
             // href:'/', //链接
             close:true, //显示关闭按钮
@@ -138,8 +138,7 @@ var barrage = {
             return;
         }
         var timestamp = new Date().getTime();
-        var barrageRequest = {'type':1,'timestamp':timestamp,'data':{'barrageMessage':message},
-            'token':hex_md5(sessionId,1,timestamp)};
+        var barrageRequest = {'type':1,'timestamp':timestamp,'data':{'barrageMessage':message}};
         webSocket.send(JSON.stringify(barrageRequest));
         $('#message').val('');
     },
@@ -147,6 +146,6 @@ var barrage = {
 
 $(function () {
     barrage.init();
-    barrage.generateBarrage("欢迎来到福利球,你可以在底部发送所有用户可见的弹幕~~~");
+    barrage.generateBarrage("欢迎来到福利球,你可以在底部发送所有用户可见的弹幕~~~",false);
 });
 

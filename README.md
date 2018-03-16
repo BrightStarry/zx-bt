@@ -5,15 +5,16 @@
 
 
 
-#### new
+#### 目前
 - 网站当前已经部署:[福利球](https://www.fuliqiu.com)
 - web模块和Elasticsearch单节点部署在阿里云1核2G1M的ECS上;spider模块部署在阿里云1核2G6M的ECS上(cpu占用80%左右,带宽基本全部占用);MySQL也是用的阿里云的RDS;
-- 目前爬取速率保持在300-1000个有效Metadata记录/5分钟.
+- 目前爬取速率保持在400-1300个有效Metadata记录/5分钟.
+- 给网站增加了简单的弹幕功能
 
 
 #### 重构
 - 将其重构为如下模块,以便将爬虫和网站分开部署
-    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目引入.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
+    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目依赖.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
     - parent: pom项目,依赖版本定义.
     - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
     - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
@@ -43,11 +44,13 @@
 然后我开始着手如何通过info_hash获取到torrent的metadata信息.网上的普遍说法是两种方式:     
 1. 从迅雷种子库(以及其他一些磁力网站的接口)获取.大多数的实现方式,都是拼接URL + infoHash + ".torrent".但是大多数能查到的接口都已经失效.   
 2. 通过bep-009协议获取.但是我看了官网的该协议,仍是一头雾水. 
+
 对于第二种方式,直到我找到了这篇[全面文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html),它对torrent的整个获取过程中的报文请求响应进行了很详细的解析.
 还忍着语言的隔阂看了[该Go语言实现的DHT项目](https://github.com/shiyanhui/dht)的代码,才成功实现.
 
 在我成功通过bep-009协议连接peer获取到metadata信息后,才开始研究如何通过其他网站获取已有的metadata信息.    
 我这才发现...说什么从迅雷种子库,以及各类网站的xxx.torrent接口获取的都不靠谱(因为已经全部失效(我猜想应该是目前大部分网站开始被监管,不再存储整个torrent文件的缘故)).  
+  
 metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进行获取.因为目前的的磁力搜索网站某个磁力的详情页地址大多是xxxx.com/<40位16进制infoHash>.html的形式.
 而我们要获取的信息,都会显示在页面上,例如名字/长度/子文件目录/子文件长度等信息.
 
@@ -59,14 +62,17 @@ metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进
 
 ### 简介
 此处我尽量用直白的话简述下BitTorrent(更详细的自行参见上文提到的博客).   
-首先,BitTorrent是一种各机器相互通讯的协议.就像Http协议,浏览器和服务器都遵守了相应的报文规则,才能交互解析,得以通讯.BitTorrent也是这样的基于UDP和TCP通讯的协议.  
+
+首先,BitTorrent是一种各机器相互通讯的协议.就像Http协议,浏览器和服务器都遵守了相应的报文规则,才能交互解析,得以通讯.BitTorrent也是这样的基于UDP和TCP通讯的协议.   
+ 
 该协议的目的是为了分发大体积文件(.羞羞的电影等).而下载某个文件,则需要连接到遵守该协议的某台服务器(一旦遵守该协议,并实现对应的协议部分,例如提供文件下载功能,该服务器就被称为peer),下载该文件的某个部分.     
 也正是因此,当该文件被x个服务器(peer)拥有,就可以同时从这些peer下载文件的不同部分,然后将其拼接为整个文件(这样速度就会很快).   
 
 Torrent(种子)就保存了一个文件的一些信息,名字/长度/子文件目录/子文件长度等信息,其中最重要是拥有该文件的peers服务器,也因此,可以通过种子,向这些peers发送下载请求.下载到文件.
 
 但是在DHT(分布式哈希表)出现之前,所有节点都需要连接到Tracker服务器,以获取到拥有某个文件的peers(或者Torrent).     
-DHT协议基于udp通讯,规定每个node(遵守BitTorrent协议,未实现提供下载功能的服务器)内部存储一个RoutingTable(路由表).该表存储了其他的node(或peer)节点.     
+DHT协议基于udp通讯,规定每个node(遵守BitTorrent协议,未实现提供下载功能的服务器)内部存储一个RoutingTable(路由表).该表存储了其他的node(或peer)节点.    
+
 每个node的信息包括nodeId(随机的20个byte/ip/port(其中ip/port在udp通讯的包中都已经携带,所以,实际上最重要的就是nodeId))   
 而且定义了几种方法进行node间的交互(此处设A节点为请求方,B节点为响应方, 这些方法就是发送对应规则的请求响应报文,例如Http的GET/POST/DELETE等)
 ```
@@ -81,9 +87,8 @@ DHT协议基于udp通讯,规定每个node(遵守BitTorrent协议,未实现提供
 由此可得出,越是高位的bit不相同(异或值为1),则值越大,距离越远(因为假设两个nodeId第1位就不同,其异或值必然大于2^160).   
 
 DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到已经在网络中的任何一个node信息,向其发送find_node请求即可.想要获取某个info_hash的peer,也可直接发送get_peers,而无需连接到Tracker服务器.  
-如此,DHT可理解为一个去中心化的P2P网络.         
-
-
+如此,DHT可理解为一个去中心化的P2P网络.
+         
 
 
 #### 项目介绍
@@ -177,7 +182,6 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 <!--自己的父项目-->
  <dependencyManagement>
         <dependencies>
-
             <dependency>
                 <groupId>com.zx.bt</groupId>
                 <artifactId>zx-bt-top</artifactId>
@@ -201,7 +205,9 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
         - 一些容易忽略的细节必须加以注释
         - 多看源码,看方法注解,防止一些愚蠢的bug(但这个解码器类的源码中没有任何注解,mmp)
 
-
+- 如果es的字段长度超过32766字节,将提示过长,无法被存入的异常,可在建立索引的mappings的对应字段中增加"ignore_above": 256,
+表示超过该长度仍然可以被存入.但被索引. 并且该字段要关闭分词.
+- 索引修改,可参考[该博客](http://blog.csdn.net/napoay/article/details/52012249). 修改成功后可通过head插件查看.
 
 #### 注意点
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。

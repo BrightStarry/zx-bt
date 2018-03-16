@@ -19,7 +19,8 @@
           "type": "long"
         },
         "infoHash":{
-          "type": "keyword"
+          "type": "keyword",
+          "ignore_above": 256
         },
         "type":{
           "type": "integer"

@@ -68,7 +68,7 @@ public class WebSocketServer {
 	public void onMessage(WebSocketRequestDTO webSocketRequestDTO,Session session) throws Exception  {
 		try {
 			//校验时间戳,如果失败,抛出异常
-			verifyRequestTimestamp(session, webSocketRequestDTO);
+			verifyRequestTimestamp(webSocketRequestDTO);
 
 			switch (EnumUtil.getByCode(webSocketRequestDTO.getType(), WebSocketMessageTypeEnum.class)
 					.orElseThrow(() -> new BTException("消息类型不存在:当前类型:" + webSocketRequestDTO.getType()))) {
@@ -87,7 +87,7 @@ public class WebSocketServer {
 						return;
 					log.info("{}[onMessage]弹幕消息:{}",LOG,barrageMessage);
 					WebSocketResponseDTO<BarrageResponseDTO> barrage = new WebSocketResponseDTO<>(WebSocketMessageTypeEnum.BARRAGE.getCode(), System.currentTimeMillis(),
-							new BarrageResponseDTO(barrageMessage));
+							new BarrageResponseDTO(barrageMessage,session.getId()));
 					sendMessageAll(barrage);
 					break;
 			}
@@ -103,21 +103,11 @@ public class WebSocketServer {
 		}
 	}
 
-	/**
-	 * 校验请求token,当失败时,发送异常响应
-	 */
-	public void verifyRequestToken(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) throws BTException{
-		//token校验失败
-		if(!webSocketRequestDTO.verifyToken(session.getId())){
-			log.info("{}[verifyRequestToken]校验token失败");
-			throw new BTException(WebSocketMessageCodeEnum.TOKEN_OR_TIMESTAMP_ERROR);
-		}
-	}
 
 	/**
 	 * 校验请求时间戳,当失败时,发送异常响应
 	 */
-	public void verifyRequestTimestamp(Session session, WebSocketRequestDTO<?> webSocketRequestDTO) throws BTException{
+	public void verifyRequestTimestamp( WebSocketRequestDTO<?> webSocketRequestDTO) throws BTException{
 		//token校验失败
 		if(!webSocketRequestDTO.verifyTimestamp()){
 			log.info("{}[verifyRequestTimestamp]校验timestamp失败");
@@ -150,8 +140,7 @@ public class WebSocketServer {
 	public void sendMessageAll(WebSocketResponseDTO<?> webSocketResponseDTO) {
 		webSocketConnectionCache.getValues().parallelStream().forEach(item ->{
 			try {
-				sendMessageOne(item.getWebSocketSession(), webSocketResponseDTO.setHash(
-						CodeUtil.stringToMd5(webSocketResponseDTO.getCode()+item.getWebSocketSession().getId() + webSocketResponseDTO.getTimestamp())));
+				sendMessageOne(item.getWebSocketSession(), webSocketResponseDTO);
 			} catch (Exception e) {
 				log.error("{}[sendMessageAll]向某用户发送数据失败:{}",e.getMessage(),e);
 			}

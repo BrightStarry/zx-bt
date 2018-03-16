@@ -31,10 +31,6 @@ public class WebSocketRequestDTO<T> {
 	 */
 	private Long timestamp;
 
-	/**
-	 * token 用户的websocket的session.id + 消息类型 + 时间戳 作md5 16进制 32位 小写
-	 */
-	private String token;
 
 	/**
 	 * 消息数据
@@ -45,12 +41,12 @@ public class WebSocketRequestDTO<T> {
 	/**
 	 * 校验token是否正确
 	 */
-	public boolean verifyToken(String webSocketSessionId) {
-		if (StringUtils.isBlank(token) || token.length() != CodeUtil.MD5_LENGTH_32 || type == null)
-			return false;
-
-		return token.equals(CodeUtil.stringToMd5(webSocketSessionId + type + timestamp));
-	}
+//	public boolean verifyToken(String webSocketSessionId) {
+//		if (StringUtils.isBlank(token) || token.length() != CodeUtil.MD5_LENGTH_32 || type == null)
+//			return false;
+//
+//		return token.equals(CodeUtil.stringToMd5(webSocketSessionId + type + timestamp));
+//	}
 
 	/**
 	 * 校验时间戳是否正确,在当前时间正负1分钟内

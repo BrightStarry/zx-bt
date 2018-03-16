@@ -20,4 +20,9 @@ public class BarrageResponseDTO {
 	 * 弹幕消息
 	 */
 	private String barrageMessage;
+
+	/**
+	 * 发送者的 websocket sessionId
+	 */
+	private String sessionId;
 }
