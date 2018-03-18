@@ -109,11 +109,11 @@ zx-bt:
     # 获取连接请求超时时间
     connection-request-timeout: 1000
     # 连接超时时间
-    connection-timeout: 3000
+    connection-timeout: 2000
     # 最大连接数
     max-connection-num: 150
     # 握手超时时间
-    socket-timeout: 1000
+    socket-timeout: 2000
   es:
     cluster-name: zx
 #    ip: 106.14.7.29
@@ -121,7 +121,7 @@ zx-bt:
     port: 9300
   performance:
     # find_node任务,线程数
-    find-node-task-thread-num: 10
+    find-node-task-thread-num: 15
     # find_node任务, 发送间隔. 毫秒
     find-node-task-interval-ms: 1
     # find_node任务,最大队列长度
@@ -170,6 +170,8 @@ zx-bt:
   main:
     # 是否开启主任务
     start: false
+    # 当前开启的解析器类型
+    infoHashParserTypes:
     # 配置版本标识
     configVersion: 1.0
     # 布隆过滤器,重置间隔时间,小时

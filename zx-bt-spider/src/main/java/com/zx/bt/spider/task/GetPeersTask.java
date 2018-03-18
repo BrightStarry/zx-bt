@@ -72,12 +72,6 @@ public class GetPeersTask implements Pauseable {
 		queue.offer(infoHashHexStr);
 	}
 
-	/**
-	 * 判断是否存在某个任务
-	 */
-	public boolean contain(String infoHashHexStr) {
-		return queue.parallelStream().filter(item -> item.equals(infoHashHexStr)).count() > 0;
-	}
 
 	/**
 	 * 删除某个任务

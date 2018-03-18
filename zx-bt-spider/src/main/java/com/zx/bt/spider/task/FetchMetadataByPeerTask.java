@@ -69,12 +69,7 @@ public class FetchMetadataByPeerTask {
 		queue.offer(new DelayInfoHash(infoHash, startTime));
 	}
 
-	/**
-	 * 是否存在
-	 */
-	public boolean contain(String infoHashHexStr) {
-		return queue.parallelStream().filter(item -> item.infoHash.equals(infoHashHexStr)).count() > 0;
-	}
+
 
 	/**
 	 * 删除某个任务

@@ -9,10 +9,13 @@ import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.spider.enums.MetadataTypeEnum;
 import com.zx.bt.spider.util.HtmlResolver;
 import com.zx.bt.spider.util.HttpClientUtil;
+import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
@@ -23,17 +26,21 @@ import java.util.Optional;
  * author:ZhengXing
  * datetime:2018/3/16 0016 17:44
  * 抽象的 infoHash 解析器
+ *
+ * 解析已有的其他磁力搜索网站
  * 将infoHash解析为 {@link com.zx.bt.common.entity.Metadata}
  */
 @Slf4j
 @Component
+@Order(Integer.MIN_VALUE)
 public abstract class AbstractInfoHashParser {
 	protected static final String LOG = "[InfoHash解析器]";
 
 	protected static HttpClientUtil httpClientUtil;
 	protected static ObjectMapper objectMapper;
 
-	protected AbstractInfoHashParser(HttpClientUtil httpClientUtil,ObjectMapper objectMapper) {
+	@Autowired
+	public void init(HttpClientUtil httpClientUtil,ObjectMapper objectMapper) {
 		AbstractInfoHashParser.httpClientUtil = httpClientUtil;
 		AbstractInfoHashParser.objectMapper = objectMapper;
 	}
@@ -97,6 +104,10 @@ public abstract class AbstractInfoHashParser {
 		this.infosElementSelector = infosElementSelector;
 	}
 
+	public MetadataTypeEnum getMetadataType() {
+		return metadataType;
+	}
+
 	/**
 	 * 根据infoHash获取到请求地址
 	 * 默认是 {@link #url} + infoHash + {@link #urlSuf}
@@ -123,7 +134,10 @@ public abstract class AbstractInfoHashParser {
 	/**
 	 * 获取种子长度Element
 	 */
-	protected abstract long getLength(Element element);
+	protected  long getLength(Element element){
+		String lengthStr = HtmlResolver.getElementText(element, lengthSelector);
+		return lengthStr2ByteLength(lengthStr, true);
+	}
 
 	/**
 	 * 获取种子文件列表元素
@@ -135,7 +149,7 @@ public abstract class AbstractInfoHashParser {
 	/**
 	 * 从文件列表解析出每个元素,加入集合
 	 */
-	protected  List<MetadataVO.Info> getInfos(){
+	protected  List<MetadataVO.Info> getInfos(Element infosElement){
 		return new LinkedList<>();
 	}
 
@@ -157,7 +171,7 @@ public abstract class AbstractInfoHashParser {
 	 * 解析
 	 * 模版方法
 	 */
-	protected Metadata parse(String infoHash) {
+	public Metadata parse(String infoHash) {
 		// 主体元素,默认是整个html
 		Element body = getDocumentByPath(getUrlByInfoHash(infoHash));
 		// 种子名字
@@ -167,7 +181,7 @@ public abstract class AbstractInfoHashParser {
 		// 文件列表元素
 		Element infosElement = getInfosElement(body);
 		// 文件列表
-		List<MetadataVO.Info> infos = getInfos();
+		List<MetadataVO.Info> infos = getInfos(infosElement);
 		return buildMetadata(infoHash, infos, name, length);
 	}
 

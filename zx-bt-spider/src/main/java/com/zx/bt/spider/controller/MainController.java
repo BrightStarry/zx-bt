@@ -22,7 +22,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/")
-public class StatController {
+public class MainController {
 
 	private final List<RoutingTable> routingTables;
 	private final FindNodeTask findNodeTask;
@@ -35,7 +35,7 @@ public class StatController {
 	private final MetadataService metadataService;
 	private final InfoHashFilter infoHashFilter;
 
-	public StatController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
+	public MainController(List<RoutingTable> routingTables, FindNodeTask findNodeTask,
 						  CommonCache<GetPeersSendInfo> getPeersCache, GetPeersTask getPeersTask, Config config,
 						  FetchMetadataByPeerTask fetchMetadataByPeerTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask,
 						  MetadataService metadataService, InfoHashFilter infoHashFilter) {
@@ -52,8 +52,11 @@ public class StatController {
 	}
 
 
-	@RequestMapping("/stat")
-	public Map<String, Object> stat() {
+	/**
+	 * 状态统计
+	 */
+	@RequestMapping("/")
+	public Map<String, Object> state() {
 		Map<String, Object> result = new LinkedHashMap<>();
 		result.put("当前配置版本:", config.getMain().getConfigVersion());
 		result.put(config.getMain().getCountMetadataMinute() + "分钟内入库数",
@@ -70,6 +73,15 @@ public class StatController {
 		}
 		result.put("端口信息",port);
 		return result;
+	}
+
+	/**
+	 * 修改当前开启的解析器类型
+	 */
+	@RequestMapping("/types")
+	public List<Integer> modifyParserType(String types) {
+		fetchMetadataByOtherWebTask.buildInfoHashParser(types);
+		return fetchMetadataByOtherWebTask.getCurrentParserTypesId();
 	}
 
 }

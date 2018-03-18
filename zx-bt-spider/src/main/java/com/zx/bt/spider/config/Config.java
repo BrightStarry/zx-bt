@@ -94,6 +94,11 @@ public class Config {
         private Double configVersion = 1.0;
 
         /**
+         * 要开启的解析器类型集合字符,逗号分隔
+         */
+        private String infoHashParserTypes;
+
+        /**
 		 * nodeIds
 		 */
 		private List<String> nodeIds = new ArrayList<>();
@@ -161,6 +166,8 @@ public class Config {
     public static class Performance{
         /**UDP服务器主任务线程数,单个端口的数量*/
         private Integer udpServerMainThreadNum = 5;
+
+
 
         /**
          * find_node任务, 发送间隔. 毫秒
