@@ -48,7 +48,14 @@ public class FindNodeTask implements Pauseable {
         this.queue = new LinkedBlockingDeque<>(config.getPerformance().getFindNodeTaskMaxQueueLength());
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
+        this.putLastMaxNum = config.getPerformance().getFindNodeTaskMaxQueueLength() / 5;
     }
+
+    /**
+     * 普通入队条件, 队列最大长度的10分之一
+     * 只有当size小于该长度,才允许普通入队
+     */
+    private final Integer putLastMaxNum;
 
     /**
      * 发送队列
@@ -57,15 +64,29 @@ public class FindNodeTask implements Pauseable {
 
     /**
      * 入队首
+     * announce_peer等
      */
     public void put(InetSocketAddress address) {
-        //如果失败
-        if (!queue.offer(new FindNode(address))) {
+        // 循环,直到入队成功
+        while (!queue.offer(new FindNode(address))) {
             //从末尾移除一个
             queue.pollLast();
-            //再次增加..当然.是不保证成功的.但是总会有一个最新的插进去
-            queue.offer(new FindNode(address));
         }
+    }
+
+    /**
+     * 入队尾
+     * 普通的find_node回复等
+     */
+    public void putLast(InetSocketAddress address) {
+        queue.offerLast(new FindNode(address));
+    }
+
+    /**
+     * 判断是否允许普通的node入队
+     */
+    public boolean isAllowPutLast() {
+        return queue.size() < putLastMaxNum;
     }
 
     /**
@@ -92,33 +113,6 @@ public class FindNodeTask implements Pauseable {
             }).start();
         }
     }
-
-    /**
-     * 每x分钟,取出rank值较大的节点发送findNode请求
-     */
-//    @Scheduled(cron = "0 0/10 * * * ? ")
-    @Deprecated
-    public void autoPutToFindNodeQueue() {
-        for (int j = 0; j < routingTables.size(); j++) {
-            RoutingTable routingTable = routingTables.get(j);
-            try {
-                List<Node> nodeList = routingTable.getForTop8(BTUtil.generateNodeId());
-                if(CollectionUtils.isNotEmpty(nodeList))
-                    nodeList.forEach(item ->put(item.toAddress()));
-                routingTable.loop(trieNode -> {
-                    Node[] nodes = trieNode.getNodes();
-                    for (int i = 0; i < trieNode.getCount(); i++) {
-                        if (nodes[i].getRank() > NodeRankEnum.GET_PEERS.getCode()) {
-                            put(nodes[i].toAddress());
-                        }
-                    }
-                });
-            } catch (Exception e) {
-                log.info("[autoPutToFindNodeQueue]异常.e:{}",e.getMessage(),e);
-            }
-        }
-    }
-
 
 
     /**

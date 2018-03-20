@@ -255,6 +255,9 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 
 - 使用Nginx + WebSocket的话,由于Nginx的proxy_read_timeout(Default: 60s;)属性设置,webSocket会自动断开连接.
 
+- 之前我给find_node任务设置了20个线程,然后暂停x毫秒进行发送,但我忽然发觉这样简直是麻瓜.因为这样相当于自己给自己挖了个二十
+个并发线程争夺锁的坑...于是改为10个线程,不暂停发送.
+
 
 ### Elasticsearch
 
