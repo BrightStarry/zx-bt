@@ -28,29 +28,23 @@ public class BeanUtil {
 
     /**
      * Bean 转 Map
+     * Bencode专用
+     * 将bean中包含的子bean也转为map
+     * @return {@link LinkedHashMap<String,Object>}
      */
     @SneakyThrows
     public static <T> Map<String, Object> beanToMap(T obj) {
         //实体类转map
         Map<String, Object> map = new LinkedHashMap<>();
-
-        Class<?> tClass = obj.getClass();
         //获取所有字段,包括父类字段
-        Field[] fields = getAllField(tClass);
-
+        Field[] fields = getAllField(obj.getClass());
         for (Field field : fields) {
             field.setAccessible(true);
             Object temp = field.get(obj);
-
-            //基本类型,则直接赋值
-            if(temp.getClass().getName().contains("java"))
-                map.put(field.getName(),temp);
-            //其他自定义类型
-            else{
-                //递归
-                Map<String, Object> map1 = beanToMap(temp);
-                map.put(field.getName(), map1);
-            }
+            //基本类型,则直接赋值;  其他自定义类型,则递归
+            map.put(field.getName(),
+                    temp.getClass().getName().contains("java") ?
+                            temp : beanToMap(temp));
         }
         return map;
     }

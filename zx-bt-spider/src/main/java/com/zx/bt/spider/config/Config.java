@@ -1,6 +1,7 @@
 package com.zx.bt.spider.config;
 
 import com.zx.bt.spider.task.FindNodeTask;
+import com.zx.bt.spider.task.InitTask;
 import com.zx.bt.spider.util.BTUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -102,6 +103,12 @@ public class Config {
 		 * nodeIds
 		 */
 		private List<String> nodeIds = new ArrayList<>();
+
+        /**
+         * 初始化发送时的发送数目
+         * see {@link InitTask#getInitAddresses()}
+         */
+        private Integer initTaskSendNum = 100;
 
         /**
          * 统计几分钟内入库数量
