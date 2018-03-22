@@ -5,6 +5,7 @@
 CREATE TABLE keyword_record(
   id  BIGINT   AUTO_INCREMENT COMMENT 'id',
   keyword VARCHAR(128) NOT NULL COMMENT '搜索关键词',
+  pageNo INT NOT NULL COMMENT '当前页码',
   ip CHAR(16) NOT NULL COMMENT '客户端ip',
   city VARCHAR(10) COMMENT '客户端位置',
   create_time  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP

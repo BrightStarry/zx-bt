@@ -24,7 +24,7 @@ public class MainService {
 	 * 新增查询记录
 	 */
 	@Transactional
-	public void insertKeywordRecord(String ip,String keyword) {
-		keywordRecordRepository.save(new KeywordRecord(keyword,ip ));
+	public void insertKeywordRecord(String ip,String keyword,Integer pageNo) {
+		keywordRecordRepository.save(new KeywordRecord(keyword,ip,pageNo));
 	}
 }

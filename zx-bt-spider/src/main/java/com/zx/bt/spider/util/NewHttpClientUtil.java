@@ -121,7 +121,7 @@ public class NewHttpClientUtil {
 	/**
 	 * 发起POST请求，返回String,Json
 	 */
-	public <T> String doPost(String uri, String jsonStr, String cookieKey, String headerKey) {
+	public String doPost(String uri, String jsonStr, String cookieKey, String headerKey) {
 		try {
 			return doRequestForString(getHttpClient(cookieKey, headerKey), buildHttpPost(uri, jsonStr));
 		} catch (IOException e) {
@@ -129,10 +129,6 @@ public class NewHttpClientUtil {
 		}
 		return EMPTY;
 	}
-
-
-
-
 
 
 

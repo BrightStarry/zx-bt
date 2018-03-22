@@ -7,7 +7,7 @@ var barrage = {
     body: $('body'),
     url: {
         //websocket连接地址
-        webSocketUrl: 'ws://' + document.location.host + '/websocket',
+        webSocketUrl: 'wss://' + document.location.host + '/websocket',
         //弹幕默认头像路径
         defaultHeadImgPath: 'img/unknownUser.png',
         //自己的弹幕头像路径

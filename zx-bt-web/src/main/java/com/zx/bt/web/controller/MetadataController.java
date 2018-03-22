@@ -65,7 +65,7 @@ public class MetadataController implements ControllerPlus {
         model.addAttribute("orderVO", new OrderVO(form.getOrderType(), form.getIsMustContain()));
         //如果当前页为第一页记录入库
         if(form.getPageNo().equals(Config.DEFAULT_START_PAGE_NO))
-            mainService.insertKeywordRecord(getIp(request),keyword);
+            mainService.insertKeywordRecord(getIp(request),keyword,form.getPageNo());
         return "list";
     }
 
