@@ -170,6 +170,8 @@ zx-bt:
   main:
     # 是否开启主任务
     start: false
+    # 是否为主节点
+    master: true
     # 当前开启的解析器类型
     infoHashParserTypes:
     # 配置版本标识
