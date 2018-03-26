@@ -17,17 +17,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/filter")
 @ConditionalOnProperty(prefix = "zx-bt.main",name = "master",havingValue = "true")
 public class FilterController {
-    private final InfoHashFilter infoHashFilter;
+    private final InfoHashFilter masterInfoHashFilter;
 
-    public FilterController(InfoHashFilter infoHashFilter) {
-        this.infoHashFilter = infoHashFilter;
+    public FilterController(InfoHashFilter masterInfoHashFilter) {
+        this.masterInfoHashFilter = masterInfoHashFilter;
     }
 
     /**
-     * 是否重复验证，调用该节点的 {@link InfoHashFilter}类
+     * put，调用该节点的 {@link InfoHashFilter}类
      */
-    @GetMapping("/{infoHash}")
-    public boolean contain(@PathVariable String infoHash) {
-        return infoHashFilter.contain(infoHash);
+    @GetMapping(InfoHashFilter.PUT_METHOD + "{infoHash}")
+    public boolean put(@PathVariable String infoHash) {
+        return masterInfoHashFilter.put(infoHash);
     }
+
 }

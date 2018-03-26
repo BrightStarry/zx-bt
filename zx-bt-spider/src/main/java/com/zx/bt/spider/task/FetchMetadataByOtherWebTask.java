@@ -98,17 +98,33 @@ public class FetchMetadataByOtherWebTask {
     /**
      * 入队
      * 下面的操作如果没有当队列满了,不加入过滤器的需求, 可以直接使用infoHashFilter.put()方法,
-     * 并通过返回值判断. 为true,put成功,不重复; 为false,put失败,重复
+     * 并通过返回值判断. 为true,put成功,不重复; 为false,put失败,重复。
+     *
+     * 想了下，目前的写法：
+     *      //如果处理过该infoHash,则不做任何操作
+     *        if (infoHashFilter.contain(infoHashHexStr)) {
+     *        return;
+     *        }
+     *        //否则将其加入布隆过滤器和队列
+     *        //当队列已满.抛弃该任务, 也不加入过滤器
+     *        if (queue.offer(infoHashHexStr)) {
+     *        infoHashFilter.put(infoHashHexStr);
+     *        }
+     * 目前的写法再没有加锁的情况下，有少许几率发生线程安全问题。
+     * 而目前考虑到要配置为分布式集群，如果加锁，必须是分布式锁，稍许麻烦，所以，直接不考虑如上所述的需求了
      */
     public void put(String infoHashHexStr) {
-        //如果处理过该infoHash,则不做任何操作
-        if (infoHashFilter.contain(infoHashHexStr)) {
-            return;
-        }
-        //否则将其加入布隆过滤器和队列
-        //当队列已满.抛弃该任务, 也不加入过滤器
-        if (queue.offer(infoHashHexStr)) {
-            infoHashFilter.put(infoHashHexStr);
+//        //如果处理过该infoHash,则不做任何操作
+//        if (infoHashFilter.contain(infoHashHexStr)) {
+//            return;
+//        }
+//        //否则将其加入布隆过滤器和队列
+//        //当队列已满.抛弃该任务, 也不加入过滤器
+//        if (queue.offer(infoHashHexStr)) {
+//            infoHashFilter.put(infoHashHexStr);
+//        }
+        if (infoHashFilter.put(infoHashHexStr)) {
+            queue.offer(infoHashHexStr);
         }
     }
 

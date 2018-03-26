@@ -9,7 +9,6 @@ import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.spider.enums.MetadataTypeEnum;
 import com.zx.bt.spider.util.HtmlResolver;
 import com.zx.bt.spider.util.HttpClientUtil;
-import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
@@ -36,12 +35,12 @@ import java.util.Optional;
 public abstract class AbstractInfoHashParser {
 	protected static final String LOG = "[InfoHash解析器]";
 
-	protected static HttpClientUtil httpClientUtil;
+	protected static HttpClientUtil parseHttpClientUtil;
 	protected static ObjectMapper objectMapper;
 
 	@Autowired
-	public void init(HttpClientUtil httpClientUtil,ObjectMapper objectMapper) {
-		AbstractInfoHashParser.httpClientUtil = httpClientUtil;
+	public void init(HttpClientUtil parseHttpClientUtil, ObjectMapper objectMapper) {
+		AbstractInfoHashParser.parseHttpClientUtil = parseHttpClientUtil;
 		AbstractInfoHashParser.objectMapper = objectMapper;
 	}
 
@@ -121,7 +120,7 @@ public abstract class AbstractInfoHashParser {
 	 * 需要注意的是 {@link Document}也是Element的子类
 	 */
 	protected Element getDocumentByPath(String url) {
-		return HtmlResolver.getDocument(httpClientUtil.doGetForBasicBrowser(url));
+		return HtmlResolver.getDocument(parseHttpClientUtil.doGetByChromeUserAgent(url));
 	}
 
 	/**

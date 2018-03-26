@@ -7,10 +7,13 @@ package com.zx.bt.spider.store;
  */
 public interface InfoHashFilter {
 
+    String PUT_METHOD = "/put/";
+    String CONTAIN_METHOD = "/contain/";
+
     /**
      * 加入
      */
-   void put(String infoHash);
+   boolean put(String infoHash);
 
     /**
      * 判断是否存在
@@ -26,5 +29,5 @@ public interface InfoHashFilter {
     /**
      * 启动该过滤器
      */
-    public void run();
+    void run();
 }

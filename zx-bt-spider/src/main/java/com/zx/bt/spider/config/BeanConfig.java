@@ -11,12 +11,14 @@ import com.zx.bt.spider.socket.processor.UDPProcessorManager;
 import com.zx.bt.common.store.CommonCache;
 import com.zx.bt.spider.store.RoutingTable;
 import com.zx.bt.spider.util.Bencode;
+import com.zx.bt.spider.util.HttpClientUtil;
 import io.netty.util.CharsetUtil;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,7 +34,7 @@ import java.util.List;
  */
 @Configuration
 public class BeanConfig {
-	//避免netty冲突
+	//避免netty jar冲突
 	static {		System.setProperty("es.set.netty.runtime.available.processors", "false"); }
 
 	/**
@@ -133,6 +135,23 @@ public class BeanConfig {
 	@Bean
 	public MetadataService metadataService(TransportClient transportClient, ObjectMapper objectMapper) {
 		return new MetadataService(transportClient,objectMapper);
+	}
+
+	/**
+	 * {@link com.zx.bt.spider.parser.AbstractInfoHashParser}使用的 {@link HttpClientUtil}
+	 */
+	@Bean
+	public HttpClientUtil parseHttpClientUtil(Config config) {
+		return new HttpClientUtil(config.getHttp());
+	}
+
+	/**
+	 * {@link com.zx.bt.spider.store.SlaveInfoHashFilter} 使用的 {@link HttpClientUtil}
+	 */
+	@ConditionalOnProperty(prefix = "zx-bt.main",name = "master",havingValue = "false")
+	@Bean
+	public HttpClientUtil slaveHttpClientUtil() {
+		return new HttpClientUtil(null);
 	}
 
 

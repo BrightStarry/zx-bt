@@ -3,9 +3,11 @@ package com.zx.bt.spider.config;
 import com.zx.bt.spider.task.FindNodeTask;
 import com.zx.bt.spider.task.InitTask;
 import com.zx.bt.spider.util.BTUtil;
+import com.zx.bt.spider.util.HttpClientUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.Header;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * author:ZhengXing
@@ -104,6 +107,11 @@ public class Config {
          * 是否为Master节点
          */
         private Boolean master = true;
+
+        /**
+         * 如果{@link #master == false},需要配置给属性
+         */
+        public String masterUrl = "http://101.132.42.102:8080/filter";
 
         /**
          * nodeIds
@@ -303,7 +311,7 @@ public class Config {
      * Http
      */
     @Data
-    public static class Http{
+    public static class Http implements HttpClientUtil.HttpClientConfig{
         /**
          * 最大连接数
          */
@@ -328,6 +336,16 @@ public class Config {
          * 连接超时时间
          */
         private Integer connectionTimeout = 3000;
+
+        @Override
+        public List<String> getCustomCookieKeys() {
+            return null;
+        }
+
+        @Override
+        public Map<String, List<Header>> getCustomHeaders() {
+            return null;
+        }
     }
 
 

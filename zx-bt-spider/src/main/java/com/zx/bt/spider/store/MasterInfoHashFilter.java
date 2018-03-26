@@ -51,8 +51,8 @@ public class MasterInfoHashFilter implements InfoHashFilter {
      * 加入
      */
     @Override
-    public void put(String infoHash){
-        filter.put(infoHash);
+    public boolean put(String infoHash){
+        return filter.put(infoHash);
     }
 
     /**
