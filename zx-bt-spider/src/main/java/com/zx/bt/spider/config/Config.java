@@ -99,8 +99,14 @@ public class Config {
          */
         private String infoHashParserTypes;
 
+
         /**
-		 * nodeIds
+         * 是否为Master节点
+         */
+        private Boolean master = true;
+
+        /**
+         * nodeIds
 		 */
 		private List<String> nodeIds = new ArrayList<>();
 
