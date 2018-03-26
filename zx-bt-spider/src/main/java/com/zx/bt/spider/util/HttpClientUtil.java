@@ -78,15 +78,15 @@ public class HttpClientUtil {
 	/**
 	 * 发起GET请求，并返回String，使用 {@link HeaderKey#CHROME_USER_AGENT}
 	 */
-	public String doGetByChromeUserAgent(String uri) {
+	public String doGetByChromeUserAgent(String uri) throws Exception {
 		return doGet(uri, null, null, HeaderKey.CHROME_USER_AGENT.getCode());
 	}
 
 	/**
 	 * 发起GET请求，并返回String
 	 */
-	public <T> String doGet(String uri, T obj, String cookieKey, String headerKey){
-		try {
+	public <T> String doGet(String uri, T obj, String cookieKey, String headerKey) throws Exception {
+//		try {
 			HttpGet httpGet;
 			if (obj == null) {
 				httpGet = buildHttpGet(uri);
@@ -94,46 +94,46 @@ public class HttpClientUtil {
 				httpGet = buildHttpGet(uri, obj);
 			}
 			return doRequestForString(getHttpClient(cookieKey, headerKey), httpGet);
-		} catch (Exception e) {
-			log.error("{}doGet异常,uri:{},e:{}",LOG,uri,e.getMessage());
-		}
-		return EMPTY;
+//		} catch (Exception e) {
+//			log.error("{}doGet异常,uri:{},e:{}",LOG,uri,e.getMessage());
+//		}
+//		return EMPTY;
 	}
 
 	/**
 	 * 发起GET请求，返回String
 	 */
-	public <T> String doGet(String uri){
-		try {
+	public <T> String doGet(String uri) throws Exception {
+//		try {
 			return doRequestForString(getHttpClient(),  buildHttpGet(uri));
-		} catch (IOException e) {
-			log.error("{}doGet异常,uri:{},e:{}",LOG,uri,e.getMessage());
-		}
-		return EMPTY;
+//		} catch (IOException e) {
+//			log.error("{}doGet异常,uri:{},e:{}",LOG,uri,e.getMessage());
+//		}
+//		return EMPTY;
 	}
 
 	/**
 	 * 发起POST请求，返回String
 	 */
-	public <T> String doPost(String uri, T obj, String cookieKey, String headerKey) {
-		try {
+	public <T> String doPost(String uri, T obj, String cookieKey, String headerKey) throws Exception {
+//		try {
 			return doRequestForString(getHttpClient(cookieKey, headerKey), buildHttpPost(uri, obj));
-		} catch (Exception e) {
-			log.error("{}doPost异常,uri:{},e:{}",LOG,uri,e.getMessage());
-		}
-		return EMPTY;
+//		} catch (Exception e) {
+//			log.error("{}doPost异常,uri:{},e:{}",LOG,uri,e.getMessage());
+//		}
+//		return EMPTY;
 	}
 
 	/**
 	 * 发起POST请求，返回String,Json
 	 */
-	public String doPost(String uri, String jsonStr, String cookieKey, String headerKey) {
-		try {
+	public String doPost(String uri, String jsonStr, String cookieKey, String headerKey) throws Exception {
+//		try {
 			return doRequestForString(getHttpClient(cookieKey, headerKey), buildHttpPost(uri, jsonStr));
-		} catch (IOException e) {
-			log.error("{}doPost异常,uri:{},e:{}",LOG,uri,e.getMessage());
-		}
-		return EMPTY;
+//		} catch (IOException e) {
+//			log.error("{}doPost异常,uri:{},e:{}",LOG,uri,e.getMessage());
+//		}
+//		return EMPTY;
 	}
 
 
@@ -197,8 +197,9 @@ public class HttpClientUtil {
 	public String doRequestForString(CloseableHttpClient httpClient, HttpUriRequest request) throws IOException {
 		// 注意,try-with-resources语法的赋值语句中如果抛出异常,将不会被捕获
 		try (CloseableHttpResponse response = doRequestForResponse(httpClient, request)){
-			if(!isRequestSuccess(response))
-				throw new RuntimeException(LOG  + "请求失败.当前状态码：" + response.getStatusLine().getStatusCode() +  ",当前路径：" + request.getURI());
+			// 此处不做校验是因为当前 应用为了最大并发，不关注异常
+//			if(!isRequestSuccess(response))
+//				throw new RuntimeException(LOG  + "请求失败.当前状态码：" + response.getStatusLine().getStatusCode() +  ",当前路径：" + request.getURI());
 			return getStringResultByResponse(response);
 		}
 	}

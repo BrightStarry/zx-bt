@@ -6,6 +6,7 @@ import com.zx.bt.spider.util.HtmlResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,7 +15,10 @@ import java.util.List;
  * author:ZhengXing
  * datetime:2018-03-18 15:27
  * http://www.btcerise.me
+ *
+ * see {@link MetadataTypeEnum#BTCERISE} 4
  */
+@Order(2)
 @Component
 @Slf4j
 public class BtceriseInfoHashParser extends AbstractInfoHashParser {

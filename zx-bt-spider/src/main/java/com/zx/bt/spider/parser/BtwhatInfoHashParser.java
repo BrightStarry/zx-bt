@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.URLDecoder;
@@ -17,7 +18,10 @@ import java.util.List;
  * author:ZhengXing
  * datetime:2018-03-18 15:27
  * http://www.btwhat.info
+ *
+ * see {@link MetadataTypeEnum#BTWHAT} 2
  */
+@Order(1)
 @Component
 @Slf4j
 public class BtwhatInfoHashParser extends AbstractInfoHashParser {

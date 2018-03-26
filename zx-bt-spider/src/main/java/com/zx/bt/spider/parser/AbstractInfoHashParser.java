@@ -119,7 +119,7 @@ public abstract class AbstractInfoHashParser {
 	 * 根据网址发起请求,获取到{@link org.jsoup.nodes.Element}
 	 * 需要注意的是 {@link Document}也是Element的子类
 	 */
-	protected Element getDocumentByPath(String url) {
+	protected Element getDocumentByPath(String url) throws Exception {
 		return HtmlResolver.getDocument(parseHttpClientUtil.doGetByChromeUserAgent(url));
 	}
 
@@ -170,7 +170,7 @@ public abstract class AbstractInfoHashParser {
 	 * 解析
 	 * 模版方法
 	 */
-	public Metadata parse(String infoHash) {
+	public Metadata parse(String infoHash) throws Exception {
 		// 主体元素,默认是整个html
 		Element body = getDocumentByPath(getUrlByInfoHash(infoHash));
 		// 种子名字

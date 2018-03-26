@@ -36,7 +36,12 @@ public class SlaveInfoHashFilter implements InfoHashFilter {
 
 	@Override
 	public boolean put(String infoHash) {
-		return isTrue(slaveHttpClientUtil.doGet(putUrl.concat(infoHash)));
+		try {
+			return isTrue(slaveHttpClientUtil.doGet(putUrl.concat(infoHash)));
+		} catch (Exception e) {
+			log.error("[SlaveInfoHashFilter]调用失败.异常:{}",e.getMessage());
+		}
+		return false;
 	}
 
 	@Override

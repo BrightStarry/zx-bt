@@ -5,6 +5,7 @@ import com.zx.bt.spider.enums.MetadataTypeEnum;
 import com.zx.bt.spider.util.HtmlResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -13,7 +14,10 @@ import java.util.List;
  * author:ZhengXing
  * datetime:2018-03-18 15:27
  * https://www.zhongzidi.com
+ *
+ * see {@link MetadataTypeEnum#ZHONGZISOU} 1
  */
+@Order(3)
 @Component
 @Slf4j
 public class ZhongzisouInfoHashParser extends AbstractInfoHashParser {
@@ -32,7 +36,7 @@ public class ZhongzisouInfoHashParser extends AbstractInfoHashParser {
     }
 
     @Override
-    protected Element getDocumentByPath(String url) {
+    protected Element getDocumentByPath(String url) throws Exception {
         return HtmlResolver.getElement(super.getDocumentByPath(url), "#wrapp > div.jumbotron > div > div");
     }
 
