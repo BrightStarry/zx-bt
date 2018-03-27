@@ -48,7 +48,7 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 			//将nodes加入发送队列
 			if(findNodeTask.isAllowPutLast())
 				for (Node node : nodes) {
-					findNodeTask.putLast(node.toAddress());
+					findNodeTask.put(node.toAddress());
 				}
 			byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
 			//将发送消息的节点加入路由表

@@ -67,8 +67,8 @@ public class FindNodeTask implements Pauseable {
      * announce_peer等
      */
     public void put(InetSocketAddress address) {
-        // 循环,直到入队成功
-        while (!queue.offer(new FindNode(address))) {
+        // 如果插入失败
+        if(!queue.offer(new FindNode(address))){
             //从末尾移除一个
             queue.pollLast();
         }
