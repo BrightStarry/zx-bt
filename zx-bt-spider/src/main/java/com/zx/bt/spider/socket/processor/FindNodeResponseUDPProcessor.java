@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class FindNodeResponseUDPProcessor extends UDPProcessor {
 	private static final String LOG = "[FIND_NODE_RECEIVE]";
 
-	private final  List<RoutingTable> routingTables;
+	private final List<RoutingTable> routingTables;
 	private final FindNodeTask findNodeTask;
 
 	public FindNodeResponseUDPProcessor(List<RoutingTable> routingTables, FindNodeTask findNodeTask) {
@@ -38,22 +38,21 @@ public class FindNodeResponseUDPProcessor extends UDPProcessor {
 
 	@Override
 	boolean process1(ProcessObject processObject) {
-			//回复主体
-			Map<String, Object> rMap = BTUtil.getParamMap(processObject.getRawMap(), "r", "FIND_NODE,找不到r参数.map:" + processObject.getRawMap());
-			List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
-			//为空退出
-			if (CollectionUtils.isEmpty(nodeList)) return true;
-			//去重
-			Node[] nodes = nodeList.stream().distinct().toArray(Node[]::new);
-			//将nodes加入发送队列
-			if(findNodeTask.isAllowPutLast())
-				for (Node node : nodes) {
-					findNodeTask.put(node.toAddress());
-				}
-			byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
-			//将发送消息的节点加入路由表
-			routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
-			return true;
+		//回复主体
+		Map<String, Object> rMap = BTUtil.getParamMap(processObject.getRawMap(), "r", "FIND_NODE,找不到r参数.map:" + processObject.getRawMap());
+		List<Node> nodeList = BTUtil.getNodeListByRMap(rMap);
+		//为空退出
+		if (CollectionUtils.isEmpty(nodeList)) return true;
+		//去重
+		Node[] nodes = nodeList.stream().distinct().toArray(Node[]::new);
+		//将nodes加入发送队列
+		for (Node node : nodes) {
+			findNodeTask.put(node.toAddress());
+		}
+		byte[] id = BTUtil.getParamString(rMap, "id", "FIND_NODE,找不到id参数.map:" + processObject.getRawMap()).getBytes(CharsetUtil.ISO_8859_1);
+		//将发送消息的节点加入路由表
+		routingTables.get(processObject.getIndex()).put(new Node(id, processObject.getSender(), NodeRankEnum.FIND_NODE_RECEIVE.getCode()));
+		return true;
 
 	}
 
