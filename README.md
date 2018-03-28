@@ -12,21 +12,7 @@
 - 给网站增加了简单的弹幕功能
 
 
-#### 重构
-- 将其重构为如下模块,以便将爬虫和网站分开部署
-    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目依赖.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
-    - parent: pom项目,依赖版本定义.
-    - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
-    - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
-    - web: 磁力网站web项目. 
 
-
-#### 阻塞队列的实现
-无意中看了下ArrayBlockingQueue的源码. 主要在于维护一把锁和几个Condition. 例如put()时,如果元素满了,就使用一个condition让该当前线程等待.  
-而在删除方法中,在删除成功后,会使用同一个Condition唤醒某个线程(是signals而不是signalAll). 就酱.   
-
-此外需要注意的是,等待前获取的锁是调用ReentrantLock的lockInterruptibly()方法获取的可中断锁  
-(该锁,在已经中断的状态下,不能执行等待方法,需要处理InterruptedException; 普通锁如果在已经中断的状态下,仍可以进入等待状态);   
 
 
 ### 前提
@@ -38,7 +24,9 @@
 [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)这篇博客才让我对其有了一知半解.但是它在更新到要如何通过info_hash获取torrent的metadata信息时,却断更了...   
 
 按照它的的思路,在我基本完成官网中的BEP-005协议.在本地运行时,却基本无法收到announce_peer请求.并且发送的并发稍微大些(即使是单线程发送)都会不停引发Network dropped connection on reset: no further information异常.  
+
 为了避免该异常,我开始给任务之间增加阻塞队列,然后开启自定义数量的线程进行相关任务. 但情况并没有任何改善.只能将其和无法收到announce_peer请求的原因,都归咎于内网问题.    
+
 因为,我将其发到云服务器上后,该异常不再发生,并且运行一段时间后,可接收到大量announce_peer请求(目前,大部分info_hash都是通过announce_peer获取到的).     
 
 然后我开始着手如何通过info_hash获取到torrent的metadata信息.网上的普遍说法是两种方式:     
@@ -57,6 +45,7 @@ metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进
 在实现过程中,对于Bencode编解码,我本来是使用了github上的一个项目.后来自己实现了.     
 还自己实现了一个基于词典树的RoutingTable.而且为了支持并发操作..     
 我脑洞清奇地给它增加了分段锁(对每个节点生成递增的分段锁id,操作某个节点就使用该 锁id 取余 分段锁数量 作为下标从锁数组中获取锁. 我总觉得不太好...目前测试时高并发下仍有少许安全问题,但正常运行下没有任何问题)     
+
 此外,增加了布隆过滤器(guava包)对info_hash进行去重.考虑到info_hash的实时有效性(某个此时无效的infoHash指不定啥时候就有效了),定时清空过滤器(每次清空后都会导入所有有效的(获取到了metadata信息)的info_hash).
 
 
@@ -66,14 +55,17 @@ metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进
 首先,BitTorrent是一种各机器相互通讯的协议.就像Http协议,浏览器和服务器都遵守了相应的报文规则,才能交互解析,得以通讯.BitTorrent也是这样的基于UDP和TCP通讯的协议.   
  
 该协议的目的是为了分发大体积文件(.羞羞的电影等).而下载某个文件,则需要连接到遵守该协议的某台服务器(一旦遵守该协议,并实现对应的协议部分,例如提供文件下载功能,该服务器就被称为peer),下载该文件的某个部分.     
+
 也正是因此,当该文件被x个服务器(peer)拥有,就可以同时从这些peer下载文件的不同部分,然后将其拼接为整个文件(这样速度就会很快).   
 
 Torrent(种子)就保存了一个文件的一些信息,名字/长度/子文件目录/子文件长度等信息,其中最重要是拥有该文件的peers服务器,也因此,可以通过种子,向这些peers发送下载请求.下载到文件.
 
 但是在DHT(分布式哈希表)出现之前,所有节点都需要连接到Tracker服务器,以获取到拥有某个文件的peers(或者Torrent).     
+
 DHT协议基于udp通讯,规定每个node(遵守BitTorrent协议,未实现提供下载功能的服务器)内部存储一个RoutingTable(路由表).该表存储了其他的node(或peer)节点.    
 
 每个node的信息包括nodeId(随机的20个byte/ip/port(其中ip/port在udp通讯的包中都已经携带,所以,实际上最重要的就是nodeId))   
+
 而且定义了几种方法进行node间的交互(此处设A节点为请求方,B节点为响应方, 这些方法就是发送对应规则的请求响应报文,例如Http的GET/POST/DELETE等)
 ```
     ping: A向B发送请求,测试对方节点是否存活. 如果B存活,需要响应对应报文
@@ -84,9 +76,11 @@ DHT协议基于udp通讯,规定每个node(遵守BitTorrent协议,未实现提供
     announce_peer: A通知B(以及其他若干节点)自己拥有某个infoHash的资源(也就是A成为该infoHash的peer,可提供文件或种子的下载),并给B发送下载的端口.
 ```
 此外,node间的距离是通过nodeId进行异或计算的(也就是160个bit间进行异或)得出一个值,值越小,则距离越近.
+
 由此可得出,越是高位的bit不相同(异或值为1),则值越大,距离越远(因为假设两个nodeId第1位就不同,其异或值必然大于2^160).   
 
 DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到已经在网络中的任何一个node信息,向其发送find_node请求即可.想要获取某个info_hash的peer,也可直接发送get_peers,而无需连接到Tracker服务器.  
+
 如此,DHT可理解为一个去中心化的P2P网络.
          
 
@@ -258,6 +252,21 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 - 之前我给find_node任务设置了20个线程,然后暂停x毫秒进行发送,但我忽然发觉这样简直是麻瓜.因为这样相当于自己给自己挖了个二十
 个并发线程争夺锁的坑...于是改为10个线程,不暂停发送.
 
+#### 重构
+- 将其重构为如下模块,以便将爬虫和网站分开部署
+    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目依赖.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
+    - parent: pom项目,依赖版本定义.
+    - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
+    - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
+    - web: 磁力网站web项目. 
+
+
+#### 阻塞队列的实现
+无意中看了下ArrayBlockingQueue的源码. 主要在于维护一把锁和几个Condition. 例如put()时,如果元素满了,就使用一个condition让该当前线程等待.  
+而在删除方法中,在删除成功后,会使用同一个Condition唤醒某个线程(是signals而不是signalAll). 就酱.   
+
+此外需要注意的是,等待前获取的锁是调用ReentrantLock的lockInterruptibly()方法获取的可中断锁  
+(该锁,在已经中断的状态下,不能执行等待方法,需要处理InterruptedException; 普通锁如果在已经中断的状态下,仍可以进入等待状态);   
 
 ### Elasticsearch
 
