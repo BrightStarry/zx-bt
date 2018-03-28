@@ -67,12 +67,13 @@
             <a href="javascript:void(0);" onclick="common.listByKeyword(this.text)" th:text="${i}"></a>
         </li>
 
-
-        <li th:class="${metadataPageVO.pageNo == metadataPageVO.totalPage || metadataPageVO.pageNo >= metadataPageVO.totalPage - 4} ? 'hidden'">
-            <a th:data="${metadataPageVO.totalPage}" href="javascript:void(0);" onclick="common.listByKeyword(this.getAttribute('data'))"  aria-label="Next">
-                <span aria-hidden="true">»</span>
-            </a>
-        </li>
+        <!--/*
+                <li th:class="${metadataPageVO.pageNo == metadataPageVO.totalPage || metadataPageVO.pageNo >= metadataPageVO.totalPage - 4} ? 'hidden'">
+                    <a th:data="${metadataPageVO.totalPage}" href="javascript:void(0);" onclick="common.listByKeyword(this.getAttribute('data'))"  aria-label="Next">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+        */-->
     </ul>
 </div>
 

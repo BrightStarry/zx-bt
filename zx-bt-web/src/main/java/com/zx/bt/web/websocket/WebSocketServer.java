@@ -166,7 +166,7 @@ public class WebSocketServer {
 	 */
 	@OnError
 	public void onError(Session session, Throwable error) {
-		log.info("{}发生异常:{}", LOG, error.getMessage(),error);
+		log.info("{}发生异常:{}", LOG, error.getMessage());
 		closeSession(session);
 	}
 
