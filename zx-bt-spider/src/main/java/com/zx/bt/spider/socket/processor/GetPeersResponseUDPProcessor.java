@@ -46,7 +46,7 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 	public GetPeersResponseUDPProcessor(List<RoutingTable> routingTables,
 										CommonCache<GetPeersSendInfo> getPeersCache,
-										 FindNodeTask findNodeTask, Sender sender, InfoHashService infoHashService) {
+										FindNodeTask findNodeTask, Sender sender, InfoHashService infoHashService) {
 		this.routingTables = routingTables;
 		this.getPeersCache = getPeersCache;
 		this.findNodeTask = findNodeTask;
@@ -77,13 +77,13 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 
 		if (rMap.get("values") == null) return true;
 		//如果返回的是values peer
-		return valuesHandler(messageInfo, rawMap, sender, routingTable, getPeersSendInfo, rMap, id);
+		return valuesHandler(messageInfo, rawMap, sender, routingTable, getPeersSendInfo, rMap, id,index);
 	}
 
 	/**
 	 * 处理values返回
 	 */
-	private boolean valuesHandler(MessageInfo messageInfo, Map<String, Object> rawMap, InetSocketAddress sender, RoutingTable routingTable, GetPeersSendInfo getPeersSendInfo, Map<String, Object> rMap, byte[] id) {
+	private boolean valuesHandler(MessageInfo messageInfo, Map<String, Object> rawMap, InetSocketAddress sender, RoutingTable routingTable, GetPeersSendInfo getPeersSendInfo, Map<String, Object> rMap, byte[] id,int index) {
 		List<String> rawPeerList;
 		try {
 			rawPeerList = BTUtil.getParamList(rMap, "values", "GET_PEERS-RECEIVE,找不到values参数.map:" + rawMap);
@@ -117,6 +117,8 @@ public class GetPeersResponseUDPProcessor extends UDPProcessor {
 //				nodeRepository.save(new Node(null, BTUtil.getIpBySender(sender), sender.getPort()));
 		routingTable.put(new Node(id, sender, NodeRankEnum.GET_PEERS_RECEIVE_OF_VALUE.getCode()));
 		//并向该节点发送findNode请求
+		findNodeTask.put(sender);
+
 		findNodeTask.put(sender);
 
 		//否则是格式错误,不做任何处理

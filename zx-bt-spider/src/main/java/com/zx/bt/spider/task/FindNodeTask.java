@@ -37,30 +37,21 @@ public class FindNodeTask implements Pauseable {
     private final List<String> nodeIds;
     private final ReentrantLock lock;
     private final Condition condition;
-    private final List<RoutingTable> routingTables;
     private final Sender sender;
 
-    public FindNodeTask(Config config, List<RoutingTable> routingTables, Sender sender) {
+    public FindNodeTask(Config config,Sender sender) {
         this.config = config;
         this.nodeIds = config.getMain().getNodeIds();
-        this.routingTables = routingTables;
         this.sender = sender;
         this.queue = new LinkedBlockingDeque<>(config.getPerformance().getFindNodeTaskMaxQueueLength());
         this.lock = new ReentrantLock();
         this.condition = this.lock.newCondition();
-        this.putLastMaxNum = config.getPerformance().getFindNodeTaskMaxQueueLength() / 5;
     }
-
-    /**
-     * 普通入队条件, 队列最大长度的10分之一
-     * 只有当size小于该长度,才允许普通入队
-     */
-    private final Integer putLastMaxNum;
 
     /**
      * 发送队列
      */
-    private final BlockingDeque<FindNode> queue;
+    private final BlockingDeque<InetSocketAddress> queue;
 
     /**
      * 入队首
@@ -68,26 +59,14 @@ public class FindNodeTask implements Pauseable {
      */
     public void put(InetSocketAddress address) {
         // 如果插入失败
-        if(!queue.offer(new FindNode(address))){
+        if(!queue.offer(address)){
             //从末尾移除一个
             queue.pollLast();
         }
     }
 
-    /**
-     * 入队尾
-     * 普通的find_node回复等
-     */
-    public void putLast(InetSocketAddress address) {
-        queue.offerLast(new FindNode(address));
-    }
 
-    /**
-     * 判断是否允许普通的node入队
-     */
-    public boolean isAllowPutLast() {
-        return queue.size() < putLastMaxNum;
-    }
+
 
     /**
      * 循环执行该任务
@@ -99,11 +78,12 @@ public class FindNodeTask implements Pauseable {
         TimeUnit milliseconds = TimeUnit.MILLISECONDS;
         for (int i = 0; i < config.getPerformance().getFindNodeTaskThreadNum(); i++) {
             new Thread(()->{
+                int j;
                 while (true) {
                     try {
                         //轮询使用每个端口向外发送请求
-                        for (int j = 0; j < size; j++) {
-                            run(j);
+                        for (j = 0; j < size; j++) {
+                            sender.findNode(queue.take(),nodeIds.get(j),BTUtil.generateNodeIdString(),j);
                             pause(lock, condition, pauseTime, milliseconds);
                         }
                     } catch (Exception e) {
@@ -114,42 +94,10 @@ public class FindNodeTask implements Pauseable {
         }
     }
 
-
-    /**
-     * 任务
-     */
-    @SneakyThrows
-    public void run(int index) {
-        sender.findNode(queue.take().getAddress(),nodeIds.get(index),BTUtil.generateNodeIdString(),index);
-    }
-
-
-
     /**
      * 长度
      */
     public int size() {
         return queue.size();
     }
-
-    /**
-     * 待发送任务实体
-     */
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Accessors(chain = true)
-    public static class FindNode{
-        /**
-         * 目标地址
-         */
-        private InetSocketAddress address;
-
-        /**
-         * 索引
-         */
-//        private int index;
-    }
-
-
 }

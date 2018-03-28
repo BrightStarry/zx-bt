@@ -1,12 +1,10 @@
 package com.zx.bt.spider;
 
 import com.zx.bt.spider.config.Config;
-import com.zx.bt.spider.socket.UDPServer;
 import com.zx.bt.spider.task.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -14,7 +12,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @EnableScheduling
 @EnableTransactionManagement
-public class SpiderApplication implements CommandLineRunner{
+public class SpiderApplication implements CommandLineRunner {
 
 	private final InitTask initTask;
 	private final FindNodeTask findNodeTask;
@@ -23,7 +21,7 @@ public class SpiderApplication implements CommandLineRunner{
 	private final FetchMetadataByPeerTask fetchMetadataByPeerTask;
 	private final Config config;
 
-	public SpiderApplication( InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask, Config config) {
+	public SpiderApplication(InitTask initTask, FindNodeTask findNodeTask, GetPeersTask getPeersTask, FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FetchMetadataByPeerTask fetchMetadataByPeerTask, Config config) {
 		this.initTask = initTask;
 		this.findNodeTask = findNodeTask;
 		this.getPeersTask = getPeersTask;
@@ -51,7 +49,7 @@ public class SpiderApplication implements CommandLineRunner{
 	@Order(Integer.MIN_VALUE)
 	@Override
 	public void run(String... strings) throws Exception {
-		if(!config.getMain().getStart()) return;
+		if (!config.getMain().getStart()) return;
 
 		/**
 		 * 先行开启各队列任务, 重启时,任务并发过大

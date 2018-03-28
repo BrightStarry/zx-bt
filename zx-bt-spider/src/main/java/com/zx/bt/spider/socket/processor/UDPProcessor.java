@@ -17,19 +17,19 @@ import java.util.List;
 @Component
 public abstract class UDPProcessor {
 
-	protected  Config config;
-	protected  List<String> nodeIds;
+	protected static   Config config;
+	protected static List<String> nodeIds;
 
 	@Autowired
 	public void init(Config config) {
-		this.config = config;
-		this.nodeIds = config.getMain().getNodeIds();
+		UDPProcessor.config = config;
+		UDPProcessor.nodeIds = config.getMain().getNodeIds();
 	}
 
 	/**
 	 * 下一个处理器
 	 */
-	protected UDPProcessor next;
+	private UDPProcessor next;
 
 	/**
 	 * 处理请求模版方法

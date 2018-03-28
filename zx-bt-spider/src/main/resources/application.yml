@@ -169,7 +169,7 @@ zx-bt:
 
   main:
     # 是否开启主任务
-    start: true
+    start: false
     # 是否为主节点
     master: false
     # 主节点url

@@ -42,7 +42,8 @@ public class AnnouncePeerRequestUDPProcessor extends UDPProcessor {
 
     public AnnouncePeerRequestUDPProcessor(List<RoutingTable> routingTables, NodeRepository nodeRepository,
                                            GetPeersTask getPeersTask, Sender sender, InfoHashService infoHashService,
-                                           FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FindNodeTask findNodeTask) {
+                                           FetchMetadataByOtherWebTask fetchMetadataByOtherWebTask, FindNodeTask findNodeTask
+                                           ) {
         this.routingTables = routingTables;
         this.nodeRepository = nodeRepository;
         this.getPeersTask = getPeersTask;
