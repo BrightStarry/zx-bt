@@ -157,7 +157,7 @@ public class WebSocketServer {
 	 */
 	@OnClose
 	public void onClose(Session session) {
-		log.info("{}连接关闭", LOG);
+//		log.info("{}连接关闭", LOG);
 		closeSession(session);
 	}
 
