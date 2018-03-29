@@ -439,12 +439,15 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 
 #### 注意点
 - peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
+
 - node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
+
 - byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
 其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
+
 - java中的byte范围为-128 - 127,如果为负数,可通过 & 0xff转为int,其值为256 + 该负数, 例如(byte)-1 & 0xff = 255
+
 - SpringBoot项目依赖自己的父项目时,打包可能不包含依赖. 需要添加如下:
-- 在linux启动SpringBoot jar项目时,如果想使用外部配置文件,需要在该外部配置文件所在目录执行启动命令
 ```xml
 <build>
 		<plugins>
@@ -466,6 +469,9 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 		<finalName>zx-bt-web</finalName>
 	</build>
 ```
+
+- 在linux启动SpringBoot jar项目时,如果想使用外部配置文件,需要在该外部配置文件所在目录执行启动命令
+
 
 - 使用Nginx + WebSocket的话,由于Nginx的proxy_read_timeout(Default: 60s;)属性设置,webSocket会自动断开连接.
 
