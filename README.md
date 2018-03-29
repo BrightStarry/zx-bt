@@ -2,23 +2,15 @@
 一个磁力搜索系统，基于Elasticsearch进行存储搜索，基于Netty实现BT协议的node和peer间的通信。     
 并基于Bootstrap实现了简单的响应式页面，基于WebSocket实现了弹幕功能。
 
-
-#### 参考
-- [BitTorrent官网](http://bittorrent.org)
-- [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)
-- [抓包分析BitTorrent协议，很全面的文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html)
-- [Go语言实现的DHT项目](https://github.com/shiyanhui/dht)
-
 #### 目前
 - 网站当前已经部署:[福利球](https://www.fuliqiu.com)
 - web模块和Elasticsearch单节点部署在阿里云1核2G1M的ECS上;spider模块部署在阿里云1核2G6M的ECS上(cpu占用80%左右,带宽基本全部占用);MySQL也是用的阿里云的RDS;
 - 目前爬取速率保持在800个有效Metadata记录/5分钟.
 - 目前数据在200W+，并以每天15W+的速度入库。
-- 给网站增加了简单的弹幕功能
 
 
 #### 实现过程
-- 看[BitTorrent官网](http://bittorrent.org)，但可能会一头雾水。
+- 刚开始看[BitTorrent官网](http://bittorrent.org)，但一头雾水。
 - [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)这篇博文很详细地说明了种子嗅探器的原理和实现思路。
 - [抓包分析BitTorrent协议，很全面的文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html)
 这篇博文通过抓包，详细地展示了每个请求和响应的具体数据，并且详细说明了通过BEP-009协议，用info_hash获取Metadata的过程。
@@ -48,6 +40,7 @@
 - 将爬虫模块区分出主节点和从节点，实现集群部署。
 >   主节点维护自己的布隆过滤器，并提供一个判断info_hash是否重复的接口；从节点内部不再维护过滤器，通过调用主节点的接口去重。
 
+- 使用nginx实现wss和https。
 
 
 #### 模块划分
