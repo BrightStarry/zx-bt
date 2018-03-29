@@ -1,55 +1,129 @@
 ### BT 
+一个磁力搜索系统，基于Elasticsearch进行存储搜索，基于Netty实现BT协议的node和peer间的通信。     
+并基于Bootstrap实现了简单的响应式页面，基于WebSocket实现了弹幕功能。
 
-- 尝试一个磁力搜索系统，基于ELK进行存储搜索。
+
+#### 参考
 - [BitTorrent官网](http://bittorrent.org)
-
-
+- [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)
+- [抓包分析BitTorrent协议，很全面的文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html)
+- [Go语言实现的DHT项目](https://github.com/shiyanhui/dht)
 
 #### 目前
 - 网站当前已经部署:[福利球](https://www.fuliqiu.com)
 - web模块和Elasticsearch单节点部署在阿里云1核2G1M的ECS上;spider模块部署在阿里云1核2G6M的ECS上(cpu占用80%左右,带宽基本全部占用);MySQL也是用的阿里云的RDS;
-- 目前爬取速率保持在400-1300个有效Metadata记录/5分钟.
+- 目前爬取速率保持在800个有效Metadata记录/5分钟.
+- 目前数据在200W+，并以每天15W+的速度入库。
 - 给网站增加了简单的弹幕功能
 
 
+#### 实现过程
+- 看[BitTorrent官网](http://bittorrent.org)，但可能会一头雾水。
+- [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)这篇博文很详细地说明了种子嗅探器的原理和实现思路。
+- [抓包分析BitTorrent协议，很全面的文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html)
+这篇博文通过抓包，详细地展示了每个请求和响应的具体数据，并且详细说明了通过BEP-009协议，用info_hash获取Metadata的过程。
+- [Go语言实现的DHT项目](https://github.com/shiyanhui/dht)参考了该项目的部分代码，因为该项目不是Java语言，而且之前也没接触过GO语言，所以看得还是比较累的。
+
+#### 优化
+- 单个服务器可同时开启多个端口，每个端口使用各自的nodeId和routingTable。
+>   理论上端口越多，nodeId越分散，越可能和更多的node交互，获取更多的infoHash.  
+
+- 将所有需要发送find_node请求的节点保存到缓冲队列，异步发送。
+>   同步发送时，开启的节点稍微多些就容易阻塞，并且无法控制实时的并发。
+
+- 自己实现了Becode编解码
+
+- 除了BEP-009协议外，实现了若干解析类，解析数个其他磁力搜索网站已有的磁力资源，获取metadata（使用HttpClient+Jsoup）。
+
+- 支持热更换解析其他磁力网站的解析器类，因为其他网站可能突然不稳定等。
+
+- 将几个步骤分成若干个任务，各自维护各自的队列，可调控各个任务的线程数、队列长度等参数，自定义配置速率。
+
+- 将原来的从数据库查询已有数据判断是否重复，优化为使用布隆过滤器在info_hash入队时统一去重，并每x小时重置布隆过滤器。
+
+- 使用分段锁优化RoutingTable，保证并发下的线程安全。
+
+- 提供了一个状态接口，可实时查看各个任务队列、各个端口的状态，以及5分钟内metadata入库数量。
+
+- 将爬虫模块区分出主节点和从节点，实现集群部署。
+>   主节点维护自己的布隆过滤器，并提供一个判断info_hash是否重复的接口；从节点内部不再维护过滤器，通过调用主节点的接口去重。
 
 
 
-### 前提
-很久之前,在其他磁力网站搜索羞羞的东西的时候,我就想过一个问题:这些网站的数据从何而来,总不可能在和搜索引擎一样在广域网中胡乱搜索把.   
-过年时在家无聊,便开始研究起磁力链接来. 
-       
-刚开始时看[BitTorrent协议官网](http://bittorrent.org),看得一头雾水.然后开始搜索相关博客,大多数都只是炫耀自己写的爬虫,并没有详细说明其实现.     
+#### 模块划分
+- 将其重构为如下模块,以便将爬虫和网站分开部署
+    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目依赖.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
+    - parent: pom项目,依赖版本定义.
+    - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
+    - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
+    - web: 磁力网站web项目,响应式页面，弹幕功能。
 
-[一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)这篇博客才让我对其有了一知半解.但是它在更新到要如何通过info_hash获取torrent的metadata信息时,却断更了...   
+#### 爬虫模块
+>
+    com.zx.bt.spider:
+        config: 配置类相关
+            BeanConfig: 注入各类bean
+            Config: 所有自定义配置相关，具体参考application.yml中的属性，有每个属性详细注解
+        controller: 接口
+            FilterController: 主节点才会启用的接口（使用@ConditionalOnProperty注解），提供布隆过滤器的put方法去重。
+            MainController: 提供状态查看 和 热更换解析其他磁力网站的解析类接口
+        convertor: 转换器相关，只有一个类，将一个Map转为Metadata对象
+        dto: 数据传输实体类
+            bt: BitTorrent协议的各个方法相关实体类    
+        entity: 实体类，node和infoHash
+        parser: 解析其他磁力网站的解析器相关类，使用模版方法模式。
+        socket: netty实现TCP、UDP协议相关类
+            processor: 和其他node间的udp连接的处理类，使用责任链模式，处理BT协议的各个方法
+            Sender: 通用的发送器类，封装了发送BT协议各方法的函数，并保存了所有开启的端口的channel，用于发送请求
+            UDPServer: udp协议连接建立类。
+        store: 各类存储相关
+            InfoHashFilter: 自己封装的布隆过滤器的接口，包含了主节点使用的布隆过滤器和从节点使用的布隆过滤器
+            RoutingTable: 路由表          
+        task: 自定义任务相关
+        util: 
+            BeanUtil: bean转map、获取bean及父类所有属性等方法
+            Bencode: 自己实现的Bencode编解码
+            BTUtil: BT协议相关的若干方法
+            HtmlResolver: 简单封装了Jsoup的一些方法
+            HttpClientUtil: httpClient连接类，维护了一个连接池，封装了各类请求方法，并封装了简易的header及cookie策略。
+    其他还有一些类在common模块中            
+>
 
-按照它的的思路,在我基本完成官网中的BEP-005协议.在本地运行时,却基本无法收到announce_peer请求.并且发送的并发稍微大些(即使是单线程发送)都会不停引发Network dropped connection on reset: no further information异常.  
 
-为了避免该异常,我开始给任务之间增加阻塞队列,然后开启自定义数量的线程进行相关任务. 但情况并没有任何改善.只能将其和无法收到announce_peer请求的原因,都归咎于内网问题.    
+### 详细思路
+>
+    刚开始时看[BitTorrent协议官网](http://bittorrent.org),看得一头雾水.  
+    
+    [一步一步教你写BT种子嗅探器](https://www.jianshu.com/p/5c8e1ef0e0c3)这篇博客才让我对其有了一知半解.但是它在更新到要如何通过info_hash获取torrent的metadata信息时,却断更了...   
+    
+    按照它的的思路,在我基本完成官网中的BEP-005协议.在本地运行时,却基本无法收到announce_peer请求.并且发送的并发稍微大些(即使是单线程发送)都会不停引发Network dropped connection on reset: no further information异常.  
+    
+    为了避免该异常,我开始给任务之间增加阻塞队列,然后开启自定义数量的线程进行相关任务. 但情况并没有任何改善.只能将其和无法收到announce_peer请求的原因,都归咎于内网问题.    
+    
+    因为,我将其发到云服务器上后,该异常不再发生,并且运行一段时间后,可接收到大量announce_peer请求(目前,大部分info_hash都是通过announce_peer获取到的).     
+    
+    然后我开始着手如何通过info_hash获取到torrent的metadata信息.网上的普遍说法是两种方式:     
+    1. 从迅雷种子库(以及其他一些磁力网站的接口)获取.大多数的实现方式,都是拼接URL + infoHash + ".torrent".但是大多数能查到的接口都已经失效.   
+    2. 通过bep-009协议获取.但是我看了官网的该协议,仍是一头雾水. 
+    
+    对于第二种方式,直到我找到了这篇[全面文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html),它对torrent的整个获取过程中的报文请求响应进行了很详细的解析.
+    还忍着语言的隔阂看了[该Go语言实现的DHT项目](https://github.com/shiyanhui/dht)的代码,才成功实现.
+    
+    在我成功通过bep-009协议连接peer获取到metadata信息后,才开始研究如何通过其他网站获取已有的metadata信息.    
+    我这才发现...说什么从迅雷种子库,以及各类网站的xxx.torrent接口获取的都不靠谱(因为已经全部失效(我猜想应该是目前大部分网站开始被监管,不再存储整个torrent文件的缘故)).  
+      
+    metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进行获取.因为目前的的磁力搜索网站某个磁力的详情页地址大多是xxxx.com/<40位16进制infoHash>.html的形式.
+    而我们要获取的信息,都会显示在页面上,例如名字/长度/子文件目录/子文件长度等信息.
+    
+    在实现过程中,对于Bencode编解码,我本来是使用了github上的一个项目.后来自己实现了.     
+    还自己实现了一个基于词典树的RoutingTable.而且为了支持并发操作..     
+    我脑洞清奇地给它增加了分段锁(对每个节点生成递增的分段锁id,操作某个节点就使用该 锁id 取余 分段锁数量 作为下标从锁数组中获取锁. 我总觉得不太好...目前测试时高并发下仍有少许安全问题,但正常运行下没有任何问题)     
+    
+    此外,增加了布隆过滤器(guava包)对info_hash进行去重.考虑到info_hash的实时有效性(某个此时无效的infoHash指不定啥时候就有效了),定时清空过滤器(每次清空后都会导入所有有效的(获取到了metadata信息)的info_hash).
+>
 
-因为,我将其发到云服务器上后,该异常不再发生,并且运行一段时间后,可接收到大量announce_peer请求(目前,大部分info_hash都是通过announce_peer获取到的).     
 
-然后我开始着手如何通过info_hash获取到torrent的metadata信息.网上的普遍说法是两种方式:     
-1. 从迅雷种子库(以及其他一些磁力网站的接口)获取.大多数的实现方式,都是拼接URL + infoHash + ".torrent".但是大多数能查到的接口都已经失效.   
-2. 通过bep-009协议获取.但是我看了官网的该协议,仍是一头雾水. 
-
-对于第二种方式,直到我找到了这篇[全面文章](http://www.aneasystone.com/archives/2015/05/analyze-magnet-protocol-using-wireshark.html),它对torrent的整个获取过程中的报文请求响应进行了很详细的解析.
-还忍着语言的隔阂看了[该Go语言实现的DHT项目](https://github.com/shiyanhui/dht)的代码,才成功实现.
-
-在我成功通过bep-009协议连接peer获取到metadata信息后,才开始研究如何通过其他网站获取已有的metadata信息.    
-我这才发现...说什么从迅雷种子库,以及各类网站的xxx.torrent接口获取的都不靠谱(因为已经全部失效(我猜想应该是目前大部分网站开始被监管,不再存储整个torrent文件的缘故)).  
-  
-metadata信息其实可以直接爬取其他磁力搜索网站,解析其html,进行获取.因为目前的的磁力搜索网站某个磁力的详情页地址大多是xxxx.com/<40位16进制infoHash>.html的形式.
-而我们要获取的信息,都会显示在页面上,例如名字/长度/子文件目录/子文件长度等信息.
-
-在实现过程中,对于Bencode编解码,我本来是使用了github上的一个项目.后来自己实现了.     
-还自己实现了一个基于词典树的RoutingTable.而且为了支持并发操作..     
-我脑洞清奇地给它增加了分段锁(对每个节点生成递增的分段锁id,操作某个节点就使用该 锁id 取余 分段锁数量 作为下标从锁数组中获取锁. 我总觉得不太好...目前测试时高并发下仍有少许安全问题,但正常运行下没有任何问题)     
-
-此外,增加了布隆过滤器(guava包)对info_hash进行去重.考虑到info_hash的实时有效性(某个此时无效的infoHash指不定啥时候就有效了),定时清空过滤器(每次清空后都会导入所有有效的(获取到了metadata信息)的info_hash).
-
-
-### 简介
+#### 简介
 此处我尽量用直白的话简述下BitTorrent(更详细的自行参见上文提到的博客).   
 
 首先,BitTorrent是一种各机器相互通讯的协议.就像Http协议,浏览器和服务器都遵守了相应的报文规则,才能交互解析,得以通讯.BitTorrent也是这样的基于UDP和TCP通讯的协议.   
@@ -116,22 +190,6 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
         - 如果有,则取出所有peers.和所有peer建立tcp连接,根据bep-009协议,发送获取metadata的请求.
         - 如果获取到了,则入库; 否则,结束任务.
 
-      
-#### 总结
-- 目前只实现了基本功能.接下去准备性能调优,并将数据库换为elasticsearch,以达到更好的性能.
-- 目前如果所有任务都开启,在阿里云1核2G服务器上运行,将线程数都尽量调低也只能勉强运行(可能是我udp端口开启太多).主要是cpu占用99%.
-- 在2核4G服务器上测试了下,最快的一次能保持在每分钟近30个有效metadata信息的入库(cpu占用也为99%). 
-- 目前从其他磁力网站获取已有磁力信息,我只写了两个网站的解析方法,可再增加若干网站.并且,可将这些方法抽离成策略类,并定义统一接口,直接使用Spring统一注入List<该接口>,以更好的扩展.
-- 初始化任务中的节点,当前也是从配置文件中导入,可以从自己的node表中,获取topN个节点.
-- 可以给各任务增加单独的暂停功能,例如当从其他网站获取metadata任务队列满了,就暂停findNode任务等.
-- 然后,完成前端页面,实现一个完整的磁力搜索网站.
-
-#### 统计接口/stat
-- 可查看各队列元素数目.
-
-#### 线程属性配置
-- 需要尽可能保证fetchMetadataOtherWebTask队列是稳定的,不为0,也不能很快就满.根据这个需求,设置findNodeTask线程数和fetchMetadataOtherWebTask线程数.
-
 #### 奇淫巧技
 - IDEA在pom中,选择依赖的version中的版本值. 再 C + A + v.可自动抽离.
 
@@ -148,117 +206,9 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
 
 - Lombok的@NonNull注解,之前我一直没怎么使用过.它相当于增加了一个if(xxx == null)的判断,并可抛出携带为空的变量的变量名的NPE.
 
-#### bug
-- !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
-否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
-- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
-- maven分模块时,如果在父模块写了相对路径的 < modules >  标签,寻找子模块会有bug.其优先级会变成 相对路径 - 本地仓库 - 远程仓库
-- JDBC The last packet sent successfully to the server was 0 milliseconds ago. 异常. 原因是当mysql空闲连接超过一定数量后,  
-mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoReconnect=true&failOverReadOnly=false&maxReconnects=10即可.
-
-- Thymeleaf模版的功能需要3.0+版本才能实现.如果项目直接继承自SpringBoot,可通过直接定义 <properties>修改版本号.
-但如果继承了自己的父项目,则无法这样修改. 可另建一个项目(zx-bt-top),继承spring-boot,然后在自己的父项目中,依赖管理该项目.
-```xml
-<!--新建的用于继承SpringBoot的项目-->
-<groupId>com.zx.bt</groupId>
-<artifactId>zx-bt-top</artifactId>
-<version>1.0</version>
-<packaging>pom</packaging>
-<name>zx-bt-top</name>
-<description>该项目仅用于继承Spring Boot依赖,而不是自己管理其依赖, 以达到通过增加&lt;properties&gt;标签直接修改Spring Boot定义的依赖的版本号</description>
-<parent>
-	<groupId>org.springframework.boot</groupId>
-	<artifactId>spring-boot-starter-parent</artifactId>
-	<version>1.5.10.RELEASE</version>
-	<relativePath/>
-</parent>
-
-<!--自己的父项目-->
- <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.zx.bt</groupId>
-                <artifactId>zx-bt-top</artifactId>
-                <version>${zx-bt.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-</dependencyManagement>
-```
-然后需要在新建的用于继承SpringBoot的项目,增加<properties>,以修改版本.
-
-- !!! 有一个很坑的东西,那就是SpringMVC的URL传参,无法传逗号.其他常用符号都可以,但是如果值中间有逗号.就会被截断.
-
-- Spring使用@ServerEndpoint注解实现WebSocket服务器,被注解的类必须包含空的构造函数,否则会提示init异常.
-
-- webSocket中配置的消息解码器一直无法启用,导致onMessage方法中因直接使用解码后的对象作为参数,报类型不匹配异常.
-    - 因为我以前做过类似的弹幕功能,所以代码直接照搬了过来,但是,我几乎检查了所有地方,都是一样,却仍是不行.
-    - 之后,我试着验证了下该解码器的初始化方法(当收到第一个消息时初始化该解码器).然后我才看到他有个willDecode()方法,
-    用于判断该解码器是否支持当前消息. 而这个方法我返回了false.所以总结如下两点:
-        - 一些容易忽略的细节必须加以注释
-        - 多看源码,看方法注解,防止一些愚蠢的bug(但这个解码器类的源码中没有任何注解,mmp)
-
-- 如果es的字段长度超过32766字节,将提示过长,无法被存入的异常,可在建立索引的mappings的对应字段中增加"ignore_above": 256,
-表示超过该长度仍然可以被存入.但被索引. 并且该字段要关闭分词.
-- 索引修改,可参考[该博客](http://blog.csdn.net/napoay/article/details/52012249). 修改成功后可通过head插件查看.
-
-- 一个愚蠢的bug, 该hql执行失败,提示没有id字段:
-> 	@Query(value = "SELECT city FROM keyword_record GROUP BY ip  ORDER BY id LIMIT 0,?1",nativeQuery = true)
->   List<KeywordRecord> findDistinctIpTopX(int size);
-
-看了好久才发现~~~hibernate的返回对象的所有属性需要和返回结果一一匹配,改为如下即可:
-> List<String> findDistinctIpTopX(int size);
-
-- 出现如下异常:
->  Result window is too large, from + size must be less than or equal to: [10000] but was [22440]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level setting.
-
-表示分页页数过多.可通过如下请求修改
-> PUT http://106.14.7.29:9200/metadata/_settings   主体: {"index":{"max_result_window":100000000}}
 
 
-#### 注意点
-- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
-- node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
-- byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
-其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
-- java中的byte范围为-128 - 127,如果为负数,可通过 & 0xff转为int,其值为256 + 该负数, 例如(byte)-1 & 0xff = 255
-- SpringBoot项目依赖自己的父项目时,打包可能不包含依赖. 需要添加如下:
-- 在linux启动SpringBoot jar项目时,如果想使用外部配置文件,需要在该外部配置文件所在目录执行启动命令
-```xml
-<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<mainClass>com.zx.bt.web.WebApplication</mainClass>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>repackage</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-		<finalName>zx-bt-web</finalName>
-	</build>
-```
 
-- 使用Nginx + WebSocket的话,由于Nginx的proxy_read_timeout(Default: 60s;)属性设置,webSocket会自动断开连接.
-
-- 之前我给find_node任务设置了20个线程,然后暂停x毫秒进行发送,但我忽然发觉这样简直是麻瓜.因为这样相当于自己给自己挖了个二十
-个并发线程争夺锁的坑...于是改为10个线程,不暂停发送.
-
-#### 重构
-- 将其重构为如下模块,以便将爬虫和网站分开部署
-    - top: pom项目,直接继承自SpringBoot依赖.并被parent项目依赖.以达到增加<properties>直接修改spring boot定义的版本号的目的.(详见下面的bug记录)
-    - parent: pom项目,依赖版本定义.
-    - common: 通用的一些工具类/实体(例如metadata)/枚举类等.
-    - spider: 爬虫模块,DHT爬虫的实现.只负责收集有效的metadata信息,存入es.
-    - web: 磁力网站web项目. 
 
 
 #### 阻塞队列的实现
@@ -423,3 +373,108 @@ http {
     }
 }
 ```
+
+
+#### bug
+- !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
+否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
+- 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
+- maven分模块时,如果在父模块写了相对路径的 < modules >  标签,寻找子模块会有bug.其优先级会变成 相对路径 - 本地仓库 - 远程仓库
+- JDBC The last packet sent successfully to the server was 0 milliseconds ago. 异常. 原因是当mysql空闲连接超过一定数量后,  
+mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoReconnect=true&failOverReadOnly=false&maxReconnects=10即可.
+
+- Thymeleaf模版的功能需要3.0+版本才能实现.如果项目直接继承自SpringBoot,可通过直接定义 <properties>修改版本号.
+但如果继承了自己的父项目,则无法这样修改. 可另建一个项目(zx-bt-top),继承spring-boot,然后在自己的父项目中,依赖管理该项目.
+```xml
+<!--新建的用于继承SpringBoot的项目-->
+<groupId>com.zx.bt</groupId>
+<artifactId>zx-bt-top</artifactId>
+<version>1.0</version>
+<packaging>pom</packaging>
+<name>zx-bt-top</name>
+<description>该项目仅用于继承Spring Boot依赖,而不是自己管理其依赖, 以达到通过增加&lt;properties&gt;标签直接修改Spring Boot定义的依赖的版本号</description>
+<parent>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-parent</artifactId>
+	<version>1.5.10.RELEASE</version>
+	<relativePath/>
+</parent>
+
+<!--自己的父项目-->
+ <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.zx.bt</groupId>
+                <artifactId>zx-bt-top</artifactId>
+                <version>${zx-bt.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+</dependencyManagement>
+```
+然后需要在新建的用于继承SpringBoot的项目,增加<properties>,以修改版本.
+
+- !!! 有一个很坑的东西,那就是SpringMVC的URL传参,无法传逗号.其他常用符号都可以,但是如果值中间有逗号.就会被截断.
+
+- Spring使用@ServerEndpoint注解实现WebSocket服务器,被注解的类必须包含空的构造函数,否则会提示init异常.
+
+- webSocket中配置的消息解码器一直无法启用,导致onMessage方法中因直接使用解码后的对象作为参数,报类型不匹配异常.
+    - 因为我以前做过类似的弹幕功能,所以代码直接照搬了过来,但是,我几乎检查了所有地方,都是一样,却仍是不行.
+    - 之后,我试着验证了下该解码器的初始化方法(当收到第一个消息时初始化该解码器).然后我才看到他有个willDecode()方法,
+    用于判断该解码器是否支持当前消息. 而这个方法我返回了false.所以总结如下两点:
+        - 一些容易忽略的细节必须加以注释
+        - 多看源码,看方法注解,防止一些愚蠢的bug(但这个解码器类的源码中没有任何注解,mmp)
+
+- 如果es的字段长度超过32766字节,将提示过长,无法被存入的异常,可在建立索引的mappings的对应字段中增加"ignore_above": 256,
+表示超过该长度仍然可以被存入.但被索引. 并且该字段要关闭分词.
+- 索引修改,可参考[该博客](http://blog.csdn.net/napoay/article/details/52012249). 修改成功后可通过head插件查看.
+
+- 一个愚蠢的bug, 该hql执行失败,提示没有id字段:
+> 	@Query(value = "SELECT city FROM keyword_record GROUP BY ip  ORDER BY id LIMIT 0,?1",nativeQuery = true)
+>   List<KeywordRecord> findDistinctIpTopX(int size);
+
+看了好久才发现~~~hibernate的返回对象的所有属性需要和返回结果一一匹配,改为如下即可:
+> List<String> findDistinctIpTopX(int size);
+
+- 出现如下异常:
+>  Result window is too large, from + size must be less than or equal to: [10000] but was [22440]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level setting.
+
+表示分页页数过多.可通过如下请求修改
+> PUT http://106.14.7.29:9200/metadata/_settings   主体: {"index":{"max_result_window":100000000}}
+
+
+#### 注意点
+- peer的联系信息编码为6字节长的字符串，也称作”Compact IP-address/ports info”。其中前4个字节是网络字节序（大端序(高字节存于内存低地址，低字节存于内存高地址)）的IP地址，后2个字节是网络字节序的端口号。
+- node的联系信息编码为26字节长的字符串，也称作”Compact node info”。其中前20字节是网络字节序的node ID，后面6个字节是peer的”Compact IP-address/ports info”。
+- byte[]转int等. 是将byte[0] 左位移最高位数,例如将2个byte转为int,是( bytes[1] & 0xFF) | (bytes[0] & 0xFF) << 8 而不是 ( bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8.  
+其原因很简单,按照从左到右的四位,2个byte 00011100, 11100011. 显然是要变为 0001110011100011,将第一个byte放到第二个byte前面,那么也就是让第一个byte左位移8位即可
+- java中的byte范围为-128 - 127,如果为负数,可通过 & 0xff转为int,其值为256 + 该负数, 例如(byte)-1 & 0xff = 255
+- SpringBoot项目依赖自己的父项目时,打包可能不包含依赖. 需要添加如下:
+- 在linux启动SpringBoot jar项目时,如果想使用外部配置文件,需要在该外部配置文件所在目录执行启动命令
+```xml
+<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.zx.bt.web.WebApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<finalName>zx-bt-web</finalName>
+	</build>
+```
+
+- 使用Nginx + WebSocket的话,由于Nginx的proxy_read_timeout(Default: 60s;)属性设置,webSocket会自动断开连接.
+
+- 之前我给find_node任务设置了20个线程,然后暂停x毫秒进行发送,但我忽然发觉这样简直是麻瓜.因为这样相当于自己给自己挖了个二十
+个并发线程争夺锁的坑...于是改为10个线程,不暂停发送.

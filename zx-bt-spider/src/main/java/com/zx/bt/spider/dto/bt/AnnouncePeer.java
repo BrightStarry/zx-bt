@@ -1,4 +1,4 @@
-package com.zx.bt.spider.dto.method;
+package com.zx.bt.spider.dto.bt;
 
 import com.zx.bt.spider.enums.MethodEnum;
 import com.zx.bt.spider.enums.YEnum;

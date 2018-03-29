@@ -1,10 +1,10 @@
 package com.zx.bt.spider.socket;
 
 import com.zx.bt.spider.config.Config;
-import com.zx.bt.spider.dto.method.AnnouncePeer;
-import com.zx.bt.spider.dto.method.FindNode;
-import com.zx.bt.spider.dto.method.GetPeers;
-import com.zx.bt.spider.dto.method.Ping;
+import com.zx.bt.spider.dto.bt.AnnouncePeer;
+import com.zx.bt.spider.dto.bt.FindNode;
+import com.zx.bt.spider.dto.bt.GetPeers;
+import com.zx.bt.spider.dto.bt.Ping;
 import com.zx.bt.spider.entity.Node;
 import com.zx.bt.common.exception.BTException;
 import com.zx.bt.spider.function.Pauseable;

@@ -1,4 +1,4 @@
-package com.zx.bt.spider.dto.method;
+package com.zx.bt.spider.dto.bt;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

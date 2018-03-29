@@ -1,6 +1,6 @@
 package com.zx.bt.spider.socket.processor;
 
-import com.zx.bt.spider.dto.method.AnnouncePeer;
+import com.zx.bt.spider.dto.bt.AnnouncePeer;
 import com.zx.bt.spider.entity.Node;
 import com.zx.bt.spider.enums.MethodEnum;
 import com.zx.bt.spider.enums.NodeRankEnum;
