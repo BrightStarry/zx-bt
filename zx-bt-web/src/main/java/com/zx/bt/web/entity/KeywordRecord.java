@@ -35,9 +35,10 @@ public class KeywordRecord {
 
     private String city;
 
-   public KeywordRecord(String keyword, String ip,Integer pageNo) {
+    public KeywordRecord(String keyword, String ip, Integer pageNo, String city) {
         this.keyword = keyword;
         this.ip = ip;
         this.pageNo = pageNo;
+        this.city = city;
     }
 }

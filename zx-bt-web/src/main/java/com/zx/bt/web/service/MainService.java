@@ -2,6 +2,7 @@ package com.zx.bt.web.service;
 
 import com.zx.bt.web.entity.KeywordRecord;
 import com.zx.bt.web.repository.KeywordRecordRepository;
+import com.zx.bt.web.util.IpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,6 @@ public class MainService {
 	 */
 	@Transactional
 	public void insertKeywordRecord(String ip,String keyword,Integer pageNo) {
-		keywordRecordRepository.save(new KeywordRecord(keyword,ip,pageNo));
+		keywordRecordRepository.save(new KeywordRecord(keyword,ip,pageNo, IpUtil.getCity(ip)));
 	}
 }
