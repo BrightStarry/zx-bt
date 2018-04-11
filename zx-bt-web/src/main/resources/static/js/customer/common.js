@@ -31,9 +31,21 @@ var common = {
 
     /**
      * 生成分页查询路径
+     *
+     * 不指定 关键词， 从 输入框中读取
      */
     generateListByKeywordPath: function (pageNo) {
-        var keyword = $('#keyword').val();
+        return common.generateListByKeywordPath(pageNo, null);
+    },
+
+    /**
+     * 生成分页查询路径
+     *
+     * 可指定关键词
+     */
+    generateListByKeywordPath: function (pageNo, keyword) {
+        if(!keyword)
+            keyword = $('#keyword').val();
 
         if($('#isMustContain').length > 0) {
             var isMustContain = $('#isMustContain').is(":checked");
@@ -48,17 +60,29 @@ var common = {
 
         if(!keyword.trim())
             return null;
-        return common.url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + keyword;
+        return common.url.listByKeywordUrl + pageNo + "?isMustContain=" + isMustContain + "&orderType=" + orderType + "&keyword=" + encodeURIComponent(keyword);
     },
 
 
     /**
      * 跳转到分页查询路径
      * 原网页跳转 或 打开新网页
+     *
+     * 不指定关键词，从
      */
     listByKeyword: function (pageNo) {
+        common.listByKeyword(pageNo,null)
+    },
+
+    /**
+     * 跳转到分页查询路径
+     * 原网页跳转 或 打开新网页
+     *
+     * 可指定 关键词
+     */
+    listByKeyword: function (pageNo, keyword) {
         var isBlank = $('#keywordBtn').attr('isBlank');
-        var path = common.generateListByKeywordPath(pageNo);
+        var path = common.generateListByKeywordPath(pageNo,keyword);
         if(!path)
             return;
         if(isBlank === "true")

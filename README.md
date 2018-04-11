@@ -427,14 +427,17 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 > 	@Query(value = "SELECT city FROM keyword_record GROUP BY ip  ORDER BY id LIMIT 0,?1",nativeQuery = true)
 >   List<KeywordRecord> findDistinctIpTopX(int size);
 
-看了好久才发现~~~hibernate的返回对象的所有属性需要和返回结果一一匹配,改为如下即可:
+- 看了好久才发现~~~hibernate的返回对象的所有属性需要和返回结果一一匹配,改为如下即可:
 > List<String> findDistinctIpTopX(int size);
 
 - 出现如下异常:
 >  Result window is too large, from + size must be less than or equal to: [10000] but was [22440]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level setting.
 
-表示分页页数过多.可通过如下请求修改
+- 表示分页页数过多.可通过如下请求修改
 > PUT http://106.14.7.29:9200/metadata/_settings   主体: {"index":{"max_result_window":100000000}}
+
+- get请求，如果包含特殊字符，例如 '&' 等，可在js中用如下方法，将该字符转义
+>  "&keyword=" + encodeURIComponent(keyword);
 
 
 #### 注意点
