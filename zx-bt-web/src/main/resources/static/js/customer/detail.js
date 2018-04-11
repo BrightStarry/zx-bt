@@ -18,7 +18,8 @@ var detail = {
                 $(this).button('reset');
             });
         });
-    }
+    },
+
 };
 
 $(function () {

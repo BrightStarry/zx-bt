@@ -26,25 +26,30 @@
     <div class="list-group content-top">
         <div th:if="${#lists.isEmpty(metadataPageVO.list)}" class="alert alert-success">抱歉,暂无此相关资源.</div>
         <div class="container">
-            <a th:each="metadataVO : ${metadataPageVO.list}" th:object="${metadataVO.metadata}"
-               th:href="'/detail/' + *{_id}" target="_blank">
-                <div class="panel panel-info">
-                    <div class="panel-heading text-justify line-break">
+            <div class="panel panel-info" th:each="metadataVO : ${metadataPageVO.list}"
+                 th:object="${metadataVO.metadata}">
+                <div class="panel-heading text-justify line-break">
+                    <a th:href="'/detail/' + *{_id}" target="_blank">
                         <h3 class="panel-title " th:text="*{name}"></h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
-                            长度: <span th:text="${metadataVO.length}"></span>
-                        </div>
-                        <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
-                            <span class="glyphicon glyphicon-fire">热度</span>: <span th:text="*{hot}"></span>
-                        </div>
-                        <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
-                            创建时间: <span th:text="*{#dates.format(createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
-                        </div>
-                    </div>
+                    </a>
                 </div>
-            </a>
+
+                <div class="panel-body">
+                    <div class="col-lg-3  col-sm-3 col-md-3 col-xs-12">
+                        长度: <span th:text="${metadataVO.length}"></span>
+                    </div>
+                    <div class="col-lg-3  col-sm-3 col-md-3 col-xs-12">
+                        <span class="glyphicon glyphicon-fire">热度</span>: <span th:text="*{hot}"></span>
+                    </div>
+                    <div class="col-lg-4  col-sm-4 col-md-4 col-xs-12">
+                        创建时间: <span th:text="*{#dates.format(createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
+                    </div>
+                    <div class="col-lg-2  col-sm-2 col-md-2 col-xs-12">
+                        <a th:onclick="*{'list.clickCopy(this,&quot;' +'magnet:?xt=urn:btih:' + infoHash + '&quot;)'}">点击复制</a>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
     </div>
