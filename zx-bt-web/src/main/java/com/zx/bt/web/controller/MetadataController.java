@@ -16,10 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -63,9 +60,9 @@ public class MetadataController implements ControllerPlus {
         model.addAttribute("metadataPageVO", metadataPageVO);
         //将当前排序规则加入视图
         model.addAttribute("orderVO", new OrderVO(form.getOrderType(), form.getIsMustContain()));
-        //如果当前页为第一页记录入库
-        if(form.getPageNo().equals(Config.DEFAULT_START_PAGE_NO))
-            mainService.insertKeywordRecord(getIp(request),keyword,form.getPageNo());
+        //入库
+//        if(form.getPageNo().equals(Config.DEFAULT_START_PAGE_NO))
+        mainService.insertKeywordRecord(getIp(request), keyword, form.getPageNo());
         return "list";
     }
 
@@ -74,7 +71,7 @@ public class MetadataController implements ControllerPlus {
      */
     @JsonView(MetadataVO.DetailView.class)
     @GetMapping("/detail/{esId}")
-    public String metadataDetail(@PathVariable String esId,Model model) {
+    public String metadataDetail(@PathVariable String esId, Model model) {
         if (StringUtils.isBlank(esId)) {
             throw new BTException("参数有误");
         }
@@ -85,5 +82,21 @@ public class MetadataController implements ControllerPlus {
         model.addAttribute("metadataVO", metadataVO);
         return "detail";
     }
+
+    /**
+     * 增加热度
+     */
+    @PostMapping("/hot/{esId}")
+    @ResponseBody
+    public void incrementHot(@PathVariable String esId) {
+        if (StringUtils.isBlank(esId)) {
+            throw new BTException("参数有误");
+        }
+        /**
+         * 直接用 进入详情页的方法 给该资源增加热度
+         */
+        metadataService.findOneByEsId(esId);
+    }
+
 
 }

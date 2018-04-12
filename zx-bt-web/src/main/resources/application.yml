@@ -120,6 +120,7 @@ zx-bt:
   es:
     port: 9300
     ip: 106.14.7.29
+#    ip: 172.19.87.203
     cluster-name: zx
   web:
     page-size: 10

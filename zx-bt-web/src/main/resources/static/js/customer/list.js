@@ -2,6 +2,9 @@
  * 列表页js
  */
 var list = {
+    url:{
+        incrementHot: '/hot/',
+    },
     /**
      * 初始化方法
      */
@@ -31,12 +34,7 @@ var list = {
      * 很笨但很有效的方法，创建出一个dom，将要复制的文本赋值给dom，将dom的value复制到剪切板。
      * 其他的一些复制方法无法复制隐藏域的内容。
      */
-    clickCopy : function (thisA,magnet) {
-        // var magnetText = $('#' + _id);
-        // magnetText.select();
-        // var js=magnetText.createTextRange();
-        // js.execCommand("Copy");
-
+    clickCopy : function (thisA,_id,magnet) {
         var oInput = document.createElement('input');
         oInput.value = magnet;
         document.body.appendChild(oInput);
@@ -45,6 +43,8 @@ var list = {
         oInput.className = 'oInput';
         oInput.style.display='none';
         $(thisA).text('复制成功');
+        $.post(list.url.incrementHot + _id, {}, function () {
+        });
     }
 };
 

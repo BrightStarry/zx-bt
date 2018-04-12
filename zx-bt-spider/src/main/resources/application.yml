@@ -69,7 +69,7 @@ spring:
       web-stat-filter.profile-enable: true
       # StatViewServlet配置，说明请参考Druid Wiki，配置_StatViewServlet配置
       #是否启用监控界面默认值true
-      stat-view-servlet.enabled: true
+      stat-view-servlet.enabled: false
       # web.xml的url-pattern,也就是访问/druid/*访问到该servlet
       stat-view-servlet.url-pattern: /druid/*
       #  允许清空统计数据
@@ -109,48 +109,48 @@ zx-bt:
     # 获取连接请求超时时间
     connection-request-timeout: 1000
     # 连接超时时间
-    connection-timeout: 2000
+    connection-timeout: 1500
     # 最大连接数
     max-connection-num: 300
     # 握手超时时间
-    socket-timeout: 2000
+    socket-timeout: 1500
   es:
     cluster-name: zx
-    ip: 106.14.7.29
-#    ip: 172.19.87.203
+#    ip: 106.14.7.29
+    ip: 172.19.87.203
     port: 9300
   performance:
     # find_node任务,线程数
-    find-node-task-thread-num: 70
+    find-node-task-thread-num: 30
     # find_node任务, 发送间隔. 毫秒
-    find-node-task-interval-ms: 1
+    find-node-task-interval-ms: 0
     # find_node任务,最大队列长度
-    findNodeTaskMaxQueueLength: 102400
+    findNodeTaskMaxQueueLength: 4096
     # UDP服务器主任务线程数,单个端口的数量
     udp-server-main-thread-num: 3
 
     # fetchMetadataByPeerTask,最大线程数
-    fetch-metadata-by-peer-task-tread-num: 5
+    fetch-metadata-by-peer-task-tread-num: 3
     # fetchMetadataByPeerTask,连接成功后等待peer超时时间
     fetch-metadata-by-peer-task-read-timeout-second: 10
 
     # fetchMetadataByOtherWebTask,等待尝试获取队列最大长度
     fetch-metadata-by-other-web-task-queue-num: 102400
     # fetchMetadataByOtherWebTask,最大线程数
-    fetch-metadata-by-other-web-task-thread-num: 180
+    fetch-metadata-by-other-web-task-thread-num: 100
 
     # get_peers任务,最多同时进行的任务数
     get-peers-task-concurrent-num: 50
     # get_peers任务, info_hash等待队列长度
-    get-peers-task-info-hash-queue-len: 10240
+    get-peers-task-info-hash-queue-len: 512
     # get_peers任务过期时间
-    get-peers-task-expire-second: 250
+    get-peers-task-expire-second: 200
     # get_peers请求, 最小发送间隔
-    get-peers-request-send-interval-ms: 3
+    get-peers-request-send-interval-ms: 4
     # get_peers任务, 任务满载后,暂停开启新任务时间
     get-peers-task-pause-second: 10
     # get_peers任务, 开启新任务最大间隔
-    get-peers-task-create-interval-ms: 500
+    get-peers-task-create-interval-ms: 1000
 
     # infoHash布隆过滤器 预期最大数量
     info-hash-filter-max-num: 9999999
@@ -163,15 +163,15 @@ zx-bt:
     tcp-connect-timeout-ms: 2000
 
     # 路由表 非自己的节点id 的一侧分支, 最大可存储的层数. <=160
-    routing-table-prefix-len: 9
+    routing-table-prefix-len: 8
     # 路由表分段锁 数量
     routing-table-lock-num: 10
 
   main:
     # 是否开启主任务
-    start: false
+    start: true
     # 是否为主节点
-    master: false
+    master: true
     # 主节点url
     masterUrl: http://101.132.42.102:8080/filter
     # 当前开启的解析器类型
@@ -212,7 +212,7 @@ zx-bt:
       - 44472
       - 44473
       - 44474
-    ip: 101.132.42.102
+    ip: 106.15.176.109
     init-addresses:
       # 以下是比较有名的节点.其中utorrent是比较好的.剩余两个有点垃圾
       - router.utorrent.com:6881

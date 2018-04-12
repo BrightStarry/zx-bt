@@ -4,22 +4,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.enums.CacheMethodEnum;
 import com.zx.bt.common.service.MetadataService;
 import com.zx.bt.common.store.CommonCache;
+import com.zx.bt.common.vo.MetadataVO;
+import com.zx.bt.common.vo.PageVO;
+import com.zx.bt.web.form.ListByKeywordForm;
 import com.zx.bt.web.websocket.Connection;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
 import org.springframework.boot.web.servlet.ErrorPage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
+import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * author:ZhengXing
@@ -70,8 +75,24 @@ public class BeanConfig {
         return new CommonCache<>(
                 CacheMethodEnum.AFTER_WRITE,
                 config.getService().getHotCacheExpireSecond(),
-                config.getService().getHotCacheSize());
+                config.getService().getHotCacheMaxSize());
     }
+
+    /**
+     * 某个关键词的默认搜索的第一页缓存
+     * 分页缓存
+     * see {@link com.zx.bt.web.controller.MetadataController#listByKeyword(ListByKeywordForm, BindingResult, Model, HttpServletRequest)}
+     */
+    @Bean
+    public CommonCache<PageVO<MetadataVO>> listCache(Config config) {
+        return new CommonCache<>(
+                CacheMethodEnum.AFTER_WRITE,
+                config.getService().getMetadataVOCacheExpireSecond(),
+                config.getService().getMetadataVOCacheMaxSize()
+        );
+
+    }
+
 
     /**
      * websocket的{@link com.zx.bt.web.websocket.Connection} 对象存储

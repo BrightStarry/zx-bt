@@ -56,10 +56,20 @@ public class Config {
         private Integer hotCacheExpireSecond = 20;
 
         /**
-         * 热度缓存器, 总长度
+         * 热度缓存器, 最大长度
          * 可以不用太大,因为满了之后, 应该是优先驱逐早的种子,符合业务逻辑
          */
-        private Integer hotCacheSize = 102400;
+        private Integer hotCacheMaxSize = 10240;
+
+        /**
+         * 分页查询缓存 过期时间
+         */
+        private Integer metadataVOCacheExpireSecond = 3600;
+
+        /**
+         * 分页查询缓存 最大长度
+         */
+        private Integer metadataVOCacheMaxSize = 10240;
 
         /**
          * webSocket连接过期时间(存取后自动刷新)

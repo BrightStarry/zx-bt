@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.entity.Metadata;
-import com.zx.bt.common.enums.ErrorEnum;
 import com.zx.bt.common.enums.LengthUnitEnum;
 import com.zx.bt.common.enums.OrderTypeEnum;
 import com.zx.bt.common.exception.BTException;
 import com.zx.bt.common.store.CommonCache;
+import com.zx.bt.common.util.EnumUtil;
 import com.zx.bt.common.vo.MetadataVO;
 import com.zx.bt.common.vo.PageVO;
 import joptsimple.internal.Strings;
@@ -37,7 +37,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 
@@ -50,6 +49,7 @@ import java.util.*;
 public class MetadataService {
 
     private static final String LOG = "[MetadataService]";
+    private static final String KEY_SEPARATOR = "-";
 
     //es索引名
     private static final String ES_INDEX = "metadata";
@@ -62,9 +62,13 @@ public class MetadataService {
     private final ObjectMapper objectMapper;
 
 
-
+    /**
+     * 此处是因为 spider模块中，无需这两个缓存类
+     */
     @Autowired(required = false)
     private CommonCache<String> hotCache;
+    @Autowired(required = false)
+    private CommonCache<PageVO<MetadataVO>> listCache;
 
     /**
      * infoHashFilter是否可用标识
@@ -128,7 +132,7 @@ public class MetadataService {
                 .get();
         if (!result.status().equals(RestStatus.OK)){
             log.error("{}[incrementHot]递增热度失败,状态码错误,当前状态码:{}",LOG,result.status());
-            throw new BTException(ErrorEnum.UNKNOWN_ERROR);
+//            throw new BTException(ErrorEnum.UNKNOWN_ERROR);
         }
         //存入以esId为key,值为空串的缓存
         hotCache.put(esId, Strings.EMPTY);
@@ -205,9 +209,22 @@ public class MetadataService {
      */
     @SneakyThrows
     public PageVO<MetadataVO> listByKeyword(String keyword, OrderTypeEnum orderTypeEnum, boolean isMustContain, int pageNo, int pageSize) {
-        String name = "name";
+        PageVO<MetadataVO> result;
+        /**
+         * 如果是默认查询条件（排序为默认，不必须包含，页数为1）
+         * 尝试从缓存中读取
+         */
+        // 是否启用缓存
+        boolean cacheable;
+        if ((cacheable = EnumUtil.equals(orderTypeEnum.getCode(), OrderTypeEnum.NONE) && !isMustContain && pageNo == 1)) {
+            result = listCache.get(keyword);
+            if(result != null)
+                return result;
+        }
+
+
         // 分词匹配查询
-        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery(name, keyword);
+        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("name", keyword);
         //是否必须包含该关键字,增加.operator(Operator.AND),表示必须包含这个词, 不加,则是普通的根据keyword的分词查询
         if (isMustContain)
             matchQueryBuilder.operator(Operator.AND);
@@ -257,7 +274,10 @@ public class MetadataService {
             metadata = objectMapper.readValue(item.getSourceAsString(), Metadata.class).set_id(item.getId());
             metadatas.add(new MetadataVO(metadata,LengthUnitEnum.convert(metadata.getLength())).clearNotMustProperty());
         }
-        return new PageVO<>(pageNo, pageSize, totalElement, totalPage, metadatas, keyword);
+        result = new PageVO<>(pageNo, pageSize, totalElement, totalPage, metadatas, keyword);
+        if(cacheable)
+            listCache.put(keyword,result);
+        return result;
     }
 
     /**

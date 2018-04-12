@@ -45,7 +45,7 @@
                         创建时间: <span th:text="*{#dates.format(createTime,'yyyy-MM-dd HH:mm:ss')}"></span>
                     </div>
                     <div class="col-lg-2  col-sm-2 col-md-2 col-xs-12">
-                        <a th:onclick="*{'list.clickCopy(this,&quot;' +'magnet:?xt=urn:btih:' + infoHash + '&quot;)'}">点击复制</a>
+                        <a th:onclick="*{'list.clickCopy(this,&quot;'+_id+'&quot;,&quot;' +'magnet:?xt=urn:btih:' + infoHash + '&quot;)'}">点击复制</a>
                     </div>
 
                 </div>
