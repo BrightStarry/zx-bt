@@ -58,7 +58,7 @@
 <div class="container text-center">
     <ul class="pagination pagination-lg">
         <li th:class="${metadataPageVO.pageNo == 1 || metadataPageVO.pageNo <=5}   ? 'hidden'">
-            <a href="javascript:void(0);" onclick="common.listByKeyword(1)" aria-label="Previous">
+            <a href="javascript:void(0);" th:onclick="${'common.listByKeyword(1,&quot;'+ metadataPageVO.keyword +'&quot;)'}" aria-label="Previous">
                 <span aria-hidden="true">«</span>
             </a>
         </li>
@@ -69,12 +69,13 @@
         : metadataPageVO.totalPage)}"
 
             th:class="${metadataPageVO.pageNo == i} ? 'active'">
-            <a href="javascript:void(0);" onclick="common.listByKeyword(this.text)" th:text="${i}"></a>
+            <a href="javascript:void(0);" th:onclick="${'common.listByKeyword(this.text,&quot;'+ metadataPageVO.keyword +'&quot;)'}"  th:text="${i}"></a>
         </li>
 
         <li th:class="${metadataPageVO.pageNo == metadataPageVO.totalPage || metadataPageVO.pageNo >= metadataPageVO.totalPage - 4} ? 'hidden'">
             <a th:data="${metadataPageVO.totalPage}" href="javascript:void(0);"
-               onclick="common.listByKeyword(this.getAttribute('data'))" aria-label="Next">
+               th:onclick="${'common.listByKeyword(this.getAttribute(&quot;data&quot;),&quot;'+ metadataPageVO.keyword +'&quot;)'}"
+                aria-label="Next">
                 <span aria-hidden="true">»</span>
             </a>
         </li>
