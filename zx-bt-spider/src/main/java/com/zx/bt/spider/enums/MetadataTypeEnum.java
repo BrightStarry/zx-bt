@@ -19,6 +19,7 @@ public enum MetadataTypeEnum implements CodeEnum<Integer> {
     CILIBA(3, "从https://www.ciliba.org获取"),
     BTCERISE(4,"从http://www.btcerise.me获取"),
     BTRABBIT(5, "从http://www.btrabbit.net获取"),
+    NANRENCILI(6, "从http://nanrencili.net获取"),
 
     ;
     private Integer code;

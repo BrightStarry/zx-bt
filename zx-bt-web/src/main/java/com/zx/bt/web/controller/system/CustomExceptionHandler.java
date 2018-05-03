@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 @ControllerAdvice
 @Slf4j
-public class CustomerExceptionHandler {
+public class CustomExceptionHandler {
     /**
      * 自定义异常处理
      */
