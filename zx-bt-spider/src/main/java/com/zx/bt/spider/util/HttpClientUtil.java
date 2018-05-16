@@ -45,6 +45,8 @@ public class HttpClientUtil {
 	private static final String LOG = "[HttpClientUtil]";
 	private static final String EMPTY = "";
 
+
+
 	// 请求头-------------------------------
 	//谷歌-user-agent
 	private static final Header CHROME_USER_AGENT = new BasicHeader("User-Agent",

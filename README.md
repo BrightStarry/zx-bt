@@ -214,12 +214,13 @@ DHT出现之后,假设一个新的节点想要加入该网络,只需要获取到
 ### Elasticsearch
 
 #### 创建索引
-PUT http://106.14.7.29:9200/indexName
+PUT http://106.14.7.29:9200/{indexName}
 JSON:
 ```json
     {
       "settings":{
-        "number_of_replicas": 0
+        "number_of_replicas": 0,
+        "number_of_shards":1
       },
       "mappings":{
         "metadata":{
@@ -369,6 +370,8 @@ http {
 
 
 #### bug
+- spider模块无法扫描到common模块中的注解，即使增加@ComponentScan，或在@SpringBootApplication增加scanBasePackages属性都无法扫描到，
+最后，将Application启动类，再移动到上一级目录（也就是com.zx.bt.Application）即可。
 - !!!!! Netty中发送byte[]消息时,需要 writeAndFlush(Unpooled.copiedBuffer(sendBytes)) .这样发送.而不是 writeAndFlush(sendBytes)
 否则可能导致,收到回复时,执行了handler的channelReadComplete(),跳过了channelRead()方法(也有说该bug是由于粘包拆包问题导致的).
 - 想尝试用类加载器或类自己的getResourceAsStream()方法获取文件时,如果一直为null,可能是因为编译文件未更新(而编译文件不自动更新,可能是因为未将项目加入IDEA maven窗口)
@@ -482,3 +485,8 @@ mysql自动回收该连接,而hibernate还不知道,在连接url后加上&autoRe
 个并发线程争夺锁的坑...于是改为10个线程,不暂停发送.
 
 - js中用 &quot; 进行引号转义
+
+- es中，分片数最好只比节点数，多一个，既方便扩展一个节点，也不会导致查询效率过低。此处，我直接就让分片数为一。
+ps: 各个分片，可以让各节点并发查询，在多节点时提高性能。但如果单节点开启x个分片，就会查询x次，导致查询过慢。
+
+- es的批量增加中，如果有某些数据（即使所有数据）增加失败，其总的结果仍会返回200

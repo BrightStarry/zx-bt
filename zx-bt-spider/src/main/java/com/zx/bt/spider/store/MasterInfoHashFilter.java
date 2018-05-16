@@ -1,7 +1,7 @@
 package com.zx.bt.spider.store;
 
 import com.google.common.hash.BloomFilter;
-import com.zx.bt.spider.SpiderApplication;
+import com.zx.bt.SpiderApplication;
 import com.zx.bt.spider.config.Config;
 import com.zx.bt.common.service.MetadataService;
 import com.zx.bt.common.util.CodeUtil;

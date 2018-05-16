@@ -57,7 +57,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.zx.bt.spider.SpiderApplication</mainClass>
+					<mainClass>com.zx.bt.SpiderApplication</mainClass>
 				</configuration>
 				<executions>
 					<execution>

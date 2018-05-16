@@ -101,18 +101,20 @@ public class MetadataService {
 
     /**
      * 批量增加
+     * 注意，该批量增加中，如果有某些数据增加失败，其总的结果仍会返回200
      */
     public void batchInsert(Collection<Metadata> metadatas) {
-        BulkRequestBuilder bulkRequest = transportClient.prepareBulk();
+        BulkRequestBuilder bulkRequestBuilder = transportClient.prepareBulk();
         for (Metadata item : metadatas) {
             try {
-                bulkRequest.add(transportClient.prepareIndex(ES_INDEX, ES_TYPE)
+                bulkRequestBuilder.add(transportClient.prepareIndex(ES_INDEX, ES_TYPE)
                         .setSource(objectMapper.writeValueAsBytes(item), XContentType.JSON));
             } catch (JsonProcessingException e) {
                 throw new BTException(LOG + "[batchInsert]批量新增失败,json解析异常:" + e.getMessage());
             }
+
         }
-        BulkResponse result = bulkRequest.get();
+        BulkResponse result = bulkRequestBuilder.execute().actionGet();
         if (!result.status().equals(RestStatus.OK))
             throw new BTException(LOG + "[batchInsert]批量新增失败,状态码错误,当前状态码:" + result.status());
     }
@@ -142,6 +144,8 @@ public class MetadataService {
     /**
      * 预先分页(scroll)
      * 返回总条数/scrollId/该次数据
+     *
+     * 该方法只返回infoHash字段
      */
     public ScrollResult<String> preListFindInfoHash(int size, int timeoutSecond) {
         String field = "infoHash";
@@ -155,12 +159,36 @@ public class MetadataService {
                 .setScroll(TimeValue.timeValueSeconds(timeoutSecond))
                 .get();
         if (!response.status().equals(RestStatus.OK))
-            throw new BTException(LOG + "[preListFindInfoHash]预分页查询失败,状态码错误,当前状态码:" + response.status());
+            throw new BTException(LOG + "[preListFindMetadata]预分页查询失败,状态码错误,当前状态码:" + response.status());
         List<String> infoHashs = new LinkedList<>();
         for (SearchHit item : response.getHits()) {
             infoHashs.add((String) item.field(field).getValues().get(0));
         }
         return new ScrollResult<>(infoHashs, response.getScrollId(), response.getHits().totalHits);
+    }
+
+    /**
+     * 预先分页(scroll)
+     * 返回总条数/scrollId/该次数据
+     *
+     * 该方法返回整个{@link Metadata}对象
+     */
+    @SneakyThrows
+    public ScrollResult<Metadata> preListFindMetadata(int size, int timeoutSecond) {
+        SearchResponse response = transportClient.prepareSearch(ES_INDEX)
+                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                //每次返回条数
+                .setSize(size)
+                // 这个游标维持多长时间
+                .setScroll(TimeValue.timeValueSeconds(timeoutSecond))
+                .get();
+        if (!response.status().equals(RestStatus.OK))
+            throw new BTException(LOG + "[preListFindMetadata]预分页查询失败,状态码错误,当前状态码:" + response.status());
+        List<Metadata> results = new LinkedList<>();
+        for (SearchHit item : response.getHits()) {
+            results.add(objectMapper.readValue(item.getSourceAsString(), Metadata.class).set_id(item.getId()));
+        }
+        return new ScrollResult<>(results, response.getScrollId(), response.getHits().totalHits);
     }
 
     /**
@@ -175,6 +203,8 @@ public class MetadataService {
 
     /**
      * scroll分页查询
+     *
+     * 只查询infoHash字段
      */
     public List<String> listFindInfoHash(String scrollId, int timeoutSecond) {
         String field = "infoHash";
@@ -185,6 +215,33 @@ public class MetadataService {
             infoHashs.add((String) item.field(field).getValues().get(0));
         }
         return infoHashs;
+    }
+
+    /**
+     * scroll分页查询
+     *
+     * 查询{@link Metadata}对象
+     */
+    @SneakyThrows
+    public ListFindResult<Metadata> listFindMetadata(String scrollId, int timeoutSecond) {
+        SearchResponse response = transportClient.prepareSearchScroll(scrollId)
+                .setScroll(TimeValue.timeValueSeconds(timeoutSecond)).get();
+        List<Metadata> results = new LinkedList<>();
+        for (SearchHit item : response.getHits()) {
+            results.add(objectMapper.readValue(item.getSourceAsString(), Metadata.class).set_id(item.getId()));
+        }
+        return new ListFindResult<>(response.getScrollId(),results);
+    }
+
+    /**
+     * {@link #listFindInfoHash 和 #listFindMetadata}方法 返回对象
+     * 包括返回数据 和 es的scrollId（据说该id可能会更新，所以需要返回）
+     */
+    @Data
+    @AllArgsConstructor
+    public static class ListFindResult<T>{
+        private String scrollId;
+        private List<T> list;
     }
 
     /**

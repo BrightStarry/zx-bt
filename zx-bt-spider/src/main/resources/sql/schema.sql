@@ -31,6 +31,32 @@ CREATE TABLE IF NOT EXISTS node (
 )
   AUTO_INCREMENT = 1000, COMMENT = 'node';
 
+CREATE TABLE IF NOT EXISTS metadata (
+  id          BIGINT      AUTO_INCREMENT
+  COMMENT 'id',
+  info_hash     CHAR(40)    DEFAULT ''
+  COMMENT 'infoHash',
+  name          VARCHAR(256) DEFAULT ''
+  COMMENT 'name',
+  info_string    MEDIUMTEXT
+  COMMENT 'infoString',
+  length        BIGINT         DEFAULT 0
+  COMMENT 'length',
+  hot        INT         DEFAULT 0
+  COMMENT 'hot',
+  type        TINYINT         DEFAULT 0
+  COMMENT 'type',
+  create_time DATETIME
+  COMMENT '创建时间',
+  update_time DATETIME
+  COMMENT '修改时间',
+  PRIMARY KEY (id)
+)
+  AUTO_INCREMENT = 1000, COMMENT = 'metadata';
+
+
+
+
 # 使用es存储
 # CREATE TABLE IF NOT EXISTS metadata (
 #   id         BIGINT         AUTO_INCREMENT

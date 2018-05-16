@@ -1,6 +1,7 @@
 {
   "settings":{
-    "number_of_replicas": 0
+    "number_of_replicas": 0,
+    "number_of_shards":1
   },
   "mappings":{
     "metadata":{
@@ -19,8 +20,7 @@
           "type": "long"
         },
         "infoHash":{
-          "type": "keyword",
-          "ignore_above": 256
+          "type": "keyword"
         },
         "type":{
           "type": "integer"
@@ -37,7 +37,8 @@
           "format": "strict_date_optional_time||epoch_millis"
         },
         "infoString": {
-          "type": "keyword"
+          "type": "keyword",
+          "ignore_above": 256
         }
       }
     }

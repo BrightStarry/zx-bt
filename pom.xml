@@ -9,7 +9,7 @@
 
     <packaging>pom</packaging>
 
-    <name>zx-bt-parent</name>
+    <name>zx-bt</name>
     <description>BT父模块</description>
 
 

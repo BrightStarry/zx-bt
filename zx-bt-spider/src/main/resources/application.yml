@@ -10,18 +10,20 @@ management:
 spring:
   datasource:
     url: jdbc:mysql://rm-uf659fc1pyp136g328o.mysql.rds.aliyuncs.com:3306/zx-bt?useSSL=false&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
+#    url: jdbc:mysql://127.0.0.1:3306/zx-bt?useSSL=false&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
     username: root
     password: Lzb112358*
+#    password: 123456
     driver-class-name: com.mysql.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
     # DataSource配置
     druid:
       # 初始容量
-      initial-size: 20
+      initial-size: 5
       # 最大连接池个数
-      max-active: 100
+      max-active: 200
       # 最小空闲
-      min-idle: 10
+      min-idle: 5
       # 获取连接最大等待时间
       max-wait: 3000
       # 是否缓存preparedStatement(PSCache),对游标提升巨大,建议oracle开启,mysql关闭
@@ -116,8 +118,8 @@ zx-bt:
     socket-timeout: 1500
   es:
     cluster-name: zx
-#    ip: 106.14.7.29
-    ip: 172.19.87.203
+    ip: 106.14.7.29
+#    ip: 172.19.87.203
     port: 9300
   performance:
     # find_node任务,线程数
@@ -169,7 +171,7 @@ zx-bt:
 
   main:
     # 是否开启主任务
-    start: true
+    start: false
     # 是否为主节点
     master: true
     # 主节点url

@@ -2,6 +2,7 @@ package com.zx.bt.spider.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.bt.common.enums.CacheMethodEnum;
+import com.zx.bt.common.repository.MetadataRepository;
 import com.zx.bt.common.service.MetadataService;
 import com.zx.bt.spider.dto.GetPeersSendInfo;
 import com.zx.bt.spider.socket.Sender;
@@ -120,6 +121,7 @@ public class BeanConfig {
 
 		Settings settings = Settings.builder()
 				.put("cluster.name",config.getEs().getClusterName())
+				// TODO 内网ip时不开启，外网ip时开启，自动嗅探es集群所有节点信息，也可不开启，直接使用addTransportAddress方法增加已知节点
 //				.put("client.transport.sniff", true)
 				.build();
 		//如果settings为空,可以使用Settings.EMPTY
@@ -136,6 +138,8 @@ public class BeanConfig {
 	public MetadataService metadataService(TransportClient transportClient, ObjectMapper objectMapper) {
 		return new MetadataService(transportClient,objectMapper);
 	}
+
+
 
 	/**
 	 * {@link com.zx.bt.spider.parser.AbstractInfoHashParser}使用的 {@link HttpClientUtil}
